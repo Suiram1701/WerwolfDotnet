@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="WerwolfDotnet.Server/WerwolfDotnet.Server.csproj" />
+  <Project Path="WerwolfDotnet.Client/WerwolfDotnet.Client.esproj" />
+</Solution>
