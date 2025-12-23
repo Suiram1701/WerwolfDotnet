@@ -7,10 +7,20 @@
         <RootNamespace>WerwolfDotnet.Server</RootNamespace>
         <AssemblyName>$(AssemblyName.Replace(' ', '_'))</AssemblyName>
 
+        
         <SpaRoot>..\WerwolfDotnet.Client</SpaRoot>
         <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
         <SpaProxyServerUrl>http://localhost:5173</SpaProxyServerUrl>
     </PropertyGroup>
+    
+    <Choose>
+        <When Condition="'$(Configuration)'=='Debug'">
+            <PropertyGroup>
+                <GenerateDocumentationFile>true</GenerateDocumentationFile>
+                <NoWarn>$(NoWarn);1591</NoWarn>
+            </PropertyGroup>
+        </When>
+    </Choose>
 
     <ItemGroup>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
@@ -19,11 +29,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\WerwolfDotnet.Client\WerwolfDotnet.Client.esproj" ReferenceOutputAssembly="false" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Controllers\" />
-      <Folder Include="Models\" />
     </ItemGroup>
 
 </Project>
