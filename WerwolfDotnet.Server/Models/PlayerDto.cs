@@ -1,8 +1,16 @@
+using WerwolfDotnet.Server.Game;
+
 namespace WerwolfDotnet.Server.Models;
 
-public class PlayerDto
+public class PlayerDto(Player player)
 {
-    public required int Id { get; init; }
+    /// <summary>
+    /// The id (only unique in the game session) of the player.
+    /// </summary>
+    public int Id { get; } = player.Id;
     
-    public required string Name { get; init; }
+    /// <summary>
+    /// The name of the player.
+    /// </summary>
+    public string Name { get; } = player.Name;
 }

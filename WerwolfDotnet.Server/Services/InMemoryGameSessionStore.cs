@@ -7,6 +7,9 @@ public class InMemoryGameSessionStore : IGameSessionStore
 {
     private readonly Dictionary<int, GameContext> _gameContexts = [];
 
+    public Task<bool> IdExistsAsync(int gameId) =>
+        Task.FromResult(_gameContexts.ContainsKey(gameId));
+    
     public Task AddAsync(GameContext ctx)
     {
         return !_gameContexts.TryAdd(ctx.Id, ctx)
@@ -25,6 +28,8 @@ public class InMemoryGameSessionStore : IGameSessionStore
         IEnumerable<GameContext> contexts = _gameContexts.Values;
         return Task.FromResult(contexts);
     }
+
+    public Task UpdateAsync(GameContext ctx) => Task.CompletedTask;     // Not need to do anything because it will update its-self through references.
 
     public Task RemoveAsync(GameContext ctx)
     {

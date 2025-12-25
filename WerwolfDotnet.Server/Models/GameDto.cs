@@ -3,45 +3,37 @@ using WerwolfDotnet.Server.Game;
 namespace WerwolfDotnet.Server.Models;
 
 /// <summary>
-/// An Dto for returning a game.
+/// A Dto for returning a game.
 /// </summary>
-public class GameDto
+public class GameDto(GameContext context)
 {
     /// <summary>
     /// The identifier of the game
     /// </summary>
-    public int Id { get; }
-    
+    public int Id { get; } = context.Id;
+
     /// <summary>
     /// Indicates whether the game is password protected.
     /// </summary>
-    public bool Protected { get; }
-    
+    public bool Protected { get; } = context.IsProtected;
+
     /// <summary>
     /// Indicates whether the game is currently running. You can't join ongoing games.
     /// </summary>
-    public bool IsRunning { get; }
-    
-    /// <summary>
-    /// The player ID of the game master (the one who is hosting the game)
-    /// </summary>
-    public int GameMasterId  { get; }
-    
-    /// <summary>
-    /// A list of all players and their name who are participating in the game.
-    /// </summary>
-    public PlayerDto[] Players { get; }
+    public bool IsRunning { get; } = context.State > GameState.Preparation;
 
     /// <summary>
-    /// Converts a game context into this Dto
+    /// The name of the game master (the one who is hosting the game)
     /// </summary>
-    /// <param name="ctx">The context to create from.</param>
-    public GameDto(GameContext ctx)
-    {
-        Id = ctx.Id;
-        Protected = ctx.IsProtected;
-        IsRunning = ctx.State != GameState.Preparation;
-        // GameMasterId = 
-        // Players = 
-    }
+    public string GameMaster { get; } = context.GameMaster.Name;
+    
+    /// <summary>
+    /// The current amount of players in the game.
+    /// </summary>
+    public int PlayersCount { get; } = context.Players.Count;
+
+    /// <summary>
+    /// The maximum amount of player in a game.
+    /// </summary>
+    public int MaxPlayersCount { get; } = context.MaxPlayers;
 }
