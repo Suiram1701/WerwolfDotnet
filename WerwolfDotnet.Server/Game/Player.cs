@@ -28,4 +28,10 @@ public class Player
         authSecretStr = Convert.ToBase64String(authSecret);
         _authSecretHash = SHA256.HashData(authSecret);
     }
+
+    public bool VerifyAuthToken(string token)
+    {
+        byte[] tokenBytes = Convert.FromBase64String(token);
+        return SHA256.HashData(tokenBytes).SequenceEqual(_authSecretHash);
+    }
 }
