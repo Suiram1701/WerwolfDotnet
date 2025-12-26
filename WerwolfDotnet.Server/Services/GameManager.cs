@@ -92,8 +92,8 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
 
         Player player = new(ctx.Players.Count, playerName, ctx, out string authToken);
         ctx.AddPlayer(player);
-        await _sessionStore.UpdateAsync(ctx);
 
+        await _sessionStore.UpdateAsync(ctx);     // No need to log (done by context) 
         return (player, authToken);
     }
 }

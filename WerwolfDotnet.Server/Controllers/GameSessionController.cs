@@ -7,7 +7,7 @@ using static System.Net.Mime.MediaTypeNames;
 namespace WerwolfDotnet.Server.Controllers;
 
 [ApiController]
-[Route("api/v1/game_sessions")]
+[Route("api/game_sessions")]
 public class GameSessionController(GameManager manager) : ControllerBase
 {
     private readonly GameManager _manager = manager;
@@ -16,21 +16,21 @@ public class GameSessionController(GameManager manager) : ControllerBase
     /// Creates a new game and the game master who created it.
     /// </summary>
     /// <param name="model">The Dto for creating the game.</param>
-    /// <response code="200">A new game was created.</response>
+    /// <response code="201">A new game was created.</response>
     /// <response code="400">Invalid values were provided.</response>
     [HttpPost]
-    [ProducesResponseType(typeof(CreatedGameDto), StatusCodes.Status200OK, Application.Json)]
+    [ProducesResponseType(typeof(JoinedGameDto), StatusCodes.Status201Created, Application.Json)]
     public async Task<IActionResult> CreateSession([FromBody] JoinGameDto model)
     {
         if (!_manager.IsPlayerNameValid(model.PlayerName, null))
             return BadRequest("A valid 'playerName' was expected!");
         
-        (GameContext ctx, Player self, string auth) = await _manager.CreateGameAsync(model.PlayerName, model.SessionPassword);
-        return CreatedAtAction(nameof(GetSessionById), new { sessionId = ctx.Id }, new CreatedGameDto
+        (GameContext ctx, Player self, string auth) = await _manager.CreateGameAsync(model.PlayerName, model.GamePassword);
+        return CreatedAtAction(nameof(GetSessionById), new { sessionId = ctx.Id }, new JoinedGameDto
         {
             Game = new GameDto(ctx),
             Self = new PlayerDto(self),
-            AuthenticationToken = auth
+            PlayerToken = auth
         });
     }
 
@@ -92,13 +92,14 @@ public class GameSessionController(GameManager manager) : ControllerBase
         if (ctx.Players.Count >= ctx.MaxPlayers)
             return Conflict("The session is already full!");
 
-        (Player self, string authToken)? playerData = await _manager.JoinGameAsync(ctx, model.PlayerName, model.SessionPassword);
+        (Player self, string authToken)? playerData = await _manager.JoinGameAsync(ctx, model.PlayerName, model.GamePassword);
         if (playerData is null)
             return Unauthorized("The provided password is invalid.");
         return Ok(new JoinedGameDto
         {
+            Game = new GameDto(ctx),
             Self = new PlayerDto(playerData.Value.self),
-            AuthenticationToken = playerData.Value.authToken
+            PlayerToken = playerData.Value.authToken
         });
     }
 }

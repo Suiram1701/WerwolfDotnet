@@ -13,5 +13,5 @@ public class JoinGameDto
     /// <summary>
     /// An optional password to protect the session with.
     /// </summary>
-    public string? SessionPassword { get; set; }
+    public string? GamePassword { get; set; }
 }

@@ -30,10 +30,10 @@ public class GameDto(GameContext context)
     /// <summary>
     /// The current amount of players in the game.
     /// </summary>
-    public int PlayersCount { get; } = context.Players.Count;
+    public int PlayerCount { get; } = context.Players.Count;
 
     /// <summary>
     /// The maximum amount of player in a game.
     /// </summary>
-    public int MaxPlayersCount { get; } = context.MaxPlayers;
+    public int MaxPlayerCount { get; } = context.MaxPlayers;
 }
