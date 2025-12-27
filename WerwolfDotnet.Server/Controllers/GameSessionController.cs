@@ -43,11 +43,13 @@ public class GameSessionController(GameManager manager) : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(GameDto[]), StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetAllSessions()
-    {
+     {
         IEnumerable<GameContext>? contexts = await _manager.GetAllGames().ConfigureAwait(false);
         if (contexts is null)
             return Forbid();
-        return Ok(contexts.Select(ctx => new GameDto(ctx)));
+        return Ok(contexts
+            .Where(ctx => ctx.State > GameState.NotInitialized)
+            .Select(ctx => new GameDto(ctx)));
     }
 
     /// <summary>
@@ -62,6 +64,8 @@ public class GameSessionController(GameManager manager) : ControllerBase
     public async Task<IActionResult> GetSessionById(int sessionId)
     {
         GameContext? ctx = await _manager.GetGameById(sessionId).ConfigureAwait(false);
+        if (ctx?.State == GameState.NotInitialized)
+            ctx = null;
         return ctx is not null
             ? Ok(new GameDto(ctx))
             : NotFound();

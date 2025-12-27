@@ -58,8 +58,9 @@ else
 {
     app.UseHttpsRedirection();
     app.UseHsts();
-    app.UseCors(websiteClientOrigin);
 }
+
+app.UseCors(websiteClientOrigin);
 
 app.UseAuthentication();
 app.UseAuthorization();
