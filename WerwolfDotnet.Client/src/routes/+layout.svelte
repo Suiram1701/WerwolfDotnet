@@ -1,5 +1,7 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount, type Snippet } from "svelte";
+    
+    let { children }: { children: Snippet } = $props();
     
     const colorKey: string = "colorTheme";
     
@@ -18,7 +20,7 @@
     onMount(() => {
         const savedColor: string | null = localStorage.getItem(colorKey);
         if (savedColor !== null)
-            currentColor = colorModes.find(c => c.value === savedColor);
+            currentColor = colorModes.find(c => c.value === savedColor) ?? colorModes[2];
     });
 
     $effect(() => {
@@ -33,13 +35,9 @@
         const attrValue = isDarkMode ? "dark" : "light";
         document.getElementsByTagName("html")[0].setAttribute("data-bs-theme", attrValue);
     });
-    
-    export const ssr = false;
 </script>
 
-<div class="container my-3">
-    <slot/>
-</div>
+<div class="container my-3">{@render children()}</div>
 
 <div class="dropdown position-fixed bottom-0 end-0 mb-3 me-3">
     <button class="btn btn-primary py-2 dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown">
