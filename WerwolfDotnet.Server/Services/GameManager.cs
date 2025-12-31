@@ -10,6 +10,13 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
     private readonly ILogger<GameManager> _logger = logger;
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly IGameSessionStore _sessionStore = sessionStore;
+
+    public event Func<GameContext, IEnumerable<Player>, Task> OnPlayersUpdated
+    {
+        add => _playersChanged.Add(value);
+        remove => _playersChanged.Remove(value);
+    }
+    private readonly List<Func<GameContext, IEnumerable<Player>, Task>> _playersChanged = [];
     
     private GameLobbyOptions LobbyOptions => lobbyOptions.CurrentValue;
 
@@ -93,7 +100,32 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
         Player player = new(ctx.Players.Count, playerName, ctx, out string authToken);
         ctx.AddPlayer(player);
 
-        await _sessionStore.UpdateAsync(ctx);     // No need to log (done by context) 
+        await _sessionStore.UpdateAsync(ctx);     // No need to log (done by context)
+        await InvokeAsyncEvent(_playersChanged, cb => cb.Invoke(ctx, ctx.Players)).ConfigureAwait(false);
         return (player, authToken);
+    }
+
+    public async Task<bool> LeaveGameAsync(GameContext ctx, Player player)
+    {
+        if (!ctx.RemovePlayer(player))
+            return false;
+
+        if (ctx.Players.Count > 0)
+        {
+            await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
+            await InvokeAsyncEvent(_playersChanged, cb => cb.Invoke(ctx, ctx.Players)).ConfigureAwait(false);
+            return true;
+        }
+        
+        // empty session -> auto remove
+        ctx.Dispose();
+        await _sessionStore.RemoveAsync(ctx).ConfigureAwait(false);
+        return true;
+    }
+
+    private static Task InvokeAsyncEvent<T>(IEnumerable<T> callbacks, Func<T, Task> invoke)
+    {
+        IEnumerable<Task> tasks = callbacks.Select(invoke);
+        return Task.WhenAll(tasks);
     }
 }

@@ -1,7 +1,9 @@
 <script lang="ts">
+    import { goto } from "$app/navigation";
     import { onMount } from "svelte";
     import { config } from "../config";
     import { Api, type HttpResponse, type GameDto, type JoinGameDto, type JoinedGameDto} from "../Api";
+    import { storePlayerToken } from "../gameSessionStore";
     import PageTitle from "./components/PageTitle.svelte"
     import GameCard from "./components/GameCard.svelte";
     import Modal from "./components/Modal.svelte";
@@ -25,9 +27,7 @@
             gamePassword: password
         };
         apiClient.api.gameSessionsCreate(request)
-            .then(response => {
-                // Not implemented
-            })
+            .then(response => joinGame(response.data))
             .catch((response: HttpResponse<JoinedGameDto>) => {
                 if (response.status === 400) {
                     document.getElementById("creatingPlayerName")!.classList.add("is-invalid");     // No need to reset because it's the only input for this form.
@@ -47,9 +47,7 @@
             gamePassword: (passwordRequired ? password : null)
         };
         apiClient.api.gameSessionsJoinCreate(gameId ?? -1, request)
-            .then(response => {
-                // Not implemented
-            })
+            .then(response => joinGame(response.data))
             .catch((response: HttpResponse<JoinedGameDto>) => {
                 switch (response.status) {
                     case 400:
@@ -72,6 +70,12 @@
             });
     }
     
+    function joinGame(data: JoinedGameDto) {
+        storePlayerToken(data.game.id ?? -1, data.self.id ?? 0, data.playerToken ?? "");
+        goto(`/game?sessionId=${data.game.id}&playerId=${data.self.id}`);
+    }
+    
+    let pollId: NodeJS.Timeout;
     onMount(() => {
         if (config.sessionsVisible) {
             games = [];
@@ -79,7 +83,7 @@
                 .then(response => {
                     games = response.data;
 
-                    setInterval(async () => {
+                    pollId = setInterval(async () => {
                         const response : HttpResponse<GameDto[], void> = await apiClient.api.gameSessionsList();
                         if (response.ok)
                             games = response.data;
@@ -91,6 +95,7 @@
                     games = null;
                     console.warn("Can't poll game session because its disabled by the server (although its enabled for the client)"); 
                 });
+            return () => clearInterval(pollId);
         }
     });
 </script>

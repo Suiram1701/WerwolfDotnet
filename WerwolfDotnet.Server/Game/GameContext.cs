@@ -6,7 +6,7 @@ namespace WerwolfDotnet.Server.Game;
 /// <summary>
 /// A whole context of a game. Contains everything.
 /// </summary>
-public class GameContext
+public sealed class GameContext : IDisposable
 {
     /// <summary>
     /// The ID of this game session. Should always be formatted using .ToString("D6")
@@ -65,7 +65,7 @@ public class GameContext
         MaxPlayers = maxPlayers;
         _logger = logger;
     }
-
+    
     public void InitializeGame(Player gameMaster)
     {
         if (GameMaster is not null || State != GameState.NotInitialized)
@@ -98,16 +98,23 @@ public class GameContext
         _logger.LogInformation("Player {playerName} ({playerId}) joined the game", player.Name, player.Id);
     }
 
-    public void RemovePlayer(Player player)
+    public bool RemovePlayer(Player player)
     {
         ThrowWhenNotInit();
-        _players.Remove(player);
+        if (!_players.Remove(player))
+            return false;
+        
         _logger.LogInformation("Player {playerName} ({playerId}) left the game", player.Name, player.Id);
+        return true;
     }
     
     private void ThrowWhenNotInit()
     {
         if (State == GameState.NotInitialized)
             throw new InvalidOperationException("A game hasn't been initialized yet!");
+    }
+
+    public void Dispose()
+    {
     }
 }

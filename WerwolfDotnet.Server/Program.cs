@@ -14,14 +14,12 @@ builder.Services
 
 builder.Services
     .AddSingleton<GameManager>()
-    .AddSingleton<IGameSessionStore, InMemoryGameSessionStore>();
+    .AddSingleton<IGameSessionStore, InMemoryGameSessionStore>()
+    .AddHostedService<GameToHubInterface>();
 
 builder.Services
     .AddAuthentication(TokenAuthenticationScheme.SchemeName)
-    .AddScheme<AuthenticationSchemeOptions, TokenAuthenticationScheme>(TokenAuthenticationScheme.SchemeName, options =>
-    {
-
-    });
+    .AddScheme<AuthenticationSchemeOptions, TokenAuthenticationScheme>(TokenAuthenticationScheme.SchemeName, null);
 builder.Services.AddAuthentication();
 
 // Add services to the container.
@@ -42,7 +40,10 @@ builder.Services.AddCors(options =>
         string? website = builder.Configuration["Endpoints:Website"];
         if (website != null)
         {
-            policy.WithOrigins(website).AllowAnyHeader().AllowAnyMethod();
+            policy.WithOrigins(website)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
         }
     });
 });
