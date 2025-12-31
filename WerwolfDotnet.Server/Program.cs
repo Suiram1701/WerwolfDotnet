@@ -47,9 +47,11 @@ builder.Services.AddCors(options =>
         }
     });
 });
+builder.Services.AddProblemDetails();
 
 WebApplication app = builder.Build();
 
+app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

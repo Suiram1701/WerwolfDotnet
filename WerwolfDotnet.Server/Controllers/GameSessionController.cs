@@ -22,10 +22,10 @@ public class GameSessionController(GameManager manager) : ControllerBase
     [ProducesResponseType(typeof(JoinedGameDto), StatusCodes.Status201Created, Application.Json)]
     public async Task<IActionResult> CreateSession([FromBody] JoinGameDto model)
     {
-        if (!_manager.IsPlayerNameValid(model.PlayerName, null))
-            return BadRequest("A valid 'playerName' was expected!");
+        if (!_manager.IsPlayerNameValid(model.PlayerName.Trim(), null))
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "A valid 'playerName' was expected!");
         
-        (GameContext ctx, Player self, string auth) = await _manager.CreateGameAsync(model.PlayerName, model.GamePassword);
+        (GameContext ctx, Player self, string auth) = await _manager.CreateGameAsync(model.PlayerName.Trim(), model.GamePassword);
         return CreatedAtAction(nameof(GetSessionById), new { sessionId = ctx.Id }, new JoinedGameDto
         {
             Game = new GameDto(ctx),
@@ -46,7 +46,7 @@ public class GameSessionController(GameManager manager) : ControllerBase
      {
         IEnumerable<GameContext>? contexts = await _manager.GetAllGames().ConfigureAwait(false);
         if (contexts is null)
-            return Forbid();
+            return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "Configuration disables viewing all sessions!");
         return Ok(contexts
             .Where(ctx => ctx.State > GameState.NotInitialized)
             .Select(ctx => new GameDto(ctx)));
@@ -68,7 +68,7 @@ public class GameSessionController(GameManager manager) : ControllerBase
             ctx = null;
         return ctx is not null
             ? Ok(new GameDto(ctx))
-            : NotFound();
+            : Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
     }
 
     /// <summary>
@@ -88,17 +88,18 @@ public class GameSessionController(GameManager manager) : ControllerBase
     {
         GameContext? ctx = await _manager.GetGameById(sessionId).ConfigureAwait(false);
         if (ctx is null)
-            return NotFound("Specified session not found.");
-        
-        if (!_manager.IsPlayerNameValid(model.PlayerName, ctx))
-            return BadRequest("The provided 'playerName' is invalid or already taken.");
+            return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Specified session not found.");
+
+        if (!_manager.IsPlayerNameValid(model.PlayerName.Trim(), ctx))
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "The provided 'playerName' is invalid or already taken.");
 
         if (ctx.Players.Count >= ctx.MaxPlayers)
-            return Conflict("The session is already full!");
+            return Problem(statusCode: StatusCodes.Status409Conflict, detail: "The session is already full!");
 
-        (Player self, string authToken)? playerData = await _manager.JoinGameAsync(ctx, model.PlayerName, model.GamePassword);
+        (Player self, string authToken)? playerData = await _manager.JoinGameAsync(ctx, model.PlayerName.Trim(), model.GamePassword);
         if (playerData is null)
-            return Unauthorized("The provided password is invalid.");
+            return Problem(statusCode: StatusCodes.Status401Unauthorized, detail: "The provided password is invalid.");
+        
         return Ok(new JoinedGameDto
         {
             Game = new GameDto(ctx),

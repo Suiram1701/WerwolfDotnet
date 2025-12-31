@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using WerwolfDotnet.Server.Game;
 using WerwolfDotnet.Server.Options;
@@ -28,12 +29,21 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
     /// <returns>true when valid.</returns>
     public bool IsPlayerNameValid(string name, GameContext? context)
     {
-        if (string.IsNullOrWhiteSpace(name))
+        if (string.IsNullOrWhiteSpace(name) || name.Any(char.IsWhiteSpace))
+            return false;
+        if (name.Length < LobbyOptions.PlayerNameMinLength || name.Length > LobbyOptions.PlayerNameMaxLength)
+            return false;
+        
+        string pattern = LobbyOptions.PlayerNameAllowNumbers
+            ? "^[a-zA-Z0-9]+$"
+            : "^[a-zA-Z]+$";
+        if (!Regex.IsMatch(name, pattern))
             return false;
 
-        if (context is not null)
-            return context.Players.All(p => p.Name != name);
-        return true;
+        if (LobbyOptions.PlayerNameForbiddenWords.Any(w => name.Contains(w, StringComparison.OrdinalIgnoreCase)))
+            return false;
+        
+        return context is null || context.Players.All(p => p.Name != name);
     }
     
     /// <summary>
