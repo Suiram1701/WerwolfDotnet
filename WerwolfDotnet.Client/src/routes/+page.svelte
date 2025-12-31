@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { page } from "$app/state";
     import { goto } from "$app/navigation";
     import { onMount } from "svelte";
     import { config } from "../config";
@@ -77,6 +78,11 @@
     
     let pollId: NodeJS.Timeout;
     onMount(() => {
+        if (page.url.searchParams.get("kicked") !== null) {
+            errorText = "Sie wurden aus der Sitzung geworfen vom Game master!"
+            errorModal.show();
+        }
+        
         if (config.sessionsVisible) {
             games = [];
             apiClient.api.gameSessionsList()
@@ -150,7 +156,7 @@
     <button class="btn btn-primary" type="button" onclick={onJoinGame}>Beitreten</button>
 {/snippet}
 
-<Modal bind:this={errorModal} id="errorModal" title="Fehler bei der Anfrage" footer={errorFooter}>{errorText}</Modal>
+<Modal bind:this={errorModal} id="errorModal" title="Meldung" footer={errorFooter}>{errorText}</Modal>
 {#snippet errorFooter()}
     <button class="btn btn-primary" type="button" data-bs-dismiss="modal">Verstanden</button>
 {/snippet}

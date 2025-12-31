@@ -45,13 +45,20 @@
     });
 
     class GameHubClient extends GameHubClientBase {
-        constructor(connection: HubConnection) {
-            super(connection);
-        }
+        constructor(connection: HubConnection) { super(connection); }
         
         onPlayersUpdated(updatedPlayers: PlayerDto[]): Promise<void> {
             players = updatedPlayers;
             return Promise.resolve();
+        }
+        
+        async onForceDisconnect(kicked: boolean): Promise<void> {
+            await connection.stop();
+            removePlayerToken(gameId ?? -1, playerId ?? -1);
+            if (kicked)
+                goto("/?kicked=true");
+            else
+                goto("/");
         }
     }
     
@@ -62,31 +69,33 @@
     }
 </script>
 
-<div class="container-fluid d-flex flex-column align-items-center">
-    <ul class="playerDisplay list-group">
+<div class="main-content container-fluid d-flex flex-column align-items-center">
+    <ul class="list-group">
         {#each players as player}
             <li class="list-group-item {getPlayerCSSClasses(player)}">{player.name}</li>
         {/each}
     </ul>
+    
+    <button class="btn btn-outline-danger mt-3" type="button" onclick={() => gameHub.leaveGame()}>Spiel verlassen</button>
 </div>
 
 <style>
     @media (max-width: 576px) {
-        .playerDisplay {
+        .main-content * {
             width: 100%;
             max-width: 100vw;
         }
     }
 
     @media (min-width: 576px) and (max-width: 1200px) {
-        .playerDisplay {
+        .main-content * {
             width: 100%;
             max-width: 35rem;
         }
     }
 
     @media (min-width: 1200px) {
-        .playerDisplay {
+        .main-content * {
             width: 100%;
             max-width: 45rem;
         }

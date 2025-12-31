@@ -8,9 +8,9 @@ export class GameHubServer {
         this.connection = connection;
     }
     
-    public leaveGame(): void {
-        this.connection.invoke("leaveGame", );
-    }
+    public async leaveGame(playerId: number | null = null): Promise<void> {
+        await this.connection.invoke("leaveGame", playerId);
+    } 
 }
 
 export abstract class GameHubClientBase {
@@ -19,7 +19,10 @@ export abstract class GameHubClientBase {
     protected constructor(connection: HubConnection) {
         this.connection = connection;
         connection.on("onPlayersUpdated", this.onPlayersUpdated)
+        connection.on("onForceDisconnect", this.onForceDisconnect)
     }
 
     public abstract onPlayersUpdated(players: PlayerDto[]): Promise<void>;
+    
+    public abstract onForceDisconnect(kicked: boolean): Promise<void>;
 }

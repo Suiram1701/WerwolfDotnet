@@ -7,4 +7,7 @@ public interface IGameHub
 {
     [HubMethodName("onPlayersUpdated")]
     public Task PlayersUpdated(IEnumerable<PlayerDto> players);
+    
+    [HubMethodName("onForceDisconnect")]
+    public Task ForceDisconnect(bool kicked = false);
 }

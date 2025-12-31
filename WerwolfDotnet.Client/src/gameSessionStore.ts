@@ -31,6 +31,6 @@ export function removePlayerToken(sessionId: number, playerId: number): boolean 
         return false;
     
     sessions.splice(sessions.indexOf(session), 1);
-    localStorage.setItem(storageKey, JSON.stringify(session));
+    localStorage.setItem(storageKey, JSON.stringify(sessions));
     return true;
 }
