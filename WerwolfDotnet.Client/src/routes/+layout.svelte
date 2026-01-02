@@ -51,7 +51,7 @@
     <div class="col-md-4 d-flex align-items-center">
         <a href="/" class="mb-3 me-2 mb-md-0 text-body-secondary text-decoration-none lh-1" aria-label="Bootstrap">
             <svg class="bi" width="30" height="24" aria-hidden="true"><use xlink:href="#bootstrap"></use></svg> </a>
-        <span class="mb-3 mb-md-0 text-body-secondary">© 2025 Suiram1701</span>
+        <span class="mb-3 mb-md-0 text-body-secondary">© 2026 Suiram1701</span>
     </div>
     
     <div class="d-flex flex-column align-items-center">
@@ -59,16 +59,16 @@
         
         <small class="text-muted">
             Erstellt mit
-            <span class="fw-semibold{!isDarkMode ? ' text-light' : ''}">Svelte</span>,
-            <span class="fw-semibold{!isDarkMode ? ' text-light' : ''}">Bootstrap</span>
+            <a class="link-secondary" href="https://svelte.dev" target="_blank"><span class="fw-semibold">Svelte</span></a>,
+            <a class="link-secondary" href="https://getbootstrap.com/" target="_blank"><span class="fw-semibold">Bootstrap</span></a>
             und
-            <span class="fw-semibold {!isDarkMode ? ' text-light' : ''}">ASP.NET</span> im Backend
+            <a class="link-secondary" href="https://learn.microsoft.com/aspnet/core" target="_blank"><span class="fw-semibold">ASP.NET Core</span></a> im Backend
         </small>
     </div>
     
     <ul class="nav col-md-4 justify-content-end list-unstyled d-flex">
         <li class="ms-3">
-            <a class="text-body-secondary" href="https://github.com/Suiram1701/WerwolfDotnet" aria-label="GitHub">
+            <a class="text-body-secondary" href="https://github.com/Suiram1701/WerwolfDotnet" target="_blank" aria-label="GitHub">
                 {#if isDarkMode}
                     <img src="/images/github-mark-white.svg" alt="GitHub-Logo" height="42" />
                 {:else}

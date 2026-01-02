@@ -15,7 +15,8 @@ builder.Services
 builder.Services
     .AddSingleton<GameManager>()
     .AddSingleton<IGameSessionStore, InMemoryGameSessionStore>()
-    .AddHostedService<GameToHubInterface>();
+    .AddSingleton<GameToHubInterface>()
+    .AddHostedService(sp => sp.GetRequiredService<GameToHubInterface>());
 
 builder.Services
     .AddAuthentication(TokenAuthenticationScheme.SchemeName)

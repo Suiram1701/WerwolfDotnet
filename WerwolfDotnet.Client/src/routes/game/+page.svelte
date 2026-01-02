@@ -9,7 +9,10 @@
     import { GameHubServer, GameHubClientBase } from "../../signalrHub";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
     import ModalProvider from "../components/ModalProvider.svelte";
+    import PageTitle from "../components/PageTitle.svelte";
 
+    const webUrl = page.url.protocol + "//" + page.url.host;     // Port is part of the host
+    
     let modalProvider: ModalProvider;
     const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");
     modalAccessor.subscribe(m => modalProvider = m);
@@ -75,8 +78,15 @@
     }
 </script>
 
-{#snippet leaveGame()}Möchten Sie das Spiel wirklich verlassen?{/snippet}
+{#snippet leaveGame()}<Möc></Möc>hten Sie das Spiel wirklich verlassen?{/snippet}
 {#snippet kickPlayer()}Möchten Sie diesen Spieler wirklich aus dem Spiel werden?{/snippet}
+
+<PageTitle title="Werwolf - Spiel {gameId}" />
+
+<div class="mb-4">
+    <p>Andere Spieler können beitreten indem Sie diese Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
+    <p>Direktes beitreten ist auch über <a href="{webUrl}?gameId={gameId}">diesen Link</a> möglich.</p>
+</div>
 
 <div class="main-content container-fluid d-flex flex-column align-items-center">
     <ul class="list-group">

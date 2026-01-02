@@ -78,6 +78,24 @@
             modalProvider.showSimple("Spiel verlassen", `Sie wurden vom Game master aus dem Spiel geworfen.`);
         }
         
+        if (page.url.searchParams.get("gameId") !== null) {
+            const urlGameId = Number.parseInt(page.url.searchParams.get("gameId")!);
+            apiClient.api.gameSessionsDetail(urlGameId)
+                .then(response => {
+                    gameId = response.data.id;
+                    gameIdLocked = true;
+                    password = "";
+                    passwordRequired = response.data.protected ?? true;
+
+                    modalProvider.show("Spiel beitreten", joinModalContent, true, "Beitreten", "primary", onJoinGame);
+                })
+                .catch(response => {
+                    if (response.status === 404)
+                        return;
+                    modalProvider.showSimple("Fehler bei der Anfrage", `${response.status}: ${response.statusText}`);
+                });
+        }
+        
         if (config.sessionsVisible) {
             games = [];
             apiClient.api.gameSessionsList()
@@ -143,7 +161,7 @@
     {/if}
 {/snippet}
 
-<PageTitle>Werwolf - Lobbies</PageTitle>
+<PageTitle title="Werwolf - Lobbies" />
 
 <div class="d-flex flex-column justify-content-center">
     <div class="row d-flex flex-wrap">

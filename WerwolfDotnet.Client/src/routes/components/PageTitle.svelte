@@ -1,9 +1,7 @@
 <script lang="ts">
-    let slotContent : string;
+    let { title }: { title: string } = $props();
 </script>
 
-<span contenteditable="true" bind:textContent={slotContent} hidden><slot/></span>
-
 <svelte:head>
-    <title>{slotContent}</title>
+    <title>{title}</title>
 </svelte:head>
