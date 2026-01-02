@@ -1,12 +1,18 @@
 <script lang="ts">
     import { page } from "$app/state"
     import { goto } from "$app/navigation";
-    import { onMount } from "svelte";
+    import { onMount, getContext } from "svelte";
+    import { type Readable } from "svelte/store";
     import { config } from "../../config";
     import { type PlayerDto } from "../../Api";
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
     import { GameHubServer, GameHubClientBase } from "../../signalrHub";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
+    import ModalProvider from "../components/ModalProvider.svelte";
+
+    let modalProvider: ModalProvider;
+    const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");
+    modalAccessor.subscribe(m => modalProvider = m);
     
     let gameId: number | undefined = $state();
     let playerId: number | undefined = undefined;
@@ -69,14 +75,26 @@
     }
 </script>
 
+{#snippet leaveGame()}Möchten Sie das Spiel wirklich verlassen?{/snippet}
+{#snippet kickPlayer()}Möchten Sie diesen Spieler wirklich aus dem Spiel werden?{/snippet}
+
 <div class="main-content container-fluid d-flex flex-column align-items-center">
     <ul class="list-group">
         {#each players as player}
-            <li class="list-group-item {getPlayerCSSClasses(player)}">{player.name}</li>
+            <li class="list-group-item {getPlayerCSSClasses(player)} d-flex justify-content-between align-items-center">
+                {player.name}
+                <button type="button" class="w-auto btn btn-sm btn-{player.id === playerId ? 'secondary' : 'danger'}" onclick={() => {
+                    if (player.id === playerId)
+                        return;
+                    modalProvider.show("Spiel Kicken?", leaveGame, true, "Kicken", "danger", () => gameHub.leaveGame(player.id));
+                }} disabled="{player.id === playerId}">Kicken</button>
+            </li>
         {/each}
     </ul>
     
-    <button class="btn btn-outline-danger mt-3" type="button" onclick={() => gameHub.leaveGame()}>Spiel verlassen</button>
+    <button class="btn btn-outline-danger mt-3" type="button" onclick={() => {
+         modalProvider.show("Spiel verlassen?", kickPlayer, true, "Kicken", "danger", () => gameHub.leaveGame());
+    }}>Spiel verlassen</button>
 </div>
 
 <style>

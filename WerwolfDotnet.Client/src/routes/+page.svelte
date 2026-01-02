@@ -1,13 +1,18 @@
 <script lang="ts">
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
-    import { onMount } from "svelte";
+    import { onMount, getContext } from "svelte";
+    import { type Readable } from "svelte/store";
     import { config } from "../config";
     import { Api, type HttpResponse, type GameDto, type JoinGameDto, type JoinedGameDto} from "../Api";
     import { storePlayerToken } from "../gameSessionStore";
     import PageTitle from "./components/PageTitle.svelte"
     import GameCard from "./components/GameCard.svelte";
-    import Modal from "./components/Modal.svelte";
+    import ModalProvider from "./components/ModalProvider.svelte";
+    
+    let modalProvider: ModalProvider;
+    const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");
+    modalAccessor.subscribe(m => modalProvider = m);
     
     const apiClient = new Api({ baseUrl: config.apiEndpoint });
     let games: GameDto[] | null = $state(null);
@@ -15,12 +20,6 @@
     let gameId: number | undefined = $state(), gameIdLocked: boolean = $state(false);
     let playerName: string = $state("");
     let password: string = $state(""), passwordRequired: boolean = $state(true);
-    
-    let errorText: string = $state("");
-    
-    let createModal: Modal;
-    let joinModal: Modal;
-    let errorModal: Modal;
     
     function onCreateGame() {
         const request: JoinGameDto = {
@@ -33,8 +32,8 @@
                 if (response.status === 400) {
                     document.getElementById("creatingPlayerName")!.classList.add("is-invalid");     // No need to reset because it's the only input for this form.
                 } else {
-                    errorText = `${response.status}: ${response.statusText}`;
-                    errorModal.show();
+                    modalProvider.hide();
+                    modalProvider.showSimple("Fehler bei der Anfrage", `${response.status}: ${response.statusText}`);
                 }
             });
     }
@@ -61,11 +60,8 @@
                         document.getElementById("joinGameId")!.classList.add("is-invalid");
                         break;
                     default:
-                        errorText = response.status === 409
-                            ? "Die angegebene Sitzung hat bereits die maximale Spieleranzahl erreicht."
-                            : `${response.status}: ${response.statusText}`;
-                        joinModal.hide();
-                        errorModal.show();
+                        modalProvider.hide();
+                        modalProvider.showSimple("Fehler bei der Anfrage", `${response.status}: ${response.statusText}`);
                         break;
                 }
             });
@@ -79,8 +75,7 @@
     let pollId: NodeJS.Timeout;
     onMount(() => {
         if (page.url.searchParams.get("kicked") !== null) {
-            errorText = "Sie wurden aus der Sitzung geworfen vom Game master!"
-            errorModal.show();
+            modalProvider.showSimple("Spiel verlassen", `Sie wurden vom Game master aus dem Spiel geworfen.`);
         }
         
         if (config.sessionsVisible) {
@@ -106,9 +101,7 @@
     });
 </script>
 
-<PageTitle>Werwolf - Lobbies</PageTitle>
-
-<Modal bind:this={createModal} id="createModal" title="Neues Spiel erstellen" footer={createFooter}>
+{#snippet createModalContent()}
     <div class="mb-3">
         <label class="form-label" for="creatingPlayerName">Spielername</label>
         <input class="form-control" id="creatingPlayerName" type="text" bind:value={playerName} />
@@ -122,12 +115,9 @@
             Beitretende Spieler müssen dieses Passwort zum beitreten eingeben. Leer lassen um keines zu verlangen.
         </div>
     </div>
-</Modal>
-{#snippet createFooter()}
-    <button class="btn btn-primary" type="button" onclick={onCreateGame}>Runde erstellen</button>
 {/snippet}
 
-<Modal bind:this={joinModal} id="joinModal" title="Spiel beitreten" footer={joinFooter}>
+{#snippet joinModalContent()}
     <div class="mb-3">
         <label class="form-label" for="joinGameId">Spielcode</label>
         {#if gameIdLocked}
@@ -151,21 +141,15 @@
             <div class="invalid-feedback">Das angegebene Passwort ist nicht korrekt!</div>
         </div>
     {/if}
-</Modal>
-{#snippet joinFooter()}
-    <button class="btn btn-primary" type="button" onclick={onJoinGame}>Beitreten</button>
 {/snippet}
 
-<Modal bind:this={errorModal} id="errorModal" title="Meldung" footer={errorFooter}>{errorText}</Modal>
-{#snippet errorFooter()}
-    <button class="btn btn-primary" type="button" data-bs-dismiss="modal">Verstanden</button>
-{/snippet}
+<PageTitle>Werwolf - Lobbies</PageTitle>
 
 <div class="d-flex flex-column justify-content-center">
     <div class="row d-flex flex-wrap">
         <button class="col btn btn-primary m-1 start-button" type="button" onclick={() => {
             password = "";
-            createModal.show();
+            modalProvider.show("Neues Spiel erstellen", createModalContent, true, "Erstellen", "primary", onCreateGame);
         }}>Neues Spiel erstellen</button>
         
         <button class="col btn btn-secondary m-1 start-button" type="button" onclick={() => {
@@ -174,7 +158,7 @@
             password = "";
             passwordRequired = true;
             
-            joinModal.show();
+            modalProvider.show("Spiel beitreten", joinModalContent, true, "Beitreten", "primary", onJoinGame);
         }}>Spiel beitreten</button>
     </div>
     <hr />
@@ -190,7 +174,7 @@
                         password = "";
                         passwordRequired = game.protected ?? true;
 
-                        joinModal.show();
+                        modalProvider.show("Spiel beitreten", joinModalContent, true, "Beitreten", "primary", onJoinGame);
                     }} />
                 {/each}
             </div>

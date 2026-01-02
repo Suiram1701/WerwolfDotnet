@@ -1,5 +1,7 @@
 <script lang="ts">
-    import { onMount, type Snippet } from "svelte";
+    import { onMount, setContext, type Snippet } from "svelte";
+    import { writable } from "svelte/store";
+    import ModalProvider from "./components/ModalProvider.svelte";
     
     let { children }: { children: Snippet } = $props();
     
@@ -16,9 +18,15 @@
         { name: "Automatisch", value: "auto", icon: "contrast"}
     ];
     
+    let modalProvider: ModalProvider;
+    const modalAccessor = writable<ModalProvider>();
+    setContext("modalProvider", modalAccessor);
+    
     let isDarkMode: boolean = $state(false);
     let currentColor: colorMode = $state(colorModes[2]);
     onMount(() => {
+        modalAccessor.set(modalProvider);
+        
         const savedColor: string | null = localStorage.getItem(colorKey);
         if (savedColor !== null)
             currentColor = colorModes.find(c => c.value === savedColor) ?? colorModes[2];
@@ -36,6 +44,7 @@
     });
 </script>
 
+<ModalProvider bind:this={modalProvider} />
 <div class="flex-grow-1 my-3">{@render children()}</div>
 
 <footer class="d-flex justify-content-between align-items-center py-3 mt-4 border-top">
