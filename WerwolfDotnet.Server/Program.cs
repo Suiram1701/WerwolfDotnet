@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.SignalR;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.Options;
 using WerwolfDotnet.Server.Services;
@@ -16,7 +17,8 @@ builder.Services
     .AddSingleton<GameManager>()
     .AddSingleton<IGameSessionStore, InMemoryGameSessionStore>()
     .AddSingleton<GameToHubInterface>()
-    .AddHostedService(sp => sp.GetRequiredService<GameToHubInterface>());
+    .AddHostedService(sp => sp.GetRequiredService<GameToHubInterface>())
+    .AddSingleton<IUserIdProvider, TokenAuthenticationUserIdProvider>();
 
 builder.Services
     .AddAuthentication(TokenAuthenticationScheme.SchemeName)

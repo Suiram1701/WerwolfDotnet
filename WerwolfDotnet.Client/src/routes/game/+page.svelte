@@ -78,7 +78,7 @@
     }
 </script>
 
-{#snippet leaveGame()}<Möc></Möc>hten Sie das Spiel wirklich verlassen?{/snippet}
+{#snippet leaveGame()}Möchten Sie das Spiel wirklich verlassen?{/snippet}
 {#snippet kickPlayer()}Möchten Sie diesen Spieler wirklich aus dem Spiel werden?{/snippet}
 
 <PageTitle title="Werwolf - Spiel {gameId}" />

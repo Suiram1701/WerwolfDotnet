@@ -1,12 +1,24 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
 
 namespace WerwolfDotnet.Server;
 
 public static class Extensions
 {
-    public static int GetGameId(this ClaimsPrincipal user) => int.Parse(user.FindFirstValue(Claims.SessionId)!);
+    extension(ClaimsPrincipal user)
+    {
+        public int GetGameId() => int.Parse(user.FindFirstValue(Claims.SessionId)!);
+        
+        public int GetPlayerId() => int.Parse(user.FindFirstValue(Claims.PlayerId)!);
+        
+        public string GetPlayerName() => user.FindFirstValue(Claims.PlayerName)!;
+    }
 
-    public static int GetPlayerId(this ClaimsPrincipal user) => int.Parse(user.FindFirstValue(Claims.PlayerId)!);
+    extension<T>(IHubClients<T> clients)
+    {
+        public T Player(int gameId, int playerId) => clients.User($"{gameId}:{playerId}");
 
-    public static string GetPlayerName(this ClaimsPrincipal user) => user.FindFirstValue(Claims.PlayerName)!;
+        public T Players(int gameId, IEnumerable<int> playerIds) =>
+            clients.Users(playerIds.Select(id => $"{gameId}:{id}"));
+    }
 }

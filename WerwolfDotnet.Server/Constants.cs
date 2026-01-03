@@ -18,7 +18,5 @@ public static class Constants
     public static class GroupNames
     {
         public static string Game(int gameId) => $"game:{gameId}";
-        
-        public static string Player(int gameId, int playerId) =>  $"game:{playerId}:player:{gameId}";
     } 
 }

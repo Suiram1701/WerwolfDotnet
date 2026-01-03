@@ -1,10 +1,10 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 using WerwolfDotnet.Server.Game;
-using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.Models;
+using WerwolfDotnet.Server.Services;
 
-namespace WerwolfDotnet.Server.Services;
+namespace WerwolfDotnet.Server.Hubs;
 
 /// <summary>
 /// A service which provides a communication layer from game to clients using events.

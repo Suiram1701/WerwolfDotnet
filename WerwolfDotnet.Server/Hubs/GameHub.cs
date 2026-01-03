@@ -19,8 +19,7 @@ public sealed class GameHub(ILogger<GameHub> logger, GameToHubInterface connecti
         Player player = ctx.Players.Single(p => p.Id == Context.User!.GetPlayerId());
         
         _connectionMapping.AddConnectionToPlayer(ctx.Id, player.Id, Context.ConnectionId);
-        foreach (string groupName in GetPlayerGroups(ctx, player))
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+        await Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.Game(ctx.Id));
         await Clients.Caller.PlayersUpdated(ctx.Players.Select(p => new PlayerDto(p)));
         
         await base.OnConnectedAsync();
@@ -50,18 +49,9 @@ public sealed class GameHub(ILogger<GameHub> logger, GameToHubInterface connecti
         Player playerToKick = ctx.Players.Single(p => p.Id == playerId);
         await _manager.LeaveGameAsync(ctx, playerToKick);
 
-        await Clients.Group(GroupNames.Player(ctx.Id, playerId.Value)).ForceDisconnect(kicked: playerId != selfId);
+        await Clients.Player(ctx.Id, playerToKick.Id).ForceDisconnect(kicked: playerId != selfId);
         string[] playerConnections = _connectionMapping.GetPlayerConnections(ctx.Id, playerToKick.Id);
-        foreach (string groupName in GetPlayerGroups(ctx, playerToKick))
-        {
-            foreach (string connectionId in playerConnections)
-                await Groups.RemoveFromGroupAsync(connectionId, groupName);
-        }
-    }
-    
-    private static IEnumerable<string> GetPlayerGroups(GameContext ctx, Player player)
-    {
-        yield return GroupNames.Game(ctx.Id);
-        yield return GroupNames.Player(ctx.Id, player.Id);
+        foreach (string connectionId in playerConnections)
+            await Groups.RemoveFromGroupAsync(connectionId, GroupNames.Game(ctx.Id));
     }
 }
