@@ -12,12 +12,25 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly IGameSessionStore _sessionStore = sessionStore;
 
+    /// <summary>
+    /// Gets invoked when a player was added, removed or the order was changed.
+    /// </summary>
     public event Func<GameContext, IEnumerable<Player>, Task> OnPlayersUpdated
     {
         add => _playersChanged.Add(value);
         remove => _playersChanged.Remove(value);
     }
     private readonly List<Func<GameContext, IEnumerable<Player>, Task>> _playersChanged = [];
+    
+    /// <summary>
+    /// Gets invoked when the game master (second param) or the mayor of the village (third param) changed.
+    /// </summary>
+    public event Func<GameContext, Player, Player?, Task> OnGameMetaUpdated
+    {
+        add => _gameMetaUpdated.Add(value);
+        remove => _gameMetaUpdated.Remove(value);
+    }
+    private readonly List<Func<GameContext, Player, Player?, Task>> _gameMetaUpdated = [];
     
     private GameLobbyOptions LobbyOptions => lobbyOptions.CurrentValue;
 
@@ -115,14 +128,24 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
         return (player, authToken);
     }
 
+    /// <summary>
+    /// Removes a player from a game. Can be used when a player left on his own will or when he was kicked.
+    /// </summary>
+    /// <param name="ctx">The game the player is a part of.</param>
+    /// <param name="player">The player to remove.</param>
+    /// <returns>Indicates whether it was successful.</returns>
     public async Task<bool> LeaveGameAsync(GameContext ctx, Player player)
     {
+        bool isGameMaster = player.Equals(ctx.GameMaster);
         if (!ctx.RemovePlayer(player))
             return false;
 
         if (ctx.Players.Count > 0)
         {
             await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
+
+            if (isGameMaster)
+                await InvokeAsyncEvent(_gameMetaUpdated, cb => cb.Invoke(ctx, ctx.GameMaster, ctx.Mayor));
             await InvokeAsyncEvent(_playersChanged, cb => cb.Invoke(ctx, ctx.Players)).ConfigureAwait(false);
             return true;
         }

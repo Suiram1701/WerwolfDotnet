@@ -4,7 +4,7 @@
     import { onMount, getContext } from "svelte";
     import { type Readable } from "svelte/store";
     import { config } from "../../config";
-    import { type PlayerDto } from "../../Api";
+    import { type GameMetadataDto, type GameStateDto, GameState, type PlayerDto } from "../../Api";
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
     import { GameHubServer, GameHubClientBase } from "../../signalrHub";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
@@ -18,24 +18,27 @@
     modalAccessor.subscribe(m => modalProvider = m);
     
     let gameId: number | undefined = $state();
-    let playerId: number | undefined = undefined;
+    let selfId: number | undefined = undefined;
+    
     let players: PlayerDto[] = $state([]);
+    let metadata: GameMetadataDto | undefined = $state();
+    let gameStatus: GameStateDto | undefined = $state();
     
     let connection: HubConnection;
     let gameHub: GameHubServer;
     let gameHubClient: GameHubClientBase;
     onMount(() => {
         gameId = Number.parseInt(page.url.searchParams.get("sessionId") ?? "");
-        playerId = Number.parseInt(page.url.searchParams.get("playerId") ?? "");
+        selfId = Number.parseInt(page.url.searchParams.get("playerId") ?? "");
         
-        const playerToken = getPlayerToken(gameId, playerId);
+        const playerToken = getPlayerToken(gameId, selfId);
         if (playerToken === undefined) {
             goto("/");
             return;
         }
         
         connection = new HubConnectionBuilder()
-            .withUrl(`${config.apiEndpoint}/signalr/game?sessionId=${gameId}&playerId=${playerId}`, {
+            .withUrl(`${config.apiEndpoint}/signalr/game?sessionId=${gameId}&playerId=${selfId}`, {
                 accessTokenFactory: () => playerToken
             })
             .withAutomaticReconnect()
@@ -55,15 +58,27 @@
 
     class GameHubClient extends GameHubClientBase {
         constructor(connection: HubConnection) { super(connection); }
+
+        onGameMetaUpdated(meta: GameMetadataDto): Promise<void> {
+            if (metadata !== undefined && meta.gameMasterId === selfId)
+                modalProvider.showSimple("Game-master wechsel", "Der aktuelle Game-master hat das Spiel verlassen. Sie sind nun der neue Game-master.")
+            metadata = meta;
+            return Promise.resolve();
+        }
         
         onPlayersUpdated(updatedPlayers: PlayerDto[]): Promise<void> {
             players = updatedPlayers;
             return Promise.resolve();
         }
         
+        onGameStateUpdated(gameState: GameStateDto): Promise<void> {
+            gameStatus = gameState;
+            return Promise.resolve(undefined);
+        }
+        
         async onForceDisconnect(kicked: boolean): Promise<void> {
             await connection.stop();
-            removePlayerToken(gameId ?? -1, playerId ?? -1);
+            removePlayerToken(gameId ?? -1, selfId ?? -1);
             if (kicked)
                 goto("/?kicked=true");
             else
@@ -72,7 +87,7 @@
     }
     
     function getPlayerCSSClasses(player: PlayerDto): string {
-        if (player.id === playerId) 
+        if (player.id === selfId) 
             return "list-group-item-success";
         return "";
     }
@@ -83,27 +98,32 @@
 
 <PageTitle title="Werwolf - Spiel {gameId}" />
 
-<div class="mb-4">
-    <p>Andere Spieler können beitreten indem Sie diese Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
-    <p>Direktes beitreten ist auch über <a href="{webUrl}?gameId={gameId}">diesen Link</a> möglich.</p>
-</div>
+{#if gameStatus?.currentState === GameState.Preparation}
+    <div class="text-center mb-4">
+        <p>Andere Spieler können beitreten indem Sie diese Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
+        <p>Direktes beitreten ist auch über <a href="{webUrl}?gameId={gameId}">diesen Link</a> möglich.</p>
+    </div>
+{/if}
 
 <div class="main-content container-fluid d-flex flex-column align-items-center">
     <ul class="list-group">
         {#each players as player}
             <li class="list-group-item {getPlayerCSSClasses(player)} d-flex justify-content-between align-items-center">
                 {player.name}
-                <button type="button" class="w-auto btn btn-sm btn-{player.id === playerId ? 'secondary' : 'danger'}" onclick={() => {
-                    if (player.id === playerId)
-                        return;
-                    modalProvider.show("Spiel Kicken?", leaveGame, true, "Kicken", "danger", () => gameHub.leaveGame(player.id));
-                }} disabled="{player.id === playerId}">Kicken</button>
+                
+                {#if selfId === metadata?.gameMasterId}
+                    <button type="button" class="w-auto btn btn-sm btn-{player.id === selfId ? 'secondary' : 'danger'}" onclick={() => {
+                        if (player.id === selfId)
+                            return;
+                        modalProvider.show("Spiel Kicken?", leaveGame, true, "Kicken", "danger", () => gameHub.leaveGame(player.id));
+                    }} disabled="{player.id === selfId}">Kicken</button>
+                {/if}
             </li>
         {/each}
     </ul>
     
     <button class="btn btn-outline-danger mt-3" type="button" onclick={() => {
-         modalProvider.show("Spiel verlassen?", kickPlayer, true, "Kicken", "danger", () => gameHub.leaveGame());
+         modalProvider.show("Spiel verlassen?", leaveGame, true, "Verlassen", "danger", () => gameHub.leaveGame());
     }}>Spiel verlassen</button>
 </div>
 

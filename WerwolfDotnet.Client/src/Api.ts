@@ -34,6 +34,24 @@ export interface GameDto {
   maxPlayerCount?: number;
 }
 
+export interface GameMetadataDto {
+  /** @format int32 */
+  gameMasterId?: number;
+  /** @format int32 */
+  mayorId?: number | null;
+}
+
+/** Different states the game can be in. */
+export enum GameState {
+  Preparation = "Preparation",
+  NotInitialized = "NotInitialized",
+}
+
+export interface GameStateDto {
+  /** Different states the game can be in. */
+  currentState?: GameState;
+}
+
 /** A Dto for creating or joining a gme. */
 export interface JoinGameDto {
   /** The name of the name to add. */

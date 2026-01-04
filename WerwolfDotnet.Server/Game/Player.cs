@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 
 namespace WerwolfDotnet.Server.Game;
 
-public class Player
+public class Player : IEquatable<Player>
 {
     /// <summary>
     /// The id of this player.
@@ -14,7 +14,7 @@ public class Player
     /// </summary>
     public string Name { get; }
 
-    private byte[] _authSecretHash;
+    private readonly byte[] _authSecretHash;
     private readonly GameContext _game;
     
     public Player(int id, string name, GameContext game, out string authSecretStr)
@@ -34,4 +34,24 @@ public class Player
         byte[] tokenBytes = Convert.FromBase64String(token);
         return SHA256.HashData(tokenBytes).SequenceEqual(_authSecretHash);
     }
+
+    public bool Equals(Player? other)
+    {
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        return _game.Equals(other._game) && Id == other.Id;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
+            return false;
+        if (ReferenceEquals(this, obj))
+            return true;
+        return obj.GetType() == GetType() && Equals((Player)obj);
+    }
+
+    public override int GetHashCode() => HashCode.Combine(_game.Id, Id);
 }

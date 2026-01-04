@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 using WerwolfDotnet.Server.Game;
 using WerwolfDotnet.Server.Models;
@@ -50,14 +49,25 @@ public sealed class GameToHubInterface(GameManager manager, IHubContext<GameHub,
     
     Task IHostedService.StartAsync(CancellationToken cancellationToken)
     {
+        _manager.OnGameMetaUpdated += GameMetadataUpdated;
         _manager.OnPlayersUpdated += PlayersUpdated;
         return Task.CompletedTask;
     }
 
     Task IHostedService.StopAsync(CancellationToken cancellationToken)
     {
+        _manager.OnGameMetaUpdated -= GameMetadataUpdated;
         _manager.OnPlayersUpdated -= PlayersUpdated;
         return Task.CompletedTask;
+    }
+
+    private Task GameMetadataUpdated(GameContext ctx, Player gameMaster, Player? mayor)
+    {
+        return _hubContext.Clients.Group(GroupNames.Game(ctx.Id)).GameMetaUpdated(new GameMetadataDto
+        {
+            GameMasterId = gameMaster.Id,
+            MayorId = mayor?.Id
+        });
     }
     
     private Task PlayersUpdated(GameContext ctx, IEnumerable<Player> players)

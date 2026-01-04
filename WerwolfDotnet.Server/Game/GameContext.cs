@@ -6,7 +6,7 @@ namespace WerwolfDotnet.Server.Game;
 /// <summary>
 /// A whole context of a game. Contains everything.
 /// </summary>
-public sealed class GameContext : IDisposable
+public sealed class GameContext : IEquatable<GameContext>, IDisposable
 {
     /// <summary>
     /// The ID of this game session. Should always be formatted using .ToString("D6")
@@ -27,6 +27,8 @@ public sealed class GameContext : IDisposable
     /// </remarks>
     public Player GameMaster { get; private set; } = null!;
 
+    public Player? Mayor { get; private set; }
+    
     /// <summary>
     /// A sorted collection (in seating order) of all players.
     /// </summary>
@@ -101,10 +103,26 @@ public sealed class GameContext : IDisposable
     public bool RemovePlayer(Player player)
     {
         ThrowWhenNotInit();
+        
         if (!_players.Remove(player))
             return false;
-        
         _logger.LogInformation("Player {playerName} ({playerId}) left the game", player.Name, player.Id);
+
+        if (player.Equals(GameMaster))
+        {
+            Player? newGm = _players.MinBy(p => p.Id);     // Elected by the id -> the one who joined after the GM
+            if (newGm is not null)
+            {
+                GameMaster = newGm;
+                _logger.LogInformation("Game master left the game. New game master {newGm} ({newGmId}) selected.", newGm.Name, newGm.Id);
+            }
+            else
+            {
+                Dispose();     // No one else is part of the game. 
+                _logger.LogInformation("Game master left the game. No one else could be selected as new GM -> Disposing game...");
+            }
+        }
+        
         return true;
     }
     
@@ -114,7 +132,21 @@ public sealed class GameContext : IDisposable
             throw new InvalidOperationException("A game hasn't been initialized yet!");
     }
 
+    public bool Equals(GameContext? other)
+    {
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        return Id == other.Id;
+    }
+
+    public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is GameContext other && Equals(other);
+
+    public override int GetHashCode() => Id;
+    
     public void Dispose()
     {
+        State = GameState.NotInitialized;
     }
 }
