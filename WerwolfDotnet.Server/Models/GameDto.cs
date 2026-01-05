@@ -18,10 +18,10 @@ public class GameDto(GameContext context)
     public bool Protected { get; } = context.IsProtected;
 
     /// <summary>
-    /// Indicates whether the game is currently running. You can't join ongoing games.
+    /// Indicates whether new players can join the game.
     /// </summary>
-    public bool IsRunning { get; } = context.State > GameState.Preparation;
-
+    public bool CanJoin { get; } = context.State == GameState.Preparation && context.Players.Count < context.MaxPlayers;
+    
     /// <summary>
     /// The name of the game master (the one who is hosting the game)
     /// </summary>

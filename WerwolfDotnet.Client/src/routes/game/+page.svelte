@@ -105,8 +105,8 @@
     </div>
 {/if}
 
-<div class="main-content container-fluid d-flex flex-column align-items-center">
-    <ul class="list-group">
+<div class="flex-grow-1 container-fluid d-flex flex-column align-items-center main-content">
+    <ul class="list-group flex-grow-1 mb-4">
         {#each players as player}
             <li class="list-group-item {getPlayerCSSClasses(player)} d-flex justify-content-between align-items-center">
                 {player.name}
@@ -115,14 +115,35 @@
                     <button type="button" class="w-auto btn btn-sm btn-{player.id === selfId ? 'secondary' : 'danger'}" onclick={() => {
                         if (player.id === selfId)
                             return;
-                        modalProvider.show("Spiel Kicken?", leaveGame, true, "Kicken", "danger", () => gameHub.leaveGame(player.id));
+                        modalProvider.show("Spiel Kicken?", kickPlayer, true, "Kicken", "danger", () => {
+                            gameHub.leaveGame(player.id)
+                            modalProvider.hide();
+                        });
                     }} disabled="{player.id === selfId}">Kicken</button>
                 {/if}
             </li>
         {/each}
     </ul>
+
+    {#if selfId === metadata?.gameMasterId && (gameStatus?.currentState ?? -2) <= GameState.Locked}
+        <div class="d-flex mb-3">
+            <button class="btn btn-primary" type="button" onclick={() => {
+                // TODO: Not implemented yet
+            }}>Spiel starten</button>
+
+            <button class="btn btn-info mx-2" type="button" onclick={() => {
+                // TODO: Not implemented yet
+            }}>Spieler durchmischen</button>
+
+            {#if gameStatus?.currentState !== GameState.Locked}
+                <button class="btn btn-warning" type="button" onclick={() => gameHub.toggleGameLocked()}>Beitreten blockieren</button>
+            {:else}
+                <button class="btn btn-success" type="button" onclick={() => gameHub.toggleGameLocked()}>Beitreten erlauben</button>
+            {/if}
+        </div>
+    {/if}
     
-    <button class="btn btn-outline-danger mt-3" type="button" onclick={() => {
+    <button class="btn btn-danger" type="button" onclick={() => {
          modalProvider.show("Spiel verlassen?", leaveGame, true, "Verlassen", "danger", () => gameHub.leaveGame());
     }}>Spiel verlassen</button>
 </div>

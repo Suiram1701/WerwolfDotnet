@@ -125,6 +125,20 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
         
         return true;
     }
+
+    public bool ToggleJoinLock()
+    {
+        ThrowWhenNotInit();
+
+        if (State > GameState.Locked)     // Game is already running
+            return false;
+        State = State != GameState.Locked
+            ? GameState.Locked
+            : GameState.Preparation;
+        _logger.LogTrace("Toggled game state to {state}.", State);
+        
+        return true;
+    }
     
     private void ThrowWhenNotInit()
     {

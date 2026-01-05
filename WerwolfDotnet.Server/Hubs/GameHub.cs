@@ -41,6 +41,20 @@ public sealed class GameHub(ILogger<GameHub> logger, GameToHubInterface connecti
         return base.OnDisconnectedAsync(exception);
     }
 
+    [HubMethodName("toggleGameLock")]
+    public async Task OnToggleGameLocked()
+    {
+        int selfId = Context.User!.GetPlayerId();
+        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        if (ctx.GameMaster.Id != selfId)
+        {
+            _logger.LogWarning("Non-game-master {playerId} tried to toggle the lock-mode.", selfId);
+            return;
+        }
+
+        await _manager.ToggleGameLockedAsync(ctx);
+    }
+    
     [HubMethodName("leaveGame")]
     public async Task OnPlayerLeaving(int? playerId = null)
     {

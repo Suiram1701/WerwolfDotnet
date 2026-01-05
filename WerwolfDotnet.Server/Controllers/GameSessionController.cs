@@ -93,9 +93,11 @@ public class GameSessionController(GameManager manager) : ControllerBase
         if (!_manager.IsPlayerNameValid(model.PlayerName.Trim(), ctx))
             return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "The provided 'playerName' is invalid or already taken.");
 
+        if (ctx.State != GameState.Preparation)
+            return Problem(statusCode: StatusCodes.Status409Conflict, detail: "The game is already running or locked.");
         if (ctx.Players.Count >= ctx.MaxPlayers)
             return Problem(statusCode: StatusCodes.Status409Conflict, detail: "The session is already full!");
-
+        
         (Player self, string authToken)? playerData = await _manager.JoinGameAsync(ctx, model.PlayerName.Trim(), model.GamePassword);
         if (playerData is null)
             return Problem(statusCode: StatusCodes.Status401Unauthorized, detail: "The provided password is invalid.");

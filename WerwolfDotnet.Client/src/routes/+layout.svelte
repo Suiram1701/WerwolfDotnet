@@ -45,7 +45,7 @@
 </script>
 
 <ModalProvider bind:this={modalProvider} />
-<div class="flex-grow-1 my-3">{@render children()}</div>
+<div class="flex-grow-1 d-flex flex-column my-3">{@render children()}</div>
 
 <footer class="d-flex justify-content-between align-items-center py-3 mt-4 border-top">
     <div class="col-md-4 d-flex align-items-center">

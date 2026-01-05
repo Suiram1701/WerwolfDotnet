@@ -2,7 +2,7 @@
     import { type GameDto } from "../../Api";
 
     let { game, onJoin }: { game: GameDto, onJoin: (() => void)} = $props();
-    let gameLocked : Boolean = $derived(game.isRunning || (game.playerCount ?? 0) >= (game.maxPlayerCount ?? 0));
+    let gameLocked : Boolean = $derived(!game.canJoin || (game.playerCount ?? 0) >= (game.maxPlayerCount ?? 0));
 </script>
 
 <div class="card m-2 game-card">
@@ -12,11 +12,11 @@
             Game master: {game.gameMaster}<br>
             Spieler: {game.playerCount}/{game.maxPlayerCount}
         </p>
-        <button class="btn {gameLocked ? 'btn-outline-danger' : 'btn-success'}" disabled={gameLocked === true} type="button" onclick={onJoin}>
-            {#if game.isRunning}
-                Spiel läuft bereits
-            {:else if gameLocked}     <!--- Only matches when the session is full. game.isRunning is caught before --->
+        <button class="btn {!game.canJoin ? 'btn-outline-danger' : 'btn-success'}" disabled={game.canJoin === false} type="button" onclick={onJoin}>
+            {#if (game.playerCount ?? 0) >= (game.maxPlayerCount ?? 0)}
                 Sitzung voll
+            {:else if !game.canJoin}
+                Beitritt gesperrt
             {:else}
                 Beitreten
             {/if}

@@ -29,12 +29,10 @@
         apiClient.api.gameSessionsCreate(request)
             .then(response => joinGame(response.data))
             .catch((response: HttpResponse<JoinedGameDto>) => {
-                if (response.status === 400) {
+                if (response.status === 400) 
                     document.getElementById("creatingPlayerName")!.classList.add("is-invalid");     // No need to reset because it's the only input for this form.
-                } else {
-                    modalProvider.hide();
+                else
                     modalProvider.showSimple("Fehler bei der Anfrage", `${response.status}: ${response.statusText}`);
-                }
             });
     }
 
@@ -60,7 +58,6 @@
                         document.getElementById("joinGameId")!.classList.add("is-invalid");
                         break;
                     default:
-                        modalProvider.hide();
                         modalProvider.showSimple("Fehler bei der Anfrage", `${response.status}: ${response.statusText}`);
                         break;
                 }
@@ -82,6 +79,14 @@
             const urlGameId = Number.parseInt(page.url.searchParams.get("gameId")!);
             apiClient.api.gameSessionsDetail(urlGameId)
                 .then(response => {
+                    if (!response.data.canJoin) {
+                        if ((response.data.playerCount ?? 0) >= (response.data.maxPlayerCount ?? 0))
+                            modalProvider.showSimple("Spiel beitritt nicht möglich", "Das Spiel hat bereits die maximale Anzahl an Spielern erreicht!");
+                        else
+                            modalProvider.showSimple("Spiel beitritt nicht möglich", "Das Spiel läuft bereits!");
+                        return;
+                    }
+                    
                     gameId = response.data.id;
                     gameIdLocked = true;
                     password = "";
@@ -163,14 +168,13 @@
 
 <PageTitle title="Werwolf - Lobbies" />
 
-<div class="d-flex flex-column justify-content-center">
-    <div class="row d-flex flex-wrap">
-        <button class="col btn btn-primary m-1 start-button" type="button" onclick={() => {
+<div class="row d-flex flex-wrap">
+    <button class="col btn btn-primary m-1 start-button" type="button" onclick={() => {
             password = "";
             modalProvider.show("Neues Spiel erstellen", createModalContent, true, "Erstellen", "primary", onCreateGame);
         }}>Neues Spiel erstellen</button>
-        
-        <button class="col btn btn-secondary m-1 start-button" type="button" onclick={() => {
+
+    <button class="col btn btn-secondary m-1 start-button" type="button" onclick={() => {
             gameId = undefined;
             gameIdLocked = false;
             password = "";
@@ -178,15 +182,15 @@
             
             modalProvider.show("Spiel beitreten", joinModalContent, true, "Beitreten", "primary", onJoinGame);
         }}>Spiel beitreten</button>
-    </div>
-    <hr />
+</div>
+<hr />
 
-    <h5>Vorhandene Spiele:</h5>
-    {#if games !== null}
-        {#if games?.length > 0}
-            <div class="d-flex flex-wrap">
-                {#each games as game}
-                    <GameCard {game} onJoin={() => {
+<h5>Vorhandene Spiele:</h5>
+{#if games !== null}
+    {#if games?.length > 0}
+        <div class="d-flex flex-wrap">
+            {#each games as game}
+                <GameCard {game} onJoin={() => {
                         gameId = game.id;
                         gameIdLocked = true;
                         password = "";
@@ -194,15 +198,14 @@
 
                         modalProvider.show("Spiel beitreten", joinModalContent, true, "Beitreten", "primary", onJoinGame);
                     }} />
-                {/each}
-            </div>
-        {:else}
-            <h6>Es gibt noch keine Spiele</h6>
-        {/if}
+            {/each}
+        </div>
     {:else}
-        <h6>Vorhandene Spiele können aufgrund der Serverkonfiguration nicht angezeigt werden</h6>
+        <h6>Es gibt noch keine Spiele</h6>
     {/if}
-</div>
+{:else}
+    <h6>Vorhandene Spiele können aufgrund der Serverkonfiguration nicht angezeigt werden</h6>
+{/if}
 
 <style>
     .start-button {

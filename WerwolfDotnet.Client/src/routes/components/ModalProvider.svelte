@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { beforeNavigate } from "$app/navigation";
     import { onMount, createRawSnippet, type Snippet } from "svelte";
     
     const modalId: string = "modalProvider-" + Math.floor(Math.random() * 100);
@@ -16,11 +17,13 @@
         return () => instance.dispose();
     });
     
+    beforeNavigate(() => hide());
+    
     export function showSimple(title: string, content: string) {
         const snippet = createRawSnippet(() => {
             return { render: () => content };
         });
-        show(title, snippet, false);
+        show(title, snippet, false);     // An empty lambda to force the modal to stay open
     }
     
     export function show(
@@ -40,7 +43,9 @@
         instance.show();
     }
     
-    export function hide() { instance.hide(); }
+    export function hide() {
+        instance.hide();
+    }
 </script>
 
 <div id={modalId} class="modal fade" tabindex="-1">
@@ -56,8 +61,10 @@
                     <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Abrechen</button>
                 {/if}
                 <button class="btn btn-{modalConfirmColor}" type="button" onclick={() => {
-                    modalOnConfirm?.();
-                    hide();
+                    if (modalOnConfirm !== null)
+                        modalOnConfirm();
+                    else
+                        hide();
                 }}>{modalConfirmText}</button>
             </div>
         </div>

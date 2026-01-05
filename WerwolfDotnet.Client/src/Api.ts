@@ -18,8 +18,8 @@ export interface GameDto {
   id?: number;
   /** Indicates whether the game is password protected. */
   protected?: boolean;
-  /** Indicates whether the game is currently running. You can't join ongoing games. */
-  isRunning?: boolean;
+  /** Indicates whether new players can join the game. */
+  canJoin?: boolean;
   /** The name of the game master (the one who is hosting the game) */
   gameMaster?: string | null;
   /**
@@ -41,10 +41,14 @@ export interface GameMetadataDto {
   mayorId?: number | null;
 }
 
-/** Different states the game can be in. */
+/**
+ * Different states the game can be in.
+ * @format int32
+ */
 export enum GameState {
-  Preparation = "Preparation",
-  NotInitialized = "NotInitialized",
+  Locked = 0,
+  NotInitialized = -2,
+  Preparation = -1,
 }
 
 export interface GameStateDto {

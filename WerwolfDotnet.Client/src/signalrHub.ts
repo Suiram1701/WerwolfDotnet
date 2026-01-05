@@ -8,6 +8,10 @@ export class GameHubServer {
         this.connection = connection;
     }
     
+    public async toggleGameLocked(): Promise<void> {
+        await this.connection.invoke("toggleGameLock");
+    }
+    
     public async leaveGame(playerId: number | null = null): Promise<void> {
         await this.connection.invoke("leaveGame", playerId);
     } 

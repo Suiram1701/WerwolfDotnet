@@ -2,7 +2,7 @@ using System.Reflection;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace WerwolfDotnet.Server.Services;
+namespace WerwolfDotnet.Server.OpenApiFilters;
 
 public sealed class ExportAllModelsFilter : IDocumentFilter
 {

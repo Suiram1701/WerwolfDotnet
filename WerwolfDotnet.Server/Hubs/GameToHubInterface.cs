@@ -51,6 +51,7 @@ public sealed class GameToHubInterface(GameManager manager, IHubContext<GameHub,
     {
         _manager.OnGameMetaUpdated += GameMetadataUpdated;
         _manager.OnPlayersUpdated += PlayersUpdated;
+        _manager.OnGameStateUpdated += GameStateUpdated;
         return Task.CompletedTask;
     }
 
@@ -58,6 +59,7 @@ public sealed class GameToHubInterface(GameManager manager, IHubContext<GameHub,
     {
         _manager.OnGameMetaUpdated -= GameMetadataUpdated;
         _manager.OnPlayersUpdated -= PlayersUpdated;
+        _manager.OnGameStateUpdated -= GameStateUpdated;
         return Task.CompletedTask;
     }
 
@@ -75,4 +77,7 @@ public sealed class GameToHubInterface(GameManager manager, IHubContext<GameHub,
         IEnumerable<PlayerDto> newPlayers = players.Select(p => new PlayerDto(p));
         return _hubContext.Clients.Group(GroupNames.Game(ctx.Id)).PlayersUpdated(newPlayers);
     }
+    
+    private Task GameStateUpdated(GameContext ctx, GameState gameState) =>
+        _hubContext.Clients.Group(GroupNames.Game(ctx.Id)).GameStateUpdated(new GameStateDto { CurrentState = gameState});
 }

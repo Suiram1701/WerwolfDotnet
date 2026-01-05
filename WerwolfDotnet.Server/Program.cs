@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.SignalR;
 using WerwolfDotnet.Server.Hubs;
+using WerwolfDotnet.Server.OpenApiFilters;
 using WerwolfDotnet.Server.Options;
 using WerwolfDotnet.Server.Services;
 using WerwolfDotnet.Server.Services.Interfaces;
@@ -28,13 +29,12 @@ builder.Services.AddAuthentication();
 
 // Add services to the container.
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddSignalR()
-    .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddSwaggerGen(options =>
 {
     options.DocumentFilter<ExportAllModelsFilter>();
+    options.SchemaFilter<EnumNamesSchemaFilter>();
     
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));

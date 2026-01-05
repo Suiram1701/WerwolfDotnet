@@ -32,6 +32,13 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
     }
     private readonly List<Func<GameContext, Player, Player?, Task>> _gameMetaUpdated = [];
     
+    public event Func<GameContext, GameState, Task> OnGameStateUpdated
+    {
+        add => _gameStateUpdated.Add(value);
+        remove => _gameStateUpdated.Remove(value);
+    }
+    private readonly List<Func<GameContext, GameState, Task>> _gameStateUpdated = [];
+    
     private GameLobbyOptions LobbyOptions => lobbyOptions.CurrentValue;
 
     /// <summary>
@@ -150,12 +157,25 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
             return true;
         }
         
+        
+        
         // empty session -> auto remove
         ctx.Dispose();
         await _sessionStore.RemoveAsync(ctx).ConfigureAwait(false);
         return true;
     }
 
+    public async Task<bool> ToggleGameLockedAsync(GameContext ctx)
+    {
+        if (ctx.ToggleJoinLock())
+        {
+            await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
+            await InvokeAsyncEvent(_gameStateUpdated, cb => cb.Invoke(ctx, ctx.State)).ConfigureAwait(false);
+            return true;
+        }
+        return false;
+    }
+    
     private static Task InvokeAsyncEvent<T>(IEnumerable<T> callbacks, Func<T, Task> invoke)
     {
         IEnumerable<Task> tasks = callbacks.Select(invoke);
