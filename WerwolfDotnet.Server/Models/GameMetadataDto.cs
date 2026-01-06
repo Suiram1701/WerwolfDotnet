@@ -1,8 +1,10 @@
+using WerwolfDotnet.Server.Game;
+
 namespace WerwolfDotnet.Server.Models;
 
-public class GameMetadataDto
+public class GameMetadataDto(GameContext game)
 {
-    public int GameMasterId { get; set; }
-    
-    public int? MayorId { get; set; }
+    public int GameMasterId { get; } = game.GameMaster.Id;
+
+    public int? MayorId { get; } = game.Mayor?.Id;
 }

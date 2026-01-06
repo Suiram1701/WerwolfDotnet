@@ -1,71 +1,62 @@
 <script lang="ts">
     import { beforeNavigate } from "$app/navigation";
-    import { onMount, createRawSnippet, type Snippet } from "svelte";
+    import { onMount, type Snippet } from "svelte";
     
-    const modalId: string = "modalProvider-" + Math.floor(Math.random() * 100);
-    let modalTitle: string | undefined = $state();
-    let modalContent: Snippet | undefined = $state();
-    let modalCanDismiss: boolean = $state(true);
-    let modalConfirmText: string | undefined = $state();
-    let modalConfirmColor: string = $state("primary");
-    let modalOnConfirm: (() => void) | null;
+    interface Modal {
+        title: string;
+        content?: Snippet;
+        contentText?: string;
+        confirmText?: string;
+        confirmColor?: string;
+        canDismiss?: boolean;
+        closeOnConfirm?: boolean;
+        onConfirm?: () => void;
+    }
+    
+    const id: string = "modalProvider-" + Math.floor(Math.random() * 100);
+    let modal: Modal | undefined = $state();
     
     let instance: any;
     onMount(() => {
         // @ts-ignore (bootstrap imported from CDN)
-        instance = new bootstrap.Modal("#" + modalId);
+        instance = new bootstrap.Modal("#" + id);
         return () => instance.dispose();
     });
     
     beforeNavigate(() => hide());
     
-    export function showSimple(title: string, content: string) {
-        const snippet = createRawSnippet(() => {
-            return { render: () => content };
-        });
-        show(title, snippet, false);     // An empty lambda to force the modal to stay open
-    }
-    
-    export function show(
-        title: string,
-        content: Snippet,
-        canDismiss: boolean = true,
-        confirmText: string = "Verstanden",
-        confirmColor: string = "primary",
-        onConfirm: (() => void) | null = null)
+    export function show(options: Modal)
     {
-        modalTitle = title;
-        modalContent = content;
-        modalCanDismiss = canDismiss;
-        modalConfirmText = confirmText;
-        modalConfirmColor = confirmColor;
-        modalOnConfirm = onConfirm;
+        modal = options;
         instance.show();
     }
     
-    export function hide() {
-        instance.hide();
-    }
+    export function hide() { instance.hide(); }     // Don't set modal to undefined. The Modal content will disappear before the modal itself finished the animation
 </script>
 
-<div id={modalId} class="modal fade" tabindex="-1">
+<div {id} class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{modalTitle}</h5>
+                <h5 class="modal-title">{modal?.title}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">{@render modalContent?.()}</div>
+            <div class="modal-body">
+                {#if modal?.content}
+                    {@render modal.content?.()}
+                {:else}
+                    {modal?.contentText}
+                {/if}
+            </div>
             <div class="modal-footer">
-                {#if modalCanDismiss}
+                {#if modal?.canDismiss ?? true}
                     <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Abrechen</button>
                 {/if}
-                <button class="btn btn-{modalConfirmColor}" type="button" onclick={() => {
-                    if (modalOnConfirm !== null)
-                        modalOnConfirm();
-                    else
+                <button class="btn btn-{modal?.confirmColor ?? 'primary'}" type="button" onclick={() => {
+                    modal?.onConfirm?.()
+                    if (modal?.onConfirm === undefined || modal?.closeOnConfirm)
                         hide();
-                }}>{modalConfirmText}</button>
+                }}>{modal?.confirmText ?? "Verstanden"}</button>
             </div>
         </div>
     </div>

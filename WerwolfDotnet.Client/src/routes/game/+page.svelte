@@ -61,7 +61,7 @@
 
         onGameMetaUpdated(meta: GameMetadataDto): Promise<void> {
             if (metadata !== undefined && meta.gameMasterId === selfId)
-                modalProvider.showSimple("Game-master wechsel", "Der aktuelle Game-master hat das Spiel verlassen. Sie sind nun der neue Game-master.")
+                modalProvider.show({ title: "Game-master wechsel", contentText: "Der aktuelle Game-master hat das Spiel verlassen. Sie sind nun der neue Game-master." });
             metadata = meta;
             return Promise.resolve();
         }
@@ -93,9 +93,6 @@
     }
 </script>
 
-{#snippet leaveGame()}Möchten Sie das Spiel wirklich verlassen?{/snippet}
-{#snippet kickPlayer()}Möchten Sie diesen Spieler wirklich aus dem Spiel werden?{/snippet}
-
 <PageTitle title="Werwolf - Spiel {gameId}" />
 
 {#if gameStatus?.currentState === GameState.Preparation}
@@ -115,9 +112,13 @@
                     <button type="button" class="w-auto btn btn-sm btn-{player.id === selfId ? 'secondary' : 'danger'}" onclick={() => {
                         if (player.id === selfId)
                             return;
-                        modalProvider.show("Spiel Kicken?", kickPlayer, true, "Kicken", "danger", () => {
-                            gameHub.leaveGame(player.id)
-                            modalProvider.hide();
+                        modalProvider.show({
+                            title: "Spieler kicken?",
+                            contentText: "Möchten Sie diesen Spieler wirklich aus dem Spiel werden?",
+                            confirmText: "Kicken",
+                            confirmColor: "danger",
+                            onConfirm: () => gameHub.leaveGame(player.id),
+                            closeOnConfirm: true
                         });
                     }} disabled="{player.id === selfId}">Kicken</button>
                 {/if}
@@ -144,7 +145,16 @@
     {/if}
     
     <button class="btn btn-danger" type="button" onclick={() => {
-         modalProvider.show("Spiel verlassen?", leaveGame, true, "Verlassen", "danger", () => gameHub.leaveGame());
+        modalProvider.show({
+            title: "Spiel verlassen?",
+            contentText: "Möchten Sie das Spiel wirklich verlassen?",
+            confirmText: "Verlassen",
+            confirmColor: "danger",
+            onConfirm: () => {
+                gameHub.leaveGame();
+                goto("/");
+            }
+        });
     }}>Spiel verlassen</button>
 </div>
 

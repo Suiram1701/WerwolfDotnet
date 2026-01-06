@@ -16,6 +16,8 @@ public static class Extensions
 
     extension<T>(IHubClients<T> clients)
     {
+        public T Game(int gameId) => clients.Group(GroupNames.Game(gameId));
+        
         public T Player(int gameId, int playerId) => clients.User($"{gameId}:{playerId}");
 
         public T Players(int gameId, IEnumerable<int> playerIds) =>

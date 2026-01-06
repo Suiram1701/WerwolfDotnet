@@ -7,10 +7,10 @@ using WerwolfDotnet.Server.Services;
 namespace WerwolfDotnet.Server.Hubs;
 
 [Authorize]
-public sealed class GameHub(ILogger<GameHub> logger, GameToHubInterface connectionMapping, GameManager manager) : Hub<IGameHub>
+public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper connectionMapping, GameManager manager) : Hub<IGameHub>
 {
     private readonly ILogger _logger = logger;
-    private readonly GameToHubInterface _connectionMapping = connectionMapping;
+    private readonly PlayerConnectionMapper _connectionMapping = connectionMapping;
     private readonly GameManager _manager = manager;
     
     public override async Task OnConnectedAsync()
@@ -21,11 +21,7 @@ public sealed class GameHub(ILogger<GameHub> logger, GameToHubInterface connecti
         _connectionMapping.AddConnectionToPlayer(ctx.Id, player.Id, Context.ConnectionId);
         await Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.Game(ctx.Id));
 
-        await Clients.Caller.GameMetaUpdated(new GameMetadataDto
-        {
-            GameMasterId = ctx.GameMaster.Id,
-            MayorId = ctx.Mayor?.Id,
-        });
+        await Clients.Caller.GameMetaUpdated(new GameMetadataDto(ctx));
         await Clients.Caller.GameStateUpdated(new GameStateDto { CurrentState = ctx.State });
         await Clients.Caller.PlayersUpdated(ctx.Players.Select(p => new PlayerDto(p)));
         

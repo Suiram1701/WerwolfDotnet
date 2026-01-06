@@ -1,43 +1,25 @@
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using WerwolfDotnet.Server.Game;
+using WerwolfDotnet.Server.Hubs;
+using WerwolfDotnet.Server.Models;
 using WerwolfDotnet.Server.Options;
 using WerwolfDotnet.Server.Services.Interfaces;
 
 namespace WerwolfDotnet.Server.Services;
 
-public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFactory, IGameSessionStore sessionStore, IOptionsMonitor<GameLobbyOptions> lobbyOptions)
+public class GameManager(
+    ILogger<GameManager> logger,
+    ILoggerFactory loggerFactory,
+    IGameSessionStore sessionStore,
+    IHubContext<GameHub, IGameHub> hubContext,
+    IOptionsMonitor<GameLobbyOptions> lobbyOptions)
 {
     private readonly ILogger<GameManager> _logger = logger;
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly IGameSessionStore _sessionStore = sessionStore;
-
-    /// <summary>
-    /// Gets invoked when a player was added, removed or the order was changed.
-    /// </summary>
-    public event Func<GameContext, IEnumerable<Player>, Task> OnPlayersUpdated
-    {
-        add => _playersChanged.Add(value);
-        remove => _playersChanged.Remove(value);
-    }
-    private readonly List<Func<GameContext, IEnumerable<Player>, Task>> _playersChanged = [];
-    
-    /// <summary>
-    /// Gets invoked when the game master (second param) or the mayor of the village (third param) changed.
-    /// </summary>
-    public event Func<GameContext, Player, Player?, Task> OnGameMetaUpdated
-    {
-        add => _gameMetaUpdated.Add(value);
-        remove => _gameMetaUpdated.Remove(value);
-    }
-    private readonly List<Func<GameContext, Player, Player?, Task>> _gameMetaUpdated = [];
-    
-    public event Func<GameContext, GameState, Task> OnGameStateUpdated
-    {
-        add => _gameStateUpdated.Add(value);
-        remove => _gameStateUpdated.Remove(value);
-    }
-    private readonly List<Func<GameContext, GameState, Task>> _gameStateUpdated = [];
+    private readonly IHubContext<GameHub, IGameHub> _hubContext = hubContext;
     
     private GameLobbyOptions LobbyOptions => lobbyOptions.CurrentValue;
 
@@ -130,8 +112,8 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
         Player player = new(ctx.Players.Count, playerName, ctx, out string authToken);
         ctx.AddPlayer(player);
 
-        await _sessionStore.UpdateAsync(ctx);     // No need to log (done by context)
-        await InvokeAsyncEvent(_playersChanged, cb => cb.Invoke(ctx, ctx.Players)).ConfigureAwait(false);
+        await _sessionStore.UpdateAsync(ctx);     // No need to log (done by game context)
+        await _hubContext.Clients.Game(ctx.Id).PlayersUpdated(ctx.Players.Select(p => new PlayerDto(p)));
         return (player, authToken);
     }
 
@@ -151,9 +133,9 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
         {
             await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
 
+            await _hubContext.Clients.Game(ctx.Id).PlayersUpdated(ctx.Players.Select(p => new PlayerDto(p)));
             if (isGameMaster)
-                await InvokeAsyncEvent(_gameMetaUpdated, cb => cb.Invoke(ctx, ctx.GameMaster, ctx.Mayor));
-            await InvokeAsyncEvent(_playersChanged, cb => cb.Invoke(ctx, ctx.Players)).ConfigureAwait(false);
+                await _hubContext.Clients.Game(ctx.Id).GameMetaUpdated(new GameMetadataDto(ctx));
             return true;
         }
         
@@ -167,18 +149,11 @@ public class GameManager(ILogger<GameManager> logger, ILoggerFactory loggerFacto
 
     public async Task<bool> ToggleGameLockedAsync(GameContext ctx)
     {
-        if (ctx.ToggleJoinLock())
-        {
-            await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
-            await InvokeAsyncEvent(_gameStateUpdated, cb => cb.Invoke(ctx, ctx.State)).ConfigureAwait(false);
-            return true;
-        }
-        return false;
-    }
-    
-    private static Task InvokeAsyncEvent<T>(IEnumerable<T> callbacks, Func<T, Task> invoke)
-    {
-        IEnumerable<Task> tasks = callbacks.Select(invoke);
-        return Task.WhenAll(tasks);
+        if (!ctx.ToggleJoinLock())
+            return false;
+        
+        await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
+        await _hubContext.Clients.Game(ctx.Id).GameStateUpdated(new GameStateDto { CurrentState = ctx.State });
+        return true;
     }
 }
