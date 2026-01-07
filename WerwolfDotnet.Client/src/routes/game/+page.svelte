@@ -132,9 +132,7 @@
                 // TODO: Not implemented yet
             }}>Spiel starten</button>
 
-            <button class="btn btn-info mx-2" type="button" onclick={() => {
-                // TODO: Not implemented yet
-            }}>Spieler durchmischen</button>
+            <button class="btn btn-info mx-2" type="button" onclick={() => gameHub.shufflePlayers()}>Spieler durchmischen</button>
 
             {#if gameStatus?.currentState !== GameState.Locked}
                 <button class="btn btn-warning" type="button" onclick={() => gameHub.toggleGameLocked()}>Beitreten blockieren</button>

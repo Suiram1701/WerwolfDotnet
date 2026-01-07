@@ -156,4 +156,15 @@ public class GameManager(
         await _hubContext.Clients.Game(ctx.Id).GameStateUpdated(new GameStateDto { CurrentState = ctx.State });
         return true;
     }
+
+    public async Task<bool> ShuffelPlayersAsync(GameContext ctx)
+    {
+        if (ctx.State > GameState.Locked)
+            return false;
+        
+        ctx.ShufflePlayers();
+        await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
+        await _hubContext.Clients.Game(ctx.Id).PlayersUpdated(ctx.Players.ToDtoCollection());
+        return true;
+    }
 }

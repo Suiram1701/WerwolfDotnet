@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -6,6 +7,7 @@ namespace WerwolfDotnet.Server.Game;
 /// <summary>
 /// A whole context of a game. Contains everything.
 /// </summary>
+[DebuggerDisplay($"Game: Code = {nameof(Id)}, Game-master = {nameof(GameMaster)}.{nameof(GameMaster.Id)}, Players = {nameof(Players)}.{nameof(Players.Count)}")]
 public sealed class GameContext : IEquatable<GameContext>, IDisposable
 {
     /// <summary>
@@ -33,7 +35,7 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
     /// A sorted collection (in seating order) of all players.
     /// </summary>
     public IReadOnlyList<Player> Players => _players.AsReadOnly();
-    private readonly List<Player> _players = [];
+    private List<Player> _players = [];
     
     public int MaxPlayers { get; }
 
@@ -138,6 +140,12 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
         _logger.LogTrace("Toggled game state to {state}.", State);
         
         return true;
+    }
+    
+    public void ShufflePlayers()
+    {
+        ThrowWhenNotInit();
+        _players = [.. _players.Shuffle()];
     }
     
     private void ThrowWhenNotInit()

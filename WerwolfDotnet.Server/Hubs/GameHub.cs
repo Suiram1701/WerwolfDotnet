@@ -23,7 +23,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
 
         await Clients.Caller.GameMetaUpdated(new GameMetadataDto(ctx));
         await Clients.Caller.GameStateUpdated(new GameStateDto { CurrentState = ctx.State });
-        await Clients.Caller.PlayersUpdated(ctx.Players.Select(p => new PlayerDto(p)));
+        await Clients.Caller.PlayersUpdated(ctx.Players.ToDtoCollection());
         
         await base.OnConnectedAsync();
     }
@@ -50,6 +50,20 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
 
         await _manager.ToggleGameLockedAsync(ctx);
     }
+
+    [HubMethodName("shufflePlayers")]
+    public async Task OnShufflePlayers()
+    {
+        int selfId = Context.User!.GetPlayerId();
+        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        if (ctx.GameMaster.Id != selfId)
+        {
+            _logger.LogWarning("Non-game-master {playerId} tried to toggle the lock-mode.", selfId);
+            return;
+        }
+
+        await _manager.ShuffelPlayersAsync(ctx);
+    }
     
     [HubMethodName("leaveGame")]
     public async Task OnPlayerLeaving(int? playerId = null)
@@ -68,8 +82,8 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         string[] playerConnections = _connectionMapping.GetPlayerConnections(ctx.Id, playerToKick.Id);
         foreach (string connectionId in playerConnections)
             await Groups.RemoveFromGroupAsync(connectionId, GroupNames.Game(ctx.Id));
-        await Clients.Player(ctx.Id, playerToKick.Id).ForceDisconnect(kicked: playerId != selfId);
         
         await _manager.LeaveGameAsync(ctx, playerToKick);
+        await Clients.Player(ctx.Id, playerToKick.Id).ForceDisconnect(kicked: playerId != selfId);     // Not done by manager because it can't differentiate between leaving and kicking
     }
 }

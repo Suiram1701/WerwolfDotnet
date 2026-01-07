@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace WerwolfDotnet.Server.Game;
 
+[DebuggerDisplay($"Player: Id = {nameof(Id)}, Name = {nameof(Name)}")]
 public class Player : IEquatable<Player>
 {
     /// <summary>

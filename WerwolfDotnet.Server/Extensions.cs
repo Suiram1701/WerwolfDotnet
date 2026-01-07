@@ -1,10 +1,15 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
+using WerwolfDotnet.Server.Game;
+using WerwolfDotnet.Server.Models;
 
 namespace WerwolfDotnet.Server;
 
 public static class Extensions
 {
+    public static IEnumerable<PlayerDto> ToDtoCollection(this IEnumerable<Player> players) =>
+        players.Select(p => new PlayerDto(p));
+    
     extension(ClaimsPrincipal user)
     {
         public int GetGameId() => int.Parse(user.FindFirstValue(Claims.SessionId)!);
