@@ -1,8 +1,7 @@
 using System.Reflection;
-using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.SignalR;
-using WerwolfDotnet.Server.Game;
+using WerwolfDotnet;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.OpenApiFilters;
 using WerwolfDotnet.Server.Options;

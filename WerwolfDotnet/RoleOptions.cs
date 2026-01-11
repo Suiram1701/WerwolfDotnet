@@ -1,4 +1,4 @@
-namespace WerwolfDotnet.Server.Game;
+namespace WerwolfDotnet;
 
 public class RoleOptions
 {

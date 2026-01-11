@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
-using WerwolfDotnet.Server.Game.Roles;
+using WerwolfDotnet.Roles;
 
-namespace WerwolfDotnet.Server.Game;
+namespace WerwolfDotnet;
 
 [DebuggerDisplay($"Player: Id = {nameof(Id)}, Name = {nameof(Name)}, Status = {nameof(Status)}, Role = {nameof(Role)}")]
 public class Player : IEquatable<Player>

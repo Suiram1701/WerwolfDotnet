@@ -1,4 +1,4 @@
-namespace WerwolfDotnet.Server.Game;
+namespace WerwolfDotnet;
 
 /// <summary>
 /// Represents the status a player is in.

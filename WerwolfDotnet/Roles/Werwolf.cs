@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace WerwolfDotnet.Server.Game.Roles;
+namespace WerwolfDotnet.Roles;
 
 [DebuggerDisplay($"{nameof(Name)}")]
 public class Werwolf : IRole

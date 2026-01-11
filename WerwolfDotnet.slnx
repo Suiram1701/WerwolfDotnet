@@ -5,4 +5,5 @@
     <File Path="README.md" />
   </Folder>
   <Project Path="WerwolfDotnet.Client/WerwolfDotnet.Client.esproj" />
+  <Project Path="WerwolfDotnet/WerwolfDotnet.csproj" />
 </Solution>

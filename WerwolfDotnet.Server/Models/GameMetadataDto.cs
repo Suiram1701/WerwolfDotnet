@@ -1,5 +1,3 @@
-using WerwolfDotnet.Server.Game;
-
 namespace WerwolfDotnet.Server.Models;
 
 public class GameMetadataDto(GameContext game)

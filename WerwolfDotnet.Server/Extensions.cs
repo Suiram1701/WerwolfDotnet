@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
-using WerwolfDotnet.Server.Game;
 using WerwolfDotnet.Server.Models;
 
 namespace WerwolfDotnet.Server;

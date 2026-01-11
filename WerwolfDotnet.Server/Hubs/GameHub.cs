@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using WerwolfDotnet.Server.Game;
 using WerwolfDotnet.Server.Models;
 using WerwolfDotnet.Server.Services;
 

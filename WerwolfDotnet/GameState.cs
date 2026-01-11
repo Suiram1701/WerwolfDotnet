@@ -1,4 +1,4 @@
-namespace WerwolfDotnet.Server.Game;
+namespace WerwolfDotnet;
 
 /// <summary>
 /// Different states the game can be in.

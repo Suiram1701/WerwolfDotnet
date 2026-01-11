@@ -1,9 +1,10 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
-using WerwolfDotnet.Server.Game.Roles;
+using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Roles;
 
-namespace WerwolfDotnet.Server.Game;
+namespace WerwolfDotnet;
 
 /// <summary>
 /// A whole context of a game. Contains everything.

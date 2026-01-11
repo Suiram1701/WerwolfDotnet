@@ -1,7 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
-using WerwolfDotnet.Server.Game;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.Models;
 using WerwolfDotnet.Server.Options;

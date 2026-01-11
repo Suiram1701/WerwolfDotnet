@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using WerwolfDotnet.Server.Game;
 using WerwolfDotnet.Server.Models;
 using WerwolfDotnet.Server.Services;
 using static System.Net.Mime.MediaTypeNames;

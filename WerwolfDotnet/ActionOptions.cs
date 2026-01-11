@@ -1,4 +1,4 @@
-namespace WerwolfDotnet.Server.Game;
+namespace WerwolfDotnet;
 
 /// <summary>
 /// Options for an action requested from a player,

@@ -1,4 +1,4 @@
-namespace WerwolfDotnet.Server.Game.Roles;
+namespace WerwolfDotnet.Roles;
 
 public interface IRole
 {

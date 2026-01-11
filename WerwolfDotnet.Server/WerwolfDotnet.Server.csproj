@@ -29,6 +29,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\WerwolfDotnet.Client\WerwolfDotnet.Client.esproj" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\WerwolfDotnet\WerwolfDotnet.csproj" />
     </ItemGroup>
 
 </Project>
