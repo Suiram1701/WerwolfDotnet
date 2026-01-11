@@ -9,6 +9,26 @@
  * ---------------------------------------------------------------
  */
 
+/** Options for an action requested from a player, */
+export interface ActionOptions {
+  /** The name of this action (localizer key) */
+  actionName: string | null;
+  /** The description of this action (localizer key) */
+  actionDesc: string | null;
+  /**
+   * The minimum amount of players to select
+   * @format int32
+   */
+  minimum?: number;
+  /**
+   * The maximum amount of players to select.
+   * @format int32
+   */
+  maximum?: number;
+  /** Ids of player that can't be selected. */
+  excludedPlayers?: number[] | null;
+}
+
 /** A Dto for returning a game. */
 export interface GameDto {
   /**
@@ -47,13 +67,10 @@ export interface GameMetadataDto {
  */
 export enum GameState {
   Locked = 0,
+  Day = 1,
+  Night = 2,
   NotInitialized = -2,
   Preparation = -1,
-}
-
-export interface GameStateDto {
-  /** Different states the game can be in. */
-  currentState?: GameState;
 }
 
 /** A Dto for creating or joining a gme. */
@@ -82,6 +99,8 @@ export interface PlayerDto {
   id?: number;
   /** The name of the player. */
   name?: string | null;
+  /** Indicates whether this player is currently alive. */
+  alive?: boolean;
 }
 
 export type QueryParamsType = Record<string | number, any>;

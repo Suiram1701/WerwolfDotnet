@@ -122,18 +122,26 @@
             return () => clearInterval(pollId);
         }
     });
+    
+    function formKeyDown(event: KeyboardEvent, submitCallback: () => void) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            submitCallback();
+        }
+    }
 </script>
 
 {#snippet createModalContent()}
     <div class="mb-3">
         <label class="form-label" for="creatingPlayerName">Spielername</label>
-        <input class="form-control" id="creatingPlayerName" type="text" bind:value={playerName} />
+        <input class="form-control" id="creatingPlayerName" type="text" bind:value={playerName} onkeydown={e => formKeyDown(e, onCreateGame)}/>
         <div class="invalid-feedback">Der angegebene Name ist ungültig.</div>
     </div>
 
     <div class="mb-3">
         <label class="form-label" for="creatingPassword">Passwort</label>
-        <input class="form-control" id="creatingPassword" type="password" bind:value={password} aria-describedby="creatingPasswordHelp" />
+        <input class="form-control" id="creatingPassword" type="password" bind:value={password}
+               aria-describedby="creatingPasswordHelp" onkeydown={e => formKeyDown(e, onCreateGame)} />
         <div class="form-text" id="creatingPasswordHelp">
             Beitretende Spieler müssen dieses Passwort zum beitreten eingeben. Leer lassen um keines zu verlangen.
         </div>
@@ -144,23 +152,25 @@
     <div class="mb-3">
         <label class="form-label" for="joinGameId">Spielcode</label>
         {#if gameIdLocked}
-            <input class="form-control" id="joinGameId" type="number" value="{gameId}" disabled readonly />
+            <input class="form-control" id="joinGameId" type="number" value="{gameId}"
+                   onkeydown={e => formKeyDown(e, onJoinGame)} disabled readonly />
         {:else}
-            <input class="form-control" id="joinGameId" type="number" bind:value={gameId} min="0" max="999999" />
+            <input class="form-control" id="joinGameId" type="number" bind:value={gameId}
+                   min="0" max="999999" onkeydown={e => formKeyDown(e, onJoinGame)} />
         {/if}
         <div class="invalid-feedback">Keine Spiele-Sitzung mit diesem Code konnte gefunden werden.</div>
     </div>
 
     <div class="mb-3">
         <label class="form-label" for="joinPlayerName">Spielername</label>
-        <input class="form-control" id="joinPlayerName" type="text" bind:value={playerName} />
+        <input class="form-control" id="joinPlayerName" type="text" bind:value={playerName} onkeydown={e => formKeyDown(e, onJoinGame)} />
         <div class="invalid-feedback">Der gewählte Name ist ungültig oder bereits vergeben.</div>
     </div>
 
     {#if passwordRequired}
         <div class="mb-3">
             <label class="form-label" for="joinPassword">Passwort</label>
-            <input class="form-control" id="joinPassword" type="password" bind:value={password} />
+            <input class="form-control" id="joinPassword" type="password" bind:value={password} onkeydown={e => formKeyDown(e, onJoinGame)} />
             <div class="invalid-feedback">Das angegebene Passwort ist nicht korrekt!</div>
         </div>
     {/if}

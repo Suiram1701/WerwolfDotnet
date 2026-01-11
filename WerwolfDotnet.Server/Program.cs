@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.SignalR;
+using WerwolfDotnet.Server.Game;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.OpenApiFilters;
 using WerwolfDotnet.Server.Options;
@@ -33,6 +34,7 @@ builder.Services.AddSignalR();
 builder.Services.AddSwaggerGen(options =>
 {
     options.DocumentFilter<ExportAllModelsFilter>();
+    options.DocumentFilter<ExportModelFilter>([new[] { nameof(GameState), nameof(ActionOptions) }]);
     options.SchemaFilter<EnumNamesSchemaFilter>();
     
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";

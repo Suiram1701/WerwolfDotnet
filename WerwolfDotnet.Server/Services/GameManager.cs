@@ -66,6 +66,8 @@ public class GameManager(
         GameContext context = new(gameId, sessionPassword, LobbyOptions.MaxPlayers, gameLogger);
         Player gameMaster = new(0, gameMasterName, context, out string gameMasterAuth);
         context.InitializeGame(gameMaster);
+        context.OnGameStateChanged += OnGameStateChangedAsync;
+        context.OnPlayerActionRequested += OnPlayerActionRequestedAsync;
 
         await _sessionStore.AddAsync(context);
         _logger.LogInformation("Game {gameId} created. Game master is {gameMasterName} ({gameMasterId})", gameId, gameMasterName, 0);
@@ -139,10 +141,11 @@ public class GameManager(
             return true;
         }
         
-        
-        
         // empty session -> auto remove
         ctx.Dispose();
+        ctx.OnGameStateChanged -= OnGameStateChangedAsync;
+        ctx.OnPlayerActionRequested -= OnPlayerActionRequestedAsync;
+        
         await _sessionStore.RemoveAsync(ctx).ConfigureAwait(false);
         return true;
     }
@@ -153,7 +156,6 @@ public class GameManager(
             return false;
         
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
-        await _hubContext.Clients.Game(ctx.Id).GameStateUpdated(new GameStateDto { CurrentState = ctx.State });
         return true;
     }
 
@@ -166,5 +168,42 @@ public class GameManager(
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
         await _hubContext.Clients.Game(ctx.Id).PlayersUpdated(ctx.Players.ToDtoCollection());
         return true;
+    }
+
+    public async Task StartGameAsync(GameContext ctx)
+    {
+        if (ctx.State > GameState.Locked)      // Game is already running
+            return;
+        if (ctx.Players.Count < 3)     // Not enough players
+            return;
+        
+        ctx.StartGame(new RoleOptions());
+        await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
+
+        IEnumerable<Task> notifications = ctx.Players.Select(p => _hubContext.Clients.Player(ctx.Id, p.Id).PlayerRoleUpdated(p.Role!.Name));
+        await Task.WhenAll(notifications).ConfigureAwait(false);
+    }
+
+    private async void OnGameStateChangedAsync(GameContext ctx, GameState newState, Player[] diedPlayers)
+    {
+        try
+        { await _hubContext.Clients.Game(ctx.Id).GameStateUpdated(newState, diedPlayers.Select(p => p.Id)); }
+        catch (Exception ex)
+        { _logger.LogError(ex, ex.Message); }
+    }
+
+    private async void OnPlayerActionRequestedAsync(GameContext ctx, Player? targetPlayer, ActionOptions actionOptions)
+    {
+        try
+        {
+            if (targetPlayer is null)
+                await _hubContext.Clients.Game(ctx.Id).PlayerActionRequested(actionOptions);
+            else
+                await _hubContext.Clients.Player(ctx.Id, targetPlayer.Id).PlayerActionRequested(actionOptions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, ex.Message);
+        }
     }
 }

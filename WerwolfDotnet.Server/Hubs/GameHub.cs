@@ -22,8 +22,11 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         await Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.Game(ctx.Id));
 
         await Clients.Caller.GameMetaUpdated(new GameMetadataDto(ctx));
-        await Clients.Caller.GameStateUpdated(new GameStateDto { CurrentState = ctx.State });
+        await Clients.Caller.GameStateUpdated(ctx.State, []);
         await Clients.Caller.PlayersUpdated(ctx.Players.ToDtoCollection());
+
+        if (player.Role is not null)
+            await Clients.Caller.PlayerRoleUpdated(player.Role.Name);
         
         await base.OnConnectedAsync();
     }
@@ -40,13 +43,9 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     [HubMethodName("toggleGameLock")]
     public async Task OnToggleGameLocked()
     {
-        int selfId = Context.User!.GetPlayerId();
         GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
-        if (ctx.GameMaster.Id != selfId)
-        {
-            _logger.LogWarning("Non-game-master {playerId} tried to toggle the lock-mode.", selfId);
+        if (!CheckGameMaster(ctx, "toggle game lock"))
             return;
-        }
 
         await _manager.ToggleGameLockedAsync(ctx);
     }
@@ -54,15 +53,26 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     [HubMethodName("shufflePlayers")]
     public async Task OnShufflePlayers()
     {
-        int selfId = Context.User!.GetPlayerId();
         GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
-        if (ctx.GameMaster.Id != selfId)
-        {
-            _logger.LogWarning("Non-game-master {playerId} tried to toggle the lock-mode.", selfId);
+        if (!CheckGameMaster(ctx, "shuffle players"))
             return;
-        }
 
         await _manager.ShuffelPlayersAsync(ctx);
+    }
+
+    [HubMethodName("startGame")]
+    public async Task OnStartGame()
+    {
+        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        if (!CheckGameMaster(ctx, "start game"))
+            return;
+        
+        await _manager.StartGameAsync(ctx);
+    }
+
+    [HubMethodName("playerAction")]
+    public async Task OnPlayerAction(int[] selectedPlayers)
+    {
     }
     
     [HubMethodName("leaveGame")]
@@ -85,5 +95,15 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         
         await _manager.LeaveGameAsync(ctx, playerToKick);
         await Clients.Player(ctx.Id, playerToKick.Id).ForceDisconnect(kicked: playerId != selfId);     // Not done by manager because it can't differentiate between leaving and kicking
+    }
+
+    private bool CheckGameMaster(GameContext ctx, string action)
+    {
+        int selfId = Context.User!.GetPlayerId();
+        if (ctx.GameMaster.Id == selfId)
+            return true;
+        
+        _logger.LogWarning($"Non-game-master {{playerId}} tried to {action}.", selfId);
+        return false;
     }
 }

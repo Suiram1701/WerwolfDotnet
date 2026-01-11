@@ -4,7 +4,8 @@
     import { onMount, getContext } from "svelte";
     import { type Readable } from "svelte/store";
     import { config } from "../../config";
-    import { type GameMetadataDto, type GameStateDto, GameState, type PlayerDto } from "../../Api";
+    import { type GameMetadataDto, GameState, type PlayerDto, type ActionOptions} from "../../Api";
+    import { roleNames, roleDescriptions } from "../../textes/roles";
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
     import { GameHubServer, GameHubClientBase } from "../../signalrHub";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
@@ -19,10 +20,14 @@
     
     let gameId: number | undefined = $state();
     let selfId: number | undefined = undefined;
+    let roleName: string | undefined = $state();
     
     let players: PlayerDto[] = $state([]);
     let metadata: GameMetadataDto | undefined = $state();
-    let gameStatus: GameStateDto | undefined = $state();
+    let gameState: GameState | undefined = $state();
+    
+    let runningAction: ActionOptions | null = $state(null);
+    let selectedPlayers: number[] = [];
     
     let connection: HubConnection;
     let gameHub: GameHubServer;
@@ -71,9 +76,25 @@
             return Promise.resolve();
         }
         
-        onGameStateUpdated(gameState: GameStateDto): Promise<void> {
-            gameStatus = gameState;
+        onGameStateUpdated(newState: GameState, diedPlayers: number[]): Promise<void> {
+            gameState = newState;
             return Promise.resolve(undefined);
+        }
+
+        public onPlayerRoleUpdated(newRoleName: string): Promise<void> {
+            roleName = newRoleName;
+            return Promise.resolve();
+        }
+
+        public onActionRequested(action: ActionOptions): Promise<void> {
+            selectedPlayers = [];
+            runningAction = action;
+            return Promise.resolve();
+        }
+
+        public onActionCompleted(actionName: string | null, parameters: string[] | null): Promise<void> {
+            runningAction = null;
+            return Promise.resolve();
         }
         
         async onForceDisconnect(kicked: boolean): Promise<void> {
@@ -89,27 +110,60 @@
     function getPlayerCSSClasses(player: PlayerDto): string {
         if (player.id === selfId) 
             return "list-group-item-success";
+        else if (!player.alive)
+            return "list-group-item-secondary";
         return "";
     }
 </script>
 
 <PageTitle title="Werwolf - Spiel {gameId}" />
 
-{#if gameStatus?.currentState === GameState.Preparation}
+{#if gameState === GameState.Preparation}
     <div class="text-center mb-4">
         <p>Andere Spieler können beitreten indem Sie diese Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
         <p>Direktes beitreten ist auch über <a href="{webUrl}?gameId={gameId}">diesen Link</a> möglich.</p>
     </div>
 {/if}
 
-<div class="flex-grow-1 container-fluid d-flex flex-column align-items-center main-content">
-    <ul class="list-group flex-grow-1 mb-4">
+<div class="flex-grow-1 container-fluid d-flex flex-column align-items-center">
+    {#if roleName !== undefined}
+        <div class="accordion w-100 mb-3" id="collapseRoleParent">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRole" aria-controls="collapseRole">
+                        Ihre Rolle
+                    </button>
+                </h2>
+                <div id="collapseRole" class="accordion-collapse collapse" data-bs-parent="#collapseRoleParent">
+                    <div class="accordion-body">
+                        <h5>{roleNames[roleName]}</h5>
+                        {roleDescriptions[roleName]}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {/if}
+    
+    <!-- Player display and selection -->
+    <ul class="list-group main-content mb-4">
         {#each players as player}
-            <li class="list-group-item {getPlayerCSSClasses(player)} d-flex justify-content-between align-items-center">
-                {player.name}
+            <li class="list-group-item {getPlayerCSSClasses(player)} d-flex align-items-center">
+                {#if runningAction === null}
+                    {player.name}
+                {:else}
+                    {#if runningAction.maximum === 1}
+                        <input class="form-check-input me-2" id="playerAction{player.id}" type="radio" value="{player.id}" bind:group={selectedPlayers[0]}
+                               name="playerAction" disabled="{runningAction.excludedPlayers?.includes(player.id ?? -1)}" />
+                    {:else}
+                        <input class="form-check-input me-2" id="playerAction{player.id}" type="checkbox" value="{player.id}" bind:group={selectedPlayers}
+                               name="playerAction" disabled="{runningAction.excludedPlayers?.includes(player.id ?? -1)}" />
+                    {/if}
+                    <label class="form-check-label" for="playerAction{player.id}">{player.name}</label>
+                {/if}
                 
                 {#if selfId === metadata?.gameMasterId}
-                    <button type="button" class="w-auto btn btn-sm btn-{player.id === selfId ? 'secondary' : 'danger'}" onclick={() => {
+                    <div class="flex-grow-1"></div>
+                    <button type="button" class="btn btn-sm btn-{player.id === selfId ? 'secondary' : 'danger'} w-auto" onclick={() => {
                         if (player.id === selfId)
                             return;
                         modalProvider.show({
@@ -126,23 +180,30 @@
         {/each}
     </ul>
 
-    {#if selfId === metadata?.gameMasterId && (gameStatus?.currentState ?? -2) <= GameState.Locked}
-        <div class="d-flex mb-3">
-            <button class="btn btn-primary" type="button" onclick={() => {
-                // TODO: Not implemented yet
-            }}>Spiel starten</button>
+    {#if runningAction !== null}
+        <button class="btn btn-primary main-content" type="button" onclick={() => gameHub.playerAction(selectedPlayers)}>
+            Abschicken
+        </button>
+    {/if}
 
-            <button class="btn btn-info mx-2" type="button" onclick={() => gameHub.shufflePlayers()}>Spieler durchmischen</button>
+    <div class="flex-grow-1"></div>
+    
+    <!-- Admin buttons -->
+    {#if selfId === metadata?.gameMasterId && (gameState ?? -2) <= GameState.Locked}
+        <div class="d-flex main-content mb-3">
+            <button class="btn btn-primary w-100" type="button" onclick={() => gameHub.startGame()} disabled="{players.length < 3}">Spiel starten</button>
+            <button class="btn btn-info w-100 mx-2" type="button" onclick={() => gameHub.shufflePlayers()}>Spieler durchmischen</button>
 
-            {#if gameStatus?.currentState !== GameState.Locked}
-                <button class="btn btn-warning" type="button" onclick={() => gameHub.toggleGameLocked()}>Beitreten blockieren</button>
+            {#if gameState !== GameState.Locked}
+                <button class="btn btn-warning w-100" type="button" onclick={() => gameHub.toggleGameLocked()}>Beitreten blockieren</button>
             {:else}
-                <button class="btn btn-success" type="button" onclick={() => gameHub.toggleGameLocked()}>Beitreten erlauben</button>
+                <button class="btn btn-success w-100" type="button" onclick={() => gameHub.toggleGameLocked()}>Beitreten erlauben</button>
             {/if}
         </div>
     {/if}
     
-    <button class="btn btn-danger" type="button" onclick={() => {
+    <!-- Leave button -->
+    <button class="btn btn-danger main-content" type="button" onclick={() => {
         modalProvider.show({
             title: "Spiel verlassen?",
             contentText: "Möchten Sie das Spiel wirklich verlassen?",
@@ -158,21 +219,21 @@
 
 <style>
     @media (max-width: 576px) {
-        .main-content * {
+        .main-content {
             width: 100%;
             max-width: 100vw;
         }
     }
 
     @media (min-width: 576px) and (max-width: 1200px) {
-        .main-content * {
+        .main-content {
             width: 100%;
             max-width: 35rem;
         }
     }
 
     @media (min-width: 1200px) {
-        .main-content * {
+        .main-content {
             width: 100%;
             max-width: 45rem;
         }

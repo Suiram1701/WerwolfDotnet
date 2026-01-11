@@ -18,5 +18,15 @@ public enum GameState
     /// <summary>
     /// The game is locked and no one can join.
     /// </summary>
-    Locked = 0
+    Locked = 0,
+    
+    /// <summary>
+    /// Its is currently day time and villager can vote other players.
+    /// </summary>
+    Day = 1,
+    
+    /// <summary>
+    /// Its night. No one (except the Werwolfs) are allowed to talk.
+    /// </summary>
+    Night = 2,
 }

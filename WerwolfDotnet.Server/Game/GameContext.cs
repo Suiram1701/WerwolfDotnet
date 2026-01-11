@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using WerwolfDotnet.Server.Game.Roles;
 
 namespace WerwolfDotnet.Server.Game;
 
@@ -44,8 +45,20 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
     /// </summary>
     public GameState State { get; private set; } = GameState.NotInitialized;
 
+    /// <summary>
+    /// Invoked when the state of the game changed. Player[] are the players who died during the previous state.
+    /// </summary>
+    public event Action<GameContext, GameState, Player[]>? OnGameStateChanged;
+    
+    /// <summary>
+    /// Invoked when a player is requested to take action. When player is null everyone has to take action.
+    /// </summary> 
+    public event Action<GameContext, Player?, ActionOptions>? OnPlayerActionRequested;
+    
     private readonly ILogger _logger;
-
+    private CancellationTokenSource? _gameLoopCts;
+    private Task? _gameLoop;
+    
     /// <summary>
     /// Create a new instance
     /// </summary>
@@ -78,6 +91,7 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
         GameMaster = gameMaster;
         _players.Add(gameMaster);
         State = GameState.Preparation;
+        OnGameStateChanged?.Invoke(this, State, []);
     }
 
     public bool VerifyPassword(string? password)
@@ -137,8 +151,9 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
         State = State != GameState.Locked
             ? GameState.Locked
             : GameState.Preparation;
-        _logger.LogTrace("Toggled game state to {state}.", State);
+        OnGameStateChanged?.Invoke(this, State, []);
         
+        _logger.LogTrace("Toggled game state to {state}.", State);
         return true;
     }
     
@@ -147,13 +162,35 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
         ThrowWhenNotInit();
         _players = [.. _players.Shuffle()];
     }
-    
-    private void ThrowWhenNotInit()
+
+    public void StartGame(RoleOptions options)
     {
-        if (State == GameState.NotInitialized)
-            throw new InvalidOperationException("A game hasn't been initialized yet!");
+        ThrowWhenNotInit();
+         if (State > GameState.Locked)
+             throw new InvalidOperationException("Game game has already been started!");
+
+         IRole[] roles = [
+             ..Enumerable.Repeat<IRole?>(null, options.AmountWerwolfs).Select(_ => new Werwolf()),
+             ..Enumerable.Repeat<IRole?>(null, options.AmountSeers).Select(_ => new Seer())
+         ];
+         roles = [..roles.Shuffle()];
+         
+         Player[] shuffledPlayers = [.._players.Shuffle()];
+         
+         int assignmentCount = Math.Min(roles.Length, shuffledPlayers.Length);
+         for (var i = 0; i < assignmentCount; i++)
+             shuffledPlayers[i].Role = roles[i];
+         for (int i = assignmentCount; i < shuffledPlayers.Length; i++)
+             shuffledPlayers[i].Role = new Villager();
+         
+         _gameLoopCts = new CancellationTokenSource();
+         _gameLoop = _runAsync(_gameLoopCts.Token);
     }
 
+    public void RegisterPlayerAction(Player self, Player[] selection)
+    {
+    }
+    
     public bool Equals(GameContext? other)
     {
         if (other is null)
@@ -169,6 +206,73 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
     
     public void Dispose()
     {
+        _gameLoopCts?.Cancel();
+        _gameLoop?.Dispose();
+        
         State = GameState.NotInitialized;
+    }
+    
+    private void ThrowWhenNotInit()
+    {
+        if (State == GameState.NotInitialized)
+            throw new InvalidOperationException("A game hasn't been initialized yet!");
+    }
+    
+    private async Task _runAsync(CancellationToken ct)
+    {
+        State = GameState.Night;
+        OnGameStateChanged?.Invoke(this, State, []);
+
+        OnPlayerActionRequested?.Invoke(this, null, new ActionOptions
+        {
+            ActionName = "Test",
+            ActionDesc = "Test"
+        });
+        return;
+        
+        while (!ct.IsCancellationRequested)
+        {
+            await _runNightAsync(ct);
+            _switchBetweenMainStates(GameState.Day);
+            
+            await _runDayAsync(ct);
+            _switchBetweenMainStates(GameState.Day);
+        }
+    }
+
+    private async Task _runDayAsync(CancellationToken ct)
+    {
+    }
+
+    private async Task _runNightAsync(CancellationToken ct)
+    {
+        return;
+        // Seer
+        await InvokeRoleAsync<Seer>(ct);
+        
+        // Werwolf
+        await InvokeRoleAsync<Werwolf>(ct);
+    }
+
+    private void _switchBetweenMainStates(GameState newState)
+    {
+        State = newState;
+
+        Player[] diedPlayers = _players
+            .Where(p => p.Status == PlayerState.PendingDeath)
+            .Select(p =>
+            {
+                p.Status = PlayerState.Death;
+                return p;
+            })
+            .ToArray();
+        OnGameStateChanged?.Invoke(this, State, diedPlayers);
+    }
+    
+    private async Task InvokeRoleAsync<T>(CancellationToken ct)
+        where T : IRole
+    {
+        foreach (Player player in _players.Where(p => p.Role?.GetType() == typeof(T)))
+            await player.Role!.OnNightAsync(this, player, ct);
     }
 }

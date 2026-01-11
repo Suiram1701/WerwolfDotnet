@@ -1,9 +1,10 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
+using WerwolfDotnet.Server.Game.Roles;
 
 namespace WerwolfDotnet.Server.Game;
 
-[DebuggerDisplay($"Player: Id = {nameof(Id)}, Name = {nameof(Name)}")]
+[DebuggerDisplay($"Player: Id = {nameof(Id)}, Name = {nameof(Name)}, Status = {nameof(Status)}, Role = {nameof(Role)}")]
 public class Player : IEquatable<Player>
 {
     /// <summary>
@@ -15,7 +16,17 @@ public class Player : IEquatable<Player>
     /// The displayed name of the player.
     /// </summary>
     public string Name { get; }
+    
+    /// <summary>
+    /// The role the player has at the time. Only null when the game hasn't started yet
+    /// </summary>
+    public IRole? Role { get; internal set; }
 
+    /// <summary>
+    /// The current status of the player.
+    /// </summary>
+    public PlayerState Status { get; internal set; } = PlayerState.Alive;
+    
     private readonly byte[] _authSecretHash;
     private readonly GameContext _game;
     

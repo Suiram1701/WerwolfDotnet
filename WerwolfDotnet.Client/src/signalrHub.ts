@@ -1,4 +1,4 @@
-import {type GameMetadataDto, type GameStateDto, type PlayerDto} from "./Api";
+import {type ActionOptions, type GameMetadataDto, GameState, type PlayerDto} from "./Api";
 import { HubConnection } from "@microsoft/signalr"
 
 export class GameHubServer {
@@ -16,6 +16,14 @@ export class GameHubServer {
         await this.connection.invoke("shufflePlayers");
     }
     
+    public async startGame(): Promise<void> {
+        await this.connection.invoke("startGame");
+    }
+    
+    public async playerAction(selectedPlayer: number[]): Promise<void> {
+        await this.connection.invoke("playerAction", selectedPlayer);
+    }
+    
     public async leaveGame(playerId: number | null = null): Promise<void> {
         await this.connection.invoke("leaveGame", playerId);
     } 
@@ -29,6 +37,9 @@ export abstract class GameHubClientBase {
         connection.on("onGameMetaUpdated", this.onGameMetaUpdated);
         connection.on("onPlayersUpdated", this.onPlayersUpdated);
         connection.on("onGameStateUpdated", this.onGameStateUpdated);
+        connection.on("onPlayerRoleUpdated", this.onPlayerRoleUpdated);
+        connection.on("onActionRequested", this.onActionRequested);
+        connection.on("onActionCompleted", this.onActionCompleted);
         connection.on("onForceDisconnect", this.onForceDisconnect);
     }
 
@@ -36,7 +47,13 @@ export abstract class GameHubClientBase {
     
     public abstract onPlayersUpdated(players: PlayerDto[]): Promise<void>;
     
-    public abstract onGameStateUpdated(gameState: GameStateDto): Promise<void>;
+    public abstract onGameStateUpdated(newState: GameState, diedPlayers: number[]): Promise<void>;
+    
+    public abstract onPlayerRoleUpdated(roleName: string): Promise<void>;
+    
+    public abstract onActionRequested(action: ActionOptions): Promise<void>;
+    
+    public abstract onActionCompleted(actionName: string | null, parameters: string[] | null): Promise<void>;
     
     public abstract onForceDisconnect(kicked: boolean): Promise<void>;
 }
