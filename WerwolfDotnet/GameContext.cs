@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
-using WerwolfDotnet.Roles;
 
 namespace WerwolfDotnet;
 
@@ -10,7 +9,7 @@ namespace WerwolfDotnet;
 /// A whole context of a game. Contains everything.
 /// </summary>
 [DebuggerDisplay($"Game: Code = {nameof(Id)}, Game-master = {nameof(GameMaster)}.{nameof(GameMaster.Id)}, Players = {nameof(Players)}.{nameof(Players.Count)}")]
-public sealed class GameContext : IEquatable<GameContext>, IDisposable
+public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
 {
     /// <summary>
     /// The ID of this game session. Should always be formatted using .ToString("D6")
@@ -39,22 +38,27 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
     public IReadOnlyList<Player> Players => _players.AsReadOnly();
     private List<Player> _players = [];
     
+    /// <summary>
+    /// The maximum amount of player allowed in this session.
+    /// </summary>
     public int MaxPlayers { get; }
 
     /// <summary>
     /// The current state of the game. Indicates everything from whether it's running to which role is next.
     /// </summary>
     public GameState State { get; private set; } = GameState.NotInitialized;
-
+    
+    public PhaseAction? RunningAction { get; private set; }
+    
     /// <summary>
     /// Invoked when the state of the game changed. Player[] are the players who died during the previous state.
     /// </summary>
     public event Action<GameContext, GameState, Player[]>? OnGameStateChanged;
     
     /// <summary>
-    /// Invoked when a player is requested to take action. When player is null everyone has to take action.
+    /// Invoked when one or more players are requested to take action. 
     /// </summary> 
-    public event Action<GameContext, Player?, ActionOptions>? OnPlayerActionRequested;
+    public event Action<GameContext, PhaseAction>? OnPhaseAction;
     
     private readonly ILogger _logger;
     private CancellationTokenSource? _gameLoopCts;
@@ -170,9 +174,9 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
          if (State > GameState.Locked)
              throw new InvalidOperationException("Game game has already been started!");
 
-         IRole[] roles = [
-             ..Enumerable.Repeat<IRole?>(null, options.AmountWerwolfs).Select(_ => new Werwolf()),
-             ..Enumerable.Repeat<IRole?>(null, options.AmountSeers).Select(_ => new Seer())
+         Role[] roles = [
+             ..Enumerable.Repeat(Role.Werwolf, options.AmountWerwolfs),
+             ..Enumerable.Repeat(Role.Seer, options.AmountSeers)
          ];
          roles = [..roles.Shuffle()];
          
@@ -182,14 +186,16 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
          for (var i = 0; i < assignmentCount; i++)
              shuffledPlayers[i].Role = roles[i];
          for (int i = assignmentCount; i < shuffledPlayers.Length; i++)
-             shuffledPlayers[i].Role = new Villager();
+             shuffledPlayers[i].Role = Role.Villager;
          
          _gameLoopCts = new CancellationTokenSource();
          _gameLoop = _runAsync(_gameLoopCts.Token);
     }
 
-    public void RegisterPlayerAction(Player self, Player[] selection)
+    private void RequestPlayerAction(PhaseAction action)
     {
+        RunningAction = action;
+        OnPhaseAction?.Invoke(this, action);
     }
     
     public bool Equals(GameContext? other)
@@ -217,63 +223,5 @@ public sealed class GameContext : IEquatable<GameContext>, IDisposable
     {
         if (State == GameState.NotInitialized)
             throw new InvalidOperationException("A game hasn't been initialized yet!");
-    }
-    
-    private async Task _runAsync(CancellationToken ct)
-    {
-        State = GameState.Night;
-        OnGameStateChanged?.Invoke(this, State, []);
-
-        OnPlayerActionRequested?.Invoke(this, null, new ActionOptions
-        {
-            ActionName = "Test",
-            ActionDesc = "Test"
-        });
-        return;
-        
-        while (!ct.IsCancellationRequested)
-        {
-            await _runNightAsync(ct);
-            _switchBetweenMainStates(GameState.Day);
-            
-            await _runDayAsync(ct);
-            _switchBetweenMainStates(GameState.Day);
-        }
-    }
-
-    private async Task _runDayAsync(CancellationToken ct)
-    {
-    }
-
-    private async Task _runNightAsync(CancellationToken ct)
-    {
-        return;
-        // Seer
-        await InvokeRoleAsync<Seer>(ct);
-        
-        // Werwolf
-        await InvokeRoleAsync<Werwolf>(ct);
-    }
-
-    private void _switchBetweenMainStates(GameState newState)
-    {
-        State = newState;
-
-        Player[] diedPlayers = _players
-            .Where(p => p.Status == PlayerState.PendingDeath)
-            .Select(p =>
-            {
-                p.Status = PlayerState.Death;
-                return p;
-            })
-            .ToArray();
-        OnGameStateChanged?.Invoke(this, State, diedPlayers);
-    }
-    
-    private async Task InvokeRoleAsync<T>(CancellationToken ct)
-        where T : IRole
-    {
-        foreach (Player player in _players.Where(p => p.Role?.GetType() == typeof(T)))
-            await player.Role!.OnNightAsync(this, player, ct);
     }
 }

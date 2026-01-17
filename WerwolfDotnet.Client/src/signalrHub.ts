@@ -1,4 +1,4 @@
-import {type ActionOptions, type GameMetadataDto, GameState, type PlayerDto} from "./Api";
+import { type SelectionOptionsDto, type GameMetadataDto, GameState, Role, type PlayerDto } from "./Api";
 import { HubConnection } from "@microsoft/signalr"
 
 export class GameHubServer {
@@ -39,6 +39,7 @@ export abstract class GameHubClientBase {
         connection.on("onGameStateUpdated", this.onGameStateUpdated);
         connection.on("onPlayerRoleUpdated", this.onPlayerRoleUpdated);
         connection.on("onActionRequested", this.onActionRequested);
+        connection.on("onVotesUpdated", this.onVotesUpdated);
         connection.on("onActionCompleted", this.onActionCompleted);
         connection.on("onForceDisconnect", this.onForceDisconnect);
     }
@@ -49,9 +50,11 @@ export abstract class GameHubClientBase {
     
     public abstract onGameStateUpdated(newState: GameState, diedPlayers: number[]): Promise<void>;
     
-    public abstract onPlayerRoleUpdated(roleName: string): Promise<void>;
+    public abstract onPlayerRoleUpdated(roleName: Role): Promise<void>;
     
-    public abstract onActionRequested(action: ActionOptions): Promise<void>;
+    public abstract onActionRequested(action: SelectionOptionsDto): Promise<void>;
+    
+    public abstract onVotesUpdated(votes: Record<number, number[]>): Promise<void>;
     
     public abstract onActionCompleted(actionName: string | null, parameters: string[] | null): Promise<void>;
     

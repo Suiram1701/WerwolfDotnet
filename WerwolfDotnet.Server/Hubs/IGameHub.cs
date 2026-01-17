@@ -15,10 +15,13 @@ public interface IGameHub
     public Task GameStateUpdated(GameState state, IEnumerable<int> diedPlayers);
 
     [HubMethodName("onPlayerRoleUpdated")]
-    public Task PlayerRoleUpdated(string roleName);
+    public Task PlayerRoleUpdated(Role role);
     
     [HubMethodName("onActionRequested")]
-    public Task PlayerActionRequested(ActionOptions options);
+    public Task PlayerActionRequested(SelectionOptionsDto options);
+
+    [HubMethodName("onVotesUpdated")]
+    public Task VotesUpdated(IDictionary<int, int[]> votes);
     
     [HubMethodName("onActionCompleted")]
     public Task PlayerActionCompleted(string? actionName, string[]? parameters);

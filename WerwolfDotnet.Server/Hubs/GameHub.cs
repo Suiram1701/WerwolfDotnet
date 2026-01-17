@@ -25,7 +25,10 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         await Clients.Caller.PlayersUpdated(ctx.Players.ToDtoCollection());
 
         if (player.Role is not null)
-            await Clients.Caller.PlayerRoleUpdated(player.Role.Name);
+            await Clients.Caller.PlayerRoleUpdated(player.Role.Value);
+
+        if (ctx.RunningAction is { } action && action.Participants.Contains(player))
+            await Clients.Caller.PlayerActionRequested(new SelectionOptionsDto(action, player));
         
         await base.OnConnectedAsync();
     }
@@ -72,6 +75,11 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     [HubMethodName("playerAction")]
     public async Task OnPlayerAction(int[] selectedPlayers)
     {
+        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        Player self = ctx.Players.Single(p => p.Id == Context.User!.GetPlayerId());
+
+        Player[] votes = [..ctx.Players.Where(p => selectedPlayers.Contains(p.Id))];
+        await _manager.RegisterPlayerActionAsync(ctx, self, votes);
     }
     
     [HubMethodName("leaveGame")]

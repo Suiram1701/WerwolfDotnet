@@ -9,26 +9,6 @@
  * ---------------------------------------------------------------
  */
 
-/** Options for an action requested from a player, */
-export interface ActionOptions {
-  /** The name of this action (localizer key) */
-  actionName: string | null;
-  /** The description of this action (localizer key) */
-  actionDesc: string | null;
-  /**
-   * The minimum amount of players to select
-   * @format int32
-   */
-  minimum?: number;
-  /**
-   * The maximum amount of players to select.
-   * @format int32
-   */
-  maximum?: number;
-  /** Ids of player that can't be selected. */
-  excludedPlayers?: number[] | null;
-}
-
 /** A Dto for returning a game. */
 export interface GameDto {
   /**
@@ -61,10 +41,7 @@ export interface GameMetadataDto {
   mayorId?: number | null;
 }
 
-/**
- * Different states the game can be in.
- * @format int32
- */
+/** @format int32 */
 export enum GameState {
   Locked = 0,
   Day = 1,
@@ -101,6 +78,31 @@ export interface PlayerDto {
   name?: string | null;
   /** Indicates whether this player is currently alive. */
   alive?: boolean;
+}
+
+/** @format int32 */
+export enum Role {
+  Villager = 0,
+  Werwolf = 1,
+  Seer = 2,
+}
+
+export interface SelectionOptionsDto {
+  /** The name of this action (localizer key) */
+  actionName?: string | null;
+  /** The description of this action (localizer key) */
+  actionDesc?: string | null;
+  /**
+   * The minimum amount of players to select per player.
+   * @format int32
+   */
+  minimum?: number;
+  /**
+   * The maximum amount of players to select per player.
+   * @format int32
+   */
+  maximum?: number;
+  excludedPlayers?: number[] | null;
 }
 
 export type QueryParamsType = Record<string | number, any>;

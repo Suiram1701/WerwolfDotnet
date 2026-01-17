@@ -4,8 +4,9 @@
     import { onMount, getContext } from "svelte";
     import { type Readable } from "svelte/store";
     import { config } from "../../config";
-    import { type GameMetadataDto, GameState, type PlayerDto, type ActionOptions} from "../../Api";
+    import { type GameMetadataDto, GameState, Role, type PlayerDto, type SelectionOptionsDto } from "../../Api";
     import { roleNames, roleDescriptions } from "../../textes/roles";
+    import { actionNames, actionDescriptions } from "../../textes/actions";
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
     import { GameHubServer, GameHubClientBase } from "../../signalrHub";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
@@ -20,14 +21,15 @@
     
     let gameId: number | undefined = $state();
     let selfId: number | undefined = undefined;
-    let roleName: string | undefined = $state();
+    let selfRole: Role | undefined = $state();
     
     let players: PlayerDto[] = $state([]);
     let metadata: GameMetadataDto | undefined = $state();
     let gameState: GameState | undefined = $state();
     
-    let runningAction: ActionOptions | null = $state(null);
+    let runningAction: SelectionOptionsDto | null = $state(null);
     let selectedPlayers: number[] = [];
+    let currentVotes: Record<number, number[]> = $state([]);
     
     let connection: HubConnection;
     let gameHub: GameHubServer;
@@ -81,14 +83,18 @@
             return Promise.resolve(undefined);
         }
 
-        public onPlayerRoleUpdated(newRoleName: string): Promise<void> {
-            roleName = newRoleName;
+        public onPlayerRoleUpdated(newRoleName: Role): Promise<void> {
+            selfRole = newRoleName;
             return Promise.resolve();
         }
 
-        public onActionRequested(action: ActionOptions): Promise<void> {
+        public onActionRequested(action: SelectionOptionsDto): Promise<void> {
             selectedPlayers = [];
             runningAction = action;
+            return Promise.resolve();
+        }
+        
+        public onVotesUpdated(votes: Record<number, number[]>): Promise<void> {
             return Promise.resolve();
         }
 
@@ -123,27 +129,32 @@
         <p>Andere Spieler können beitreten indem Sie diese Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
         <p>Direktes beitreten ist auch über <a href="{webUrl}?gameId={gameId}">diesen Link</a> möglich.</p>
     </div>
-{/if}
-
-<div class="flex-grow-1 container-fluid d-flex flex-column align-items-center">
-    {#if roleName !== undefined}
-        <div class="accordion w-100 mb-3" id="collapseRoleParent">
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRole" aria-controls="collapseRole">
-                        Ihre Rolle
-                    </button>
-                </h2>
-                <div id="collapseRole" class="accordion-collapse collapse" data-bs-parent="#collapseRoleParent">
-                    <div class="accordion-body">
-                        <h5>{roleNames[roleName]}</h5>
-                        {roleDescriptions[roleName]}
-                    </div>
+{:else if selfRole !== undefined}
+    <div class="accordion w-100 mb-3" id="collapseRoleParent">
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRole" aria-controls="collapseRole">
+                    Ihre Rolle
+                </button>
+            </h2>
+            <div id="collapseRole" class="accordion-collapse collapse" data-bs-parent="#collapseRoleParent">
+                <div class="accordion-body">
+                    <h5>{roleNames[selfRole]}</h5>
+                    {roleDescriptions[selfRole]}
                 </div>
             </div>
         </div>
-    {/if}
-    
+    </div>
+{/if}
+
+{#if runningAction !== null}
+    <div class="text-center mb-3">
+        <h5>{actionNames[runningAction.actionName ?? ""]}</h5>
+        <p>{actionDescriptions[runningAction.actionDesc ?? ""]}</p>
+    </div>
+{/if}
+
+<div class="flex-grow-1 container-fluid d-flex flex-column align-items-center">
     <!-- Player display and selection -->
     <ul class="list-group main-content mb-4">
         {#each players as player}
@@ -151,12 +162,13 @@
                 {#if runningAction === null}
                     {player.name}
                 {:else}
+                    <!-- Decide between radio (one selection) and checkbox (multiple selections) -->
                     {#if runningAction.maximum === 1}
                         <input class="form-check-input me-2" id="playerAction{player.id}" type="radio" value="{player.id}" bind:group={selectedPlayers[0]}
-                               name="playerAction" disabled="{runningAction.excludedPlayers?.includes(player.id ?? -1)}" />
+                               name="playerAction" disabled="{runningAction.excludedPlayers?.includes(player.id ?? -1) || !player.alive}" />
                     {:else}
                         <input class="form-check-input me-2" id="playerAction{player.id}" type="checkbox" value="{player.id}" bind:group={selectedPlayers}
-                               name="playerAction" disabled="{runningAction.excludedPlayers?.includes(player.id ?? -1)}" />
+                               name="playerAction" disabled="{runningAction.excludedPlayers?.includes(player.id ?? -1) || !player.alive}" />
                     {/if}
                     <label class="form-check-label" for="playerAction{player.id}">{player.name}</label>
                 {/if}

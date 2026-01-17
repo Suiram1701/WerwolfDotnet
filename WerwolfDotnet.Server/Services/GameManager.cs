@@ -66,7 +66,7 @@ public class GameManager(
         Player gameMaster = new(0, gameMasterName, context, out string gameMasterAuth);
         context.InitializeGame(gameMaster);
         context.OnGameStateChanged += OnGameStateChangedAsync;
-        context.OnPlayerActionRequested += OnPlayerActionRequestedAsync;
+        context.OnPhaseAction += OnPhaseActionAsync;
 
         await _sessionStore.AddAsync(context);
         _logger.LogInformation("Game {gameId} created. Game master is {gameMasterName} ({gameMasterId})", gameId, gameMasterName, 0);
@@ -143,7 +143,7 @@ public class GameManager(
         // empty session -> auto remove
         ctx.Dispose();
         ctx.OnGameStateChanged -= OnGameStateChangedAsync;
-        ctx.OnPlayerActionRequested -= OnPlayerActionRequestedAsync;
+        ctx.OnPhaseAction -= OnPhaseActionAsync;
         
         await _sessionStore.RemoveAsync(ctx).ConfigureAwait(false);
         return true;
@@ -179,8 +179,35 @@ public class GameManager(
         ctx.StartGame(new RoleOptions());
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
 
-        IEnumerable<Task> notifications = ctx.Players.Select(p => _hubContext.Clients.Player(ctx.Id, p.Id).PlayerRoleUpdated(p.Role!.Name));
+        IEnumerable<Task> notifications = ctx.Players.Select(p => _hubContext.Clients.Player(ctx.Id, p.Id).PlayerRoleUpdated(p.Role!.Value));
         await Task.WhenAll(notifications).ConfigureAwait(false);
+    }
+
+    public async Task RegisterPlayerActionAsync(GameContext ctx, Player self, Player[] selection)
+    {
+        if (ctx.RunningAction is not {} action)
+            return;
+
+        action.RegisterVote(self, selection);
+        await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
+
+        // Only required for multi-player actions (notify other participants).
+        if (action.Participants.Count > 1)
+        {
+            Dictionary<int, int[]> votesForPlayer = new();
+            foreach ((Player by, Player[] votesFor) in action.PlayerVotes)
+            {
+                foreach (Player votedOne in votesFor)
+                {
+                    if (votesForPlayer.TryGetValue(votedOne.Id, out int[]? votes))
+                        votesForPlayer[votedOne.Id] = votes.Append(by.Id).ToArray();
+                    else
+                        votesForPlayer[votedOne.Id] = [by.Id];
+                }
+            }
+
+            await _hubContext.Clients.Players(ctx.Id, action.Participants.Select(p => p.Id)).VotesUpdated(votesForPlayer);
+        }
     }
 
     private async void OnGameStateChangedAsync(GameContext ctx, GameState newState, Player[] diedPlayers)
@@ -191,14 +218,12 @@ public class GameManager(
         { _logger.LogError(ex, ex.Message); }
     }
 
-    private async void OnPlayerActionRequestedAsync(GameContext ctx, Player? targetPlayer, ActionOptions actionOptions)
+    private async void OnPhaseActionAsync(GameContext ctx, PhaseAction action)
     {
         try
         {
-            if (targetPlayer is null)
-                await _hubContext.Clients.Game(ctx.Id).PlayerActionRequested(actionOptions);
-            else
-                await _hubContext.Clients.Player(ctx.Id, targetPlayer.Id).PlayerActionRequested(actionOptions);
+            await Task.WhenAll(action.Participants.Select(p => _hubContext.Clients.Player(ctx.Id, p.Id)
+                .PlayerActionRequested(new SelectionOptionsDto(action, p))));
         }
         catch (Exception ex)
         {
