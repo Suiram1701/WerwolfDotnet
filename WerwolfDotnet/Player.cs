@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
+using WerwolfDotnet.Roles;
 
 namespace WerwolfDotnet;
 
@@ -19,12 +20,17 @@ public class Player : IEquatable<Player>
     /// <summary>
     /// The role the player has at the time. Only <c>null</c> when the game hasn't started yet
     /// </summary>
-    public Role? Role { get; internal set; }
+    public IRole? Role { get; internal set; }
 
     /// <summary>
     /// The current status of the player.
     /// </summary>
     public PlayerState Status { get; internal set; } = PlayerState.Alive;
+
+    /// <summary>
+    /// Indicates whether this player can be selected to kill.
+    /// </summary>
+    public bool IsKillable => Status != PlayerState.Death;
 
     private readonly byte[] _authSecretHash;
     private readonly GameContext _game;

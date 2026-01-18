@@ -25,7 +25,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         await Clients.Caller.PlayersUpdated(ctx.Players.ToDtoCollection());
 
         if (player.Role is not null)
-            await Clients.Caller.PlayerRoleUpdated(player.Role.Value);
+            await Clients.Caller.PlayerRoleUpdated(player.Role.Type);
 
         if (ctx.RunningAction is { } action && action.Participants.Contains(player))
             await Clients.Caller.PlayerActionRequested(new SelectionOptionsDto(action, player));

@@ -56,7 +56,7 @@ export abstract class GameHubClientBase {
     
     public abstract onVotesUpdated(votes: Record<number, number[]>): Promise<void>;
     
-    public abstract onActionCompleted(actionName: string | null, parameters: string[] | null): Promise<void>;
+    public abstract onActionCompleted(parameters: string[] | null): Promise<void>;
     
     public abstract onForceDisconnect(kicked: boolean): Promise<void>;
 }

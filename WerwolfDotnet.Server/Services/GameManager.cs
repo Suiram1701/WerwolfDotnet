@@ -67,6 +67,7 @@ public class GameManager(
         context.InitializeGame(gameMaster);
         context.OnGameStateChanged += OnGameStateChangedAsync;
         context.OnPhaseAction += OnPhaseActionAsync;
+        context.OnPhaseActionCompleted += OnPhaseActionCompletedAsync;
 
         await _sessionStore.AddAsync(context);
         _logger.LogInformation("Game {gameId} created. Game master is {gameMasterName} ({gameMasterId})", gameId, gameMasterName, 0);
@@ -144,6 +145,7 @@ public class GameManager(
         ctx.Dispose();
         ctx.OnGameStateChanged -= OnGameStateChangedAsync;
         ctx.OnPhaseAction -= OnPhaseActionAsync;
+        ctx.OnPhaseActionCompleted -= OnPhaseActionCompletedAsync;
         
         await _sessionStore.RemoveAsync(ctx).ConfigureAwait(false);
         return true;
@@ -179,7 +181,7 @@ public class GameManager(
         ctx.StartGame(new RoleOptions());
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
 
-        IEnumerable<Task> notifications = ctx.Players.Select(p => _hubContext.Clients.Player(ctx.Id, p.Id).PlayerRoleUpdated(p.Role!.Value));
+        IEnumerable<Task> notifications = ctx.Players.Select(p => _hubContext.Clients.Player(ctx.Id, p.Id).PlayerRoleUpdated(p.Role!.Type));
         await Task.WhenAll(notifications).ConfigureAwait(false);
     }
 
@@ -226,8 +228,17 @@ public class GameManager(
                 .PlayerActionRequested(new SelectionOptionsDto(action, p))));
         }
         catch (Exception ex)
+        { _logger.LogError(ex, ex.Message); }
+    }
+
+    private async void OnPhaseActionCompletedAsync(GameContext ctx, PhaseAction action, string[]? parameters)
+    {
+        try
         {
-            _logger.LogError(ex, ex.Message);
+            await _hubContext.Clients.Players(ctx.Id, action.Participants.Select(p => p.Id))
+                .PlayerActionCompleted(parameters);
         }
+        catch (Exception ex)
+        { _logger.LogError(ex, ex.Message); }
     }
 }

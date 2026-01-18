@@ -24,7 +24,7 @@ public interface IGameHub
     public Task VotesUpdated(IDictionary<int, int[]> votes);
     
     [HubMethodName("onActionCompleted")]
-    public Task PlayerActionCompleted(string? actionName, string[]? parameters);
+    public Task PlayerActionCompleted(string[]? parameters);
     
     [HubMethodName("onForceDisconnect")]
     public Task ForceDisconnect(bool kicked = false);

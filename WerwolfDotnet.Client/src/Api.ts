@@ -9,6 +9,12 @@
  * ---------------------------------------------------------------
  */
 
+/** @format int32 */
+export enum ActionType {
+  WerwolfVoting = 0,
+  SeerSelection = 1,
+}
+
 /** A Dto for returning a game. */
 export interface GameDto {
   /**
@@ -88,10 +94,7 @@ export enum Role {
 }
 
 export interface SelectionOptionsDto {
-  /** The name of this action (localizer key) */
-  actionName?: string | null;
-  /** The description of this action (localizer key) */
-  actionDesc?: string | null;
+  type?: ActionType;
   /**
    * The minimum amount of players to select per player.
    * @format int32

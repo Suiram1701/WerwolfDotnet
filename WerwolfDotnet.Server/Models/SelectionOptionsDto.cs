@@ -5,12 +5,7 @@ public class SelectionOptionsDto(PhaseAction action, Player self)
     /// <summary>
     /// The name of this action (localizer key)
     /// </summary>
-    public string ActionName { get; } = action.ActionName;
-
-    /// <summary>
-    /// The description of this action (localizer key)
-    /// </summary>
-    public string ActionDesc { get; } = action.ActionDesc;
+    public ActionType Type { get; } = action.Type;
 
     /// <summary>
     /// The minimum amount of players to select per player.

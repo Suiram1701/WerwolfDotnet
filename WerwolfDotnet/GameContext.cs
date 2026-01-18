@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Roles;
 
 namespace WerwolfDotnet;
 
@@ -59,6 +60,12 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// Invoked when one or more players are requested to take action. 
     /// </summary> 
     public event Action<GameContext, PhaseAction>? OnPhaseAction;
+
+    /// <summary>
+    /// Invoked when a startet phase action completed. The last param are parameters passed for displaying a result.
+    /// When <c>null</c> nothing should be shown.
+    /// </summary>
+    public event Action<GameContext, PhaseAction, string[]?>? OnPhaseActionCompleted;
     
     private readonly ILogger _logger;
     private CancellationTokenSource? _gameLoopCts;
@@ -174,9 +181,9 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
          if (State > GameState.Locked)
              throw new InvalidOperationException("Game game has already been started!");
 
-         Role[] roles = [
-             ..Enumerable.Repeat(Role.Werwolf, options.AmountWerwolfs),
-             ..Enumerable.Repeat(Role.Seer, options.AmountSeers)
+         IRole[] roles = [
+             ..Enumerable.Repeat<IRole?>(null, options.AmountWerwolfs).Select(_ => new Werwolf()),
+             ..Enumerable.Repeat<IRole?>(null, options.AmountSeers).Select(_ => new Seer())
          ];
          roles = [..roles.Shuffle()];
          
@@ -186,16 +193,35 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
          for (var i = 0; i < assignmentCount; i++)
              shuffledPlayers[i].Role = roles[i];
          for (int i = assignmentCount; i < shuffledPlayers.Length; i++)
-             shuffledPlayers[i].Role = Role.Villager;
+             shuffledPlayers[i].Role = new Villager();
          
          _gameLoopCts = new CancellationTokenSource();
-         _gameLoop = _runAsync(_gameLoopCts.Token);
+         _gameLoop = _RunAsync(_gameLoopCts.Token);
     }
 
-    private void RequestPlayerAction(PhaseAction action)
+    /// <summary>
+    /// Starts a new action which requests from one or more players a selection.
+    /// </summary>
+    /// <param name="action"></param>
+    /// <returns>A tasks which waits until every player made a decision.</returns>
+    private Task RequestPlayerActionAsync(PhaseAction action)
     {
+        TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        action.OnCompleted += _ => tcs.TrySetResult();
+        
         RunningAction = action;
         OnPhaseAction?.Invoke(this, action);
+
+        return tcs.Task;
+    }
+
+    private void CompletePlayerAction(string[]? parameters)
+    {
+        if (RunningAction is null)
+            return;
+        
+        OnPhaseActionCompleted?.Invoke(this, RunningAction, parameters);
+        RunningAction = null;
     }
     
     public bool Equals(GameContext? other)

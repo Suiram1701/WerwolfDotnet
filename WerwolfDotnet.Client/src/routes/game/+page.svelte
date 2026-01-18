@@ -6,7 +6,7 @@
     import { config } from "../../config";
     import { type GameMetadataDto, GameState, Role, type PlayerDto, type SelectionOptionsDto } from "../../Api";
     import { roleNames, roleDescriptions } from "../../textes/roles";
-    import { actionNames, actionDescriptions } from "../../textes/actions";
+    import {actionNames, actionDescriptions, actionCompletions} from "../../textes/actions";
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
     import { GameHubServer, GameHubClientBase } from "../../signalrHub";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
@@ -80,6 +80,13 @@
         
         onGameStateUpdated(newState: GameState, diedPlayers: number[]): Promise<void> {
             gameState = newState;
+            for (const player of players) {
+                if (diedPlayers.includes(player.id!))
+                    player.alive = false;
+            }
+            
+            if (diedPlayers.includes(selfId!))
+                modalProvider.show({ title: "Du bist gestorben", contentText: "Du bist gestorben. Ab sofort kannst du dem Spiel nur noch zuschauen." });
             return Promise.resolve(undefined);
         }
 
@@ -95,11 +102,20 @@
         }
         
         public onVotesUpdated(votes: Record<number, number[]>): Promise<void> {
+            currentVotes = votes;
             return Promise.resolve();
         }
 
-        public onActionCompleted(actionName: string | null, parameters: string[] | null): Promise<void> {
+        public onActionCompleted(parameters: string[] | null): Promise<void> {
+            if (parameters !== null) {
+                modalProvider.show({
+                    title: actionNames[runningAction!.type ?? 0],
+                    contentText: actionCompletions[runningAction!.type ?? 0](parameters)
+                });
+            }
+            
             runningAction = null;
+            currentVotes = [];
             return Promise.resolve();
         }
         
@@ -149,8 +165,8 @@
 
 {#if runningAction !== null}
     <div class="text-center mb-3">
-        <h5>{actionNames[runningAction.actionName ?? ""]}</h5>
-        <p>{actionDescriptions[runningAction.actionDesc ?? ""]}</p>
+        <h5>{actionNames[runningAction.type ?? 0]}</h5>
+        <p>{actionDescriptions[runningAction.type ?? 0]}</p>
     </div>
 {/if}
 

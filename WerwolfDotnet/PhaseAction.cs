@@ -8,12 +8,7 @@ public sealed class PhaseAction
     /// <summary>
     /// The name of this action (localizer key)
     /// </summary>
-    public required string ActionName { get; init; }
-    
-    /// <summary>
-    /// The description of this action (localizer key)
-    /// </summary>
-    public required string ActionDesc { get; init; }
+    public required ActionType Type { get; init; }
     
     /// <summary>
     /// The minimum amount of players to select per player.
@@ -50,16 +45,14 @@ public sealed class PhaseAction
     
     public bool RegisterVote(Player self, Player[] selection)
     {
-        if (!_playerVotes.TryGetValue(self, out Player[]? currentSelection))
-            return false;
         if (selection.Length < Minimum || selection.Length > Maximum)
             return false;
         if (ExcludeSelf && selection.Contains(self))
             return false;
         if (ExcludeParticipants && selection.Any(p => Participants.Contains(p)))
             return false;
-
-        _playerVotes[self] = currentSelection;
+        
+        _playerVotes[self] = selection;
 
         if (PlayerVotes.Count == Participants.Count && PlayerVotes.All(v => v.Value.Length > 0))
             OnCompleted?.Invoke(this);
