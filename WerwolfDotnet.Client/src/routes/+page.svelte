@@ -6,9 +6,9 @@
     import { config } from "../config";
     import { Api, type HttpResponse, type GameDto, type JoinGameDto, type JoinedGameDto} from "../Api";
     import { storePlayerToken } from "../gameSessionStore";
-    import PageTitle from "./components/PageTitle.svelte"
-    import GameCard from "./components/GameCard.svelte";
-    import ModalProvider from "./components/ModalProvider.svelte";
+    import PageTitle from "$lib/components/PageTitle.svelte"
+    import GameCard from "$lib/components/GameCard.svelte";
+    import ModalProvider from "$lib/components/ModalProvider.svelte";
     
     let modalProvider: ModalProvider;
     const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");

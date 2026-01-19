@@ -10,8 +10,8 @@
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
     import { GameHubServer, GameHubClientBase } from "../../signalrHub";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
-    import ModalProvider from "../components/ModalProvider.svelte";
-    import PageTitle from "../components/PageTitle.svelte";
+    import ModalProvider from "$lib/components/ModalProvider.svelte";
+    import PageTitle from "$lib/components/PageTitle.svelte";
     import { tooltip } from "$lib/actions/tooltip";
 
     const webUrl = page.url.protocol + "//" + page.url.host;     // Port is part of the host

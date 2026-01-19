@@ -2,7 +2,6 @@
     import { type GameDto } from "../../Api";
 
     let { game, onJoin }: { game: GameDto, onJoin: (() => void)} = $props();
-    let gameLocked : Boolean = $derived(!game.canJoin || (game.playerCount ?? 0) >= (game.maxPlayerCount ?? 0));
 </script>
 
 <div class="card m-2 game-card">
