@@ -12,6 +12,8 @@ export const actionDescriptions: Readonly<Record<ActionType, string>> = {
 }
 
 export const actionCompletions: Readonly<Record<ActionType, (args: string[]) => string>> = {
-    [ActionType.WerwolfVoting]: args => `Ihr habt euch auf ${args[0]} geeinigt. Dieser Spieler wird am morgen tot sein (solange keine andere Rolle eingreift).`,
-    [ActionType.SeerSelection]: args => `Du hast dich für ${args[0]} entschieden. Dieser Spieler hat die Rolle ${""}.`,
+    [ActionType.WerwolfVoting]: args => args.length == 1
+        ? `Ihr habt euch auf ${args[0]} geeinigt. Dieser Spieler wird am morgen tot sein (solange keine andere Rolle eingreift).`
+        : "Ihr konntet euch auf keinen Spieler einigen, der Sterben soll.",
+    [ActionType.SeerSelection]: args => `Du hast dich für ${args[0]} entschieden. Dieser Spieler hat die Rolle ${roleNames[Role[args[1] as keyof typeof Role]]}.`,
 }

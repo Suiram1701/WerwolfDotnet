@@ -21,7 +21,7 @@ public interface IGameHub
     public Task PlayerActionRequested(SelectionOptionsDto options);
 
     [HubMethodName("onVotesUpdated")]
-    public Task VotesUpdated(IDictionary<int, int[]> votes);
+    public Task VotesUpdated(IReadOnlyDictionary<int, int[]> votes);
     
     [HubMethodName("onActionCompleted")]
     public Task PlayerActionCompleted(string[]? parameters);

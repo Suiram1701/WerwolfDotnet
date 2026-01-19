@@ -12,6 +12,7 @@
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
     import ModalProvider from "../components/ModalProvider.svelte";
     import PageTitle from "../components/PageTitle.svelte";
+    import { tooltip } from "$lib/actions/tooltip";
 
     const webUrl = page.url.protocol + "//" + page.url.host;     // Port is part of the host
     
@@ -28,7 +29,7 @@
     let gameState: GameState | undefined = $state();
     
     let runningAction: SelectionOptionsDto | null = $state(null);
-    let selectedPlayers: number[] = [];
+    let selectedPlayers: number[] = $state([]);
     let currentVotes: Record<number, number[]> = $state([]);
     
     let connection: HubConnection;
@@ -60,9 +61,10 @@
                 console.log("An error occurred while trying to connect to the game API!", err)
                 goto("/");
             });
+        
         return () => connection.stop();
     });
-
+    
     class GameHubClient extends GameHubClientBase {
         constructor(connection: HubConnection) { super(connection); }
 
@@ -103,6 +105,14 @@
         
         public onVotesUpdated(votes: Record<number, number[]>): Promise<void> {
             currentVotes = votes;
+            
+            let ownVotes: number[] = [];
+            for (const key in votes) {
+                if (votes[key].includes(selfId!))
+                    ownVotes.push(Number(key));
+            }
+            selectedPlayers = ownVotes;
+            
             return Promise.resolve();
         }
 
@@ -188,10 +198,20 @@
                     {/if}
                     <label class="form-check-label" for="playerAction{player.id}">{player.name}</label>
                 {/if}
+
+                <div class="flex-grow-1"></div>
+
+                {#if (player.id ?? 0) in currentVotes && currentVotes[player.id ?? 0].length > 0}
+                    <span class="badge text-bg-secondary" use:tooltip={{
+                        title: currentVotes[player.id ?? 0].map(id => players.find(p => (p.id ?? 0) === id)?.name).join(', '),
+                        placement: "top"
+                    }}>
+                        {currentVotes[player.id ?? 0].length}
+                    </span>
+                {/if}
                 
                 {#if selfId === metadata?.gameMasterId}
-                    <div class="flex-grow-1"></div>
-                    <button type="button" class="btn btn-sm btn-{player.id === selfId ? 'secondary' : 'danger'} w-auto" onclick={() => {
+                    <button type="button" class="btn btn-sm btn-{player.id === selfId ? 'secondary' : 'danger'} w-auto ms-3" onclick={() => {
                         if (player.id === selfId)
                             return;
                         modalProvider.show({
@@ -209,7 +229,8 @@
     </ul>
 
     {#if runningAction !== null}
-        <button class="btn btn-primary main-content" type="button" onclick={() => gameHub.playerAction(selectedPlayers)}>
+        <button class="btn btn-primary main-content" type="button" onclick={() => gameHub.playerAction(selectedPlayers)}
+                disabled="{selectedPlayers.length < (runningAction.minimum ?? 0) || selectedPlayers.length > (runningAction.maximum ?? 0)}">
             Abschicken
         </button>
     {/if}

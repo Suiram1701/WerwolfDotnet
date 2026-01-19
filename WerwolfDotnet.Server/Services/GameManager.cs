@@ -190,25 +190,21 @@ public class GameManager(
         if (ctx.RunningAction is not {} action)
             return;
 
+        // Suppress unnecessary updated
+        if (action.PlayerVotes.TryGetValue(self, out Player[]? currentVotes) &&
+            currentVotes.All(v => selection.Contains(v)))
+            return;
+
         action.RegisterVote(self, selection);
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
 
         // Only required for multi-player actions (notify other participants).
         if (action.Participants.Count > 1)
         {
-            Dictionary<int, int[]> votesForPlayer = new();
-            foreach ((Player by, Player[] votesFor) in action.PlayerVotes)
-            {
-                foreach (Player votedOne in votesFor)
-                {
-                    if (votesForPlayer.TryGetValue(votedOne.Id, out int[]? votes))
-                        votesForPlayer[votedOne.Id] = votes.Append(by.Id).ToArray();
-                    else
-                        votesForPlayer[votedOne.Id] = [by.Id];
-                }
-            }
-
-            await _hubContext.Clients.Players(ctx.Id, action.Participants.Select(p => p.Id)).VotesUpdated(votesForPlayer);
+            IReadOnlyDictionary<int, int[]> votedPlayers = action.GetVotedPlayers()
+                .Select(kvp => KeyValuePair.Create(kvp.Key.Id, kvp.Value.Select(p => p.Id).ToArray()))
+                .ToDictionary();
+            await _hubContext.Clients.Players(ctx.Id, action.Participants.Select(p => p.Id)).VotesUpdated(votedPlayers);
         }
     }
 

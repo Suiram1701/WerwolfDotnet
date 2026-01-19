@@ -28,9 +28,9 @@ public class Player : IEquatable<Player>
     public PlayerState Status { get; internal set; } = PlayerState.Alive;
 
     /// <summary>
-    /// Indicates whether this player can be selected to kill.
+    /// Indicates whether this player can be selected to kill or can do an action.
     /// </summary>
-    public bool IsKillable => Status != PlayerState.Death;
+    public bool IsAlive => Status != PlayerState.Death;
 
     private readonly byte[] _authSecretHash;
     private readonly GameContext _game;

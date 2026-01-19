@@ -28,7 +28,17 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
             await Clients.Caller.PlayerRoleUpdated(player.Role.Type);
 
         if (ctx.RunningAction is { } action && action.Participants.Contains(player))
+        {
             await Clients.Caller.PlayerActionRequested(new SelectionOptionsDto(action, player));
+
+            if (action.Participants.Count > 1)
+            {
+                IReadOnlyDictionary<int, int[]> votedPlayers = action.GetVotedPlayers()
+                    .Select(kvp => KeyValuePair.Create(kvp.Key.Id, kvp.Value.Select(p => p.Id).ToArray()))
+                    .ToDictionary();
+                await Clients.Caller.VotesUpdated(votedPlayers);
+            }
+        }
         
         await base.OnConnectedAsync();
     }
