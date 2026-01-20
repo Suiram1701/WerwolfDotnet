@@ -4,5 +4,6 @@ public enum Role
 {
     Villager,
     Werwolf,
-    Seer
+    Seer,
+    Witch
 }

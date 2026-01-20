@@ -226,6 +226,13 @@
                 {/if}
             </li>
         {/each}
+        
+        {#if runningAction !== null && runningAction.minimum === 0 && runningAction.maximum === 1}
+            <li class="list-group-item d-flex align-items-center d-flex align-items-center">
+                <input class="form-check-input me-2" id="playerAction-NoOne" name="playerAction" type="radio" onclick={() => selectedPlayers = []}>
+                <label class="form-check-label" for="playerAction-NoOne">Niemand auswählen</label>
+            </li>
+        {/if}
     </ul>
 
     {#if runningAction !== null}

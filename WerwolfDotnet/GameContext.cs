@@ -183,7 +183,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
 
          IRole[] roles = [
              ..Enumerable.Repeat<IRole?>(null, options.AmountWerwolfs).Select(_ => new Werwolf()),
-             ..Enumerable.Repeat<IRole?>(null, options.AmountSeers).Select(_ => new Seer())
+             ..Enumerable.Repeat<IRole?>(null, options.AmountSeers).Select(_ => new Seer()),
+             ..Enumerable.Repeat<IRole?>(null, options.AmountWitches).Select(_ => new Witch())
          ];
          roles = [..roles.Shuffle()];
          
@@ -215,7 +216,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         return tcs.Task;
     }
 
-    private void CompletePlayerAction(string[]? parameters)
+    private void CompletePlayerAction(string[]? parameters = null)
     {
         if (RunningAction is null)
             return;

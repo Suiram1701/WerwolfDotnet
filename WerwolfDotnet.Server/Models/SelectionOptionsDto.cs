@@ -17,9 +17,10 @@ public class SelectionOptionsDto(PhaseAction action, Player self)
     /// </summary>
     public int Maximum { get; } = action.Maximum;
 
-    public int[] ExcludedPlayers { get; } = Enumerable.Empty<int>()
-        .Concat(action.ExcludeSelf ? [self.Id] : [])
-        .Concat(action.ExcludeParticipants ? action.Participants.Select(p => p.Id) : [])
+    public int[] ExcludedPlayers { get; } = action.ExcludedPlayers
+        .Concat(action.ExcludeSelf ? [self] : [])
+        .Concat(action.ExcludeParticipants ? action.Participants : [])
+        .Select(p => p.Id)
         .Distinct()
         .ToArray();
 }

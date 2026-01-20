@@ -1,3 +1,5 @@
+using WerwolfDotnet.Roles;
+
 namespace WerwolfDotnet;
 
 partial class GameContext
@@ -10,7 +12,6 @@ partial class GameContext
         while (!ct.IsCancellationRequested)
         {
             await _RunNightAsync(ct);
-            return;
             _SwitchBetweenMainStates(GameState.Day);
             
             await _RunDayAsync(ct);
@@ -22,6 +23,7 @@ partial class GameContext
     {
         await _HandleWerwolfsAsync(ct);
         await _HandleSeersAsync(ct);
+        await _HandleWitchesAsync(ct);
     }
 
     private async Task _RunDayAsync(CancellationToken ct)
@@ -68,6 +70,56 @@ partial class GameContext
 
             Player playerToReveal = RunningAction!.PlayerVotes[seer].Single();     // Guaranteed by PhaseAction
             CompletePlayerAction([playerToReveal.Name, playerToReveal.Role!.Type.ToString()]);
+        }
+    }
+
+    private async Task _HandleWitchesAsync(CancellationToken ct)
+    {
+        foreach (Player witch in _players.Where(p => p.IsAlive && p.Role!.Type == Role.Witch))
+        {
+            var role = (Witch)witch.Role!;
+            if (role.CanHeal)
+            {
+                // Healing
+                await RequestPlayerActionAsync(new PhaseAction
+                {
+                    Type = ActionType.WitchHealSelection,
+                    Minimum = 0,
+                    Maximum = 1,
+                    Participants = [witch],
+                    ExcludedPlayers = _players.Where(p => p.Status != PlayerState.PendingDeath)
+                });
+            
+                Player? playerToHeal = RunningAction!.PlayerVotes[witch].SingleOrDefault();
+                if (playerToHeal is not null)
+                {
+                    playerToHeal.Status = PlayerState.Alive;
+                    role.CanHeal = false;
+                    CompletePlayerAction();
+                }
+            }
+
+            if (role.CanKill)
+            {
+                // Killing
+                await RequestPlayerActionAsync(new PhaseAction
+                {
+                    Type = ActionType.WitchKillSelection,
+                    Minimum = 0,
+                    Maximum = 1,
+                    Participants = [witch],
+                    // ExcludeParticipants = true,     // Why not allow the witch to kill herself :)
+                    ExcludedPlayers = _players.Where(p => !p.IsAlive)
+                });
+            
+                Player? playerToKill = RunningAction!.PlayerVotes[witch].SingleOrDefault();
+                if (playerToKill is not null)
+                {
+                    playerToKill.Status = PlayerState.PendingDeath;
+                    role.CanKill = false;
+                    CompletePlayerAction();
+                }
+            }
         }
     }
     

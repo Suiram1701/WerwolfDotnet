@@ -13,6 +13,8 @@
 export enum ActionType {
   WerwolfVoting = 0,
   SeerSelection = 1,
+  WitchHealSelection = 2,
+  WitchKillSelection = 3,
 }
 
 /** A Dto for returning a game. */
@@ -91,6 +93,7 @@ export enum Role {
   Villager = 0,
   Werwolf = 1,
   Seer = 2,
+  Witch = 3,
 }
 
 export interface SelectionOptionsDto {

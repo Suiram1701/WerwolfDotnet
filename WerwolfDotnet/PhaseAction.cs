@@ -31,6 +31,11 @@ public sealed class PhaseAction
     public bool ExcludeParticipants { get; init; } = false;
     
     /// <summary>
+    /// Specifies players to exclude from vote-ability (if no covered by Self or Participants)
+    /// </summary>
+    public IEnumerable<Player> ExcludedPlayers { get; init; } = [];
+    
+    /// <summary>
     /// Players who participate on the same action.
     /// </summary>
     public required IReadOnlyCollection<Player> Participants { get; init; }
@@ -50,6 +55,8 @@ public sealed class PhaseAction
         if (ExcludeSelf && selection.Contains(self))
             return false;
         if (ExcludeParticipants && selection.Any(p => Participants.Contains(p)))
+            return false;
+        if (selection.Any(p => ExcludedPlayers.Contains(p)))
             return false;
 
         _playerVotes[self] = selection;
