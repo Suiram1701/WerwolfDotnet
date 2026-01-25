@@ -6,7 +6,7 @@ namespace WerwolfDotnet.Server.Hubs;
 public interface IGameHub
 {
     [HubMethodName("onGameMetaUpdated")]
-    public Task GameMetaUpdated(GameMetadataDto metadata);
+    public Task GameMetaUpdated(int gameMasterId, int? mayorId);
     
     [HubMethodName("onPlayersUpdated")]
     public Task PlayersUpdated(IEnumerable<PlayerDto> players);

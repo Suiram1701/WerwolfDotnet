@@ -11,10 +11,11 @@
 
 /** @format int32 */
 export enum ActionType {
-  WerwolfVoting = 0,
-  SeerSelection = 1,
-  WitchHealSelection = 2,
-  WitchKillSelection = 3,
+  MayorVoting = 0,
+  WerwolfVoting = 1,
+  SeerSelection = 2,
+  WitchHealSelection = 3,
+  WitchKillSelection = 4,
 }
 
 /** A Dto for returning a game. */
@@ -40,13 +41,6 @@ export interface GameDto {
    * @format int32
    */
   maxPlayerCount?: number;
-}
-
-export interface GameMetadataDto {
-  /** @format int32 */
-  gameMasterId?: number;
-  /** @format int32 */
-  mayorId?: number | null;
 }
 
 /** @format int32 */

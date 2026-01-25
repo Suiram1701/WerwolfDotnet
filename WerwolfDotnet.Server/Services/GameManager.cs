@@ -65,6 +65,8 @@ public class GameManager(
         GameContext context = new(gameId, sessionPassword, LobbyOptions.MaxPlayers, gameLogger);
         Player gameMaster = new(0, gameMasterName, context, out string gameMasterAuth);
         context.InitializeGame(gameMaster);
+
+        context.OnGameMetadataChanged += OnGameMetadataChangedAsync;
         context.OnGameStateChanged += OnGameStateChangedAsync;
         context.OnPhaseAction += OnPhaseActionAsync;
         context.OnPhaseActionCompleted += OnPhaseActionCompletedAsync;
@@ -127,22 +129,19 @@ public class GameManager(
     /// <returns>Indicates whether it was successful.</returns>
     public async Task<bool> LeaveGameAsync(GameContext ctx, Player player)
     {
-        bool isGameMaster = player.Equals(ctx.GameMaster);
         if (!ctx.RemovePlayer(player))
             return false;
 
         if (ctx.Players.Count > 0)
         {
             await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
-
             await _hubContext.Clients.Game(ctx.Id).PlayersUpdated(ctx.Players.Select(p => new PlayerDto(p)));
-            if (isGameMaster)
-                await _hubContext.Clients.Game(ctx.Id).GameMetaUpdated(new GameMetadataDto(ctx));
             return true;
         }
         
         // empty session -> auto remove
         ctx.Dispose();
+        ctx.OnGameMetadataChanged -= OnGameMetadataChangedAsync;
         ctx.OnGameStateChanged -= OnGameStateChangedAsync;
         ctx.OnPhaseAction -= OnPhaseActionAsync;
         ctx.OnPhaseActionCompleted -= OnPhaseActionCompletedAsync;
@@ -203,6 +202,14 @@ public class GameManager(
         }
     }
 
+    private async void OnGameMetadataChangedAsync(GameContext ctx, int gameMasterId, int? mayorId)
+    {
+        try
+        { await _hubContext.Clients.Game(ctx.Id).GameMetaUpdated(gameMasterId, mayorId); }
+        catch (Exception ex)
+        { _logger.LogError(ex, ex.Message); }
+    }
+    
     private async void OnGameStateChangedAsync(GameContext ctx, GameState newState, Player[] diedPlayers)
     {
         try

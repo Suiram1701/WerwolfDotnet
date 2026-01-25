@@ -86,4 +86,25 @@ public sealed class PhaseAction
 
         return votesForPlayer.AsReadOnly();
     }
+
+    public Player? GetMostVotedPlayer()
+    {
+        Dictionary<Player, int> votesForPlayer = new();
+        foreach ((_, Player[] votesFor) in _playerVotes)
+        {
+            foreach (Player votedOne in votesFor)
+            {
+                if (votesForPlayer.TryGetValue(votedOne, out int count))
+                    votesForPlayer[votedOne] = ++count;
+                else
+                    votesForPlayer[votedOne] = 1;
+            }
+        }
+
+        int maxVotes = votesForPlayer.Values.Count > 0 ? votesForPlayer.Values.Max() : 0;
+        return votesForPlayer
+            .Where(kvp => kvp.Value == maxVotes)
+            .Select(kvp => kvp.Key)
+            .SingleOrDefault();
+    }
 }

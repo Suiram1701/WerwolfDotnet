@@ -4,7 +4,7 @@
     import { onMount, getContext } from "svelte";
     import { type Readable } from "svelte/store";
     import { config } from "../../config";
-    import { type GameMetadataDto, GameState, Role, type PlayerDto, type SelectionOptionsDto } from "../../Api";
+    import { GameState, Role, type PlayerDto, type SelectionOptionsDto } from "../../Api";
     import { roleNames, roleDescriptions } from "../../textes/roles";
     import {actionNames, actionDescriptions, actionCompletions} from "../../textes/actions";
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
@@ -25,8 +25,8 @@
     let selfRole: Role | undefined = $state();
     
     let players: PlayerDto[] = $state([]);
-    let metadata: GameMetadataDto | undefined = $state();
     let gameState: GameState | undefined = $state();
+    let gameMeta: { gameMaster: number, mayor: number | null } | undefined = undefined;
     
     let runningAction: SelectionOptionsDto | null = $state(null);
     let selectedPlayers: number[] = $state([]);
@@ -68,10 +68,10 @@
     class GameHubClient extends GameHubClientBase {
         constructor(connection: HubConnection) { super(connection); }
 
-        onGameMetaUpdated(meta: GameMetadataDto): Promise<void> {
-            if (metadata !== undefined && meta.gameMasterId === selfId)
+        onGameMetaUpdated(gameMasterId: number, mayorId: number | null): Promise<void> {
+            if (gameMeta !== undefined && gameMeta.gameMaster !== gameMasterId && gameMasterId === selfId)
                 modalProvider.show({ title: "Game-master wechsel", contentText: "Der aktuelle Game-master hat das Spiel verlassen. Sie sind nun der neue Game-master." });
-            metadata = meta;
+            gameMeta = { gameMaster: gameMasterId, mayor: mayorId };
             return Promise.resolve();
         }
         
@@ -210,7 +210,7 @@
                     </span>
                 {/if}
                 
-                {#if selfId === metadata?.gameMasterId}
+                {#if selfId === gameMeta?.gameMaster}
                     <button type="button" class="btn btn-sm btn-{player.id === selfId ? 'secondary' : 'danger'} w-auto ms-3" onclick={() => {
                         if (player.id === selfId)
                             return;
@@ -229,7 +229,8 @@
         
         {#if runningAction !== null && runningAction.minimum === 0 && runningAction.maximum === 1}
             <li class="list-group-item d-flex align-items-center d-flex align-items-center">
-                <input class="form-check-input me-2" id="playerAction-NoOne" name="playerAction" type="radio" onclick={() => selectedPlayers = []}>
+                <input class="form-check-input me-2" id="playerAction-NoOne" name="playerAction" type="radio"
+                       checked="{selectedPlayers.length === 0}" onclick={() => selectedPlayers = []}>
                 <label class="form-check-label" for="playerAction-NoOne">Niemand auswählen</label>
             </li>
         {/if}
@@ -245,7 +246,7 @@
     <div class="flex-grow-1"></div>
     
     <!-- Admin buttons -->
-    {#if selfId === metadata?.gameMasterId && (gameState ?? -2) <= GameState.Locked}
+    {#if selfId === gameMeta?.gameMaster && (gameState ?? -2) <= GameState.Locked}
         <div class="d-flex main-content mb-3">
             <button class="btn btn-primary w-100" type="button" onclick={() => gameHub.startGame()} disabled="{players.length < 3}">Spiel starten</button>
             <button class="btn btn-info w-100 mx-2" type="button" onclick={() => gameHub.shufflePlayers()}>Spieler durchmischen</button>

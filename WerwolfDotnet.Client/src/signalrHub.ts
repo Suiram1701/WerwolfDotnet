@@ -1,4 +1,4 @@
-import { type SelectionOptionsDto, type GameMetadataDto, GameState, Role, type PlayerDto } from "./Api";
+import { type SelectionOptionsDto, GameState, Role, type PlayerDto } from "./Api";
 import { HubConnection } from "@microsoft/signalr"
 
 export class GameHubServer {
@@ -44,7 +44,7 @@ export abstract class GameHubClientBase {
         connection.on("onForceDisconnect", this.onForceDisconnect);
     }
 
-    public abstract onGameMetaUpdated(meta: GameMetadataDto): Promise<void>;
+    public abstract onGameMetaUpdated(gameMasterId: number, mayorId: number | null): Promise<void>;
     
     public abstract onPlayersUpdated(players: PlayerDto[]): Promise<void>;
     

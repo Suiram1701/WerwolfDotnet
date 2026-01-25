@@ -20,7 +20,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         _connectionMapping.AddConnectionToPlayer(ctx.Id, player.Id, Context.ConnectionId);
         await Groups.AddToGroupAsync(Context.ConnectionId, GroupNames.Game(ctx.Id));
 
-        await Clients.Caller.GameMetaUpdated(new GameMetadataDto(ctx));
+        await Clients.Caller.GameMetaUpdated(ctx.GameMaster.Id, ctx.Mayor?.Id);
         await Clients.Caller.GameStateUpdated(ctx.State, []);
         await Clients.Caller.PlayersUpdated(ctx.Players.ToDtoCollection());
 

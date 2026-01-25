@@ -50,6 +50,11 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     public GameState State { get; private set; } = GameState.NotInitialized;
     
     public PhaseAction? RunningAction { get; private set; }
+
+    /// <summary>
+    /// First int is the game master id and seconds integer is the id of the village mayor.
+    /// </summary>
+    public event Action<GameContext, int, int?>? OnGameMetadataChanged;
     
     /// <summary>
     /// Invoked when the state of the game changed. Player[] are the players who died during the previous state.
@@ -142,6 +147,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
             if (newGm is not null)
             {
                 GameMaster = newGm;
+                OnGameMetadataChanged?.Invoke(this, newGm.Id, Mayor?.Id);
                 _logger.LogInformation("Game master left the game. New game master {newGm} ({newGmId}) selected.", newGm.Name, newGm.Id);
             }
             else
