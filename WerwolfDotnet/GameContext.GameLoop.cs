@@ -12,10 +12,10 @@ partial class GameContext
         while (!ct.IsCancellationRequested)
         {
             await _RunNightAsync(ct);
-            _SwitchBetweenMainStates(GameState.Day);
+            _EvaluatePreviousState(GameState.Day);
             
             await _RunDayAsync(ct);
-            _SwitchBetweenMainStates(GameState.Day);
+            _EvaluatePreviousState(GameState.Night);
         }
     }
     
@@ -138,9 +138,19 @@ partial class GameContext
         }
     }
     
-    private void _SwitchBetweenMainStates(GameState newState)
+    private void _EvaluatePreviousState(GameState newState)
     {
         State = newState;
+
+        if (_gameOptions!.ExplodingWitchHome)
+        {
+            foreach (Player diedWitch in _players.Where(p => p.Role!.Type == Role.Witch && p.Status == PlayerState.PendingDeath))
+            {
+                int i = _players.IndexOf(diedWitch);
+                _players[i <= 0 ? _players.Count - 1 : i - 1].Status = PlayerState.PendingDeath;     // Player before the witch
+                _players[i >= _players.Count - 1 ? 0 : i + 1].Status = PlayerState.PendingDeath;     // Player after the witch
+            }
+        }
 
         Player[] diedPlayers = _players
             .Where(p => p.Status == PlayerState.PendingDeath)

@@ -177,7 +177,7 @@ public class GameManager(
         if (ctx.Players.Count < 3)     // Not enough players
             return;
         
-        ctx.StartGame(new RoleOptions());
+        ctx.StartGame(new GameOptions());
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
 
         IEnumerable<Task> notifications = ctx.Players.Select(p => _hubContext.Clients.Player(ctx.Id, p.Id).PlayerRoleUpdated(p.Role!.Type));

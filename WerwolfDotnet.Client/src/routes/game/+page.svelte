@@ -88,7 +88,17 @@
             }
             
             if (diedPlayers.includes(selfId!))
+            {
                 modalProvider.show({ title: "Du bist gestorben", contentText: "Du bist gestorben. Ab sofort kannst du dem Spiel nur noch zuschauen." });
+            }
+            else if (diedPlayers.length > 0)
+            {
+                const diedStr = diedPlayers.map(id => players.find(p => p.id === id)).join(", ");
+                if (newState === GameState.Day)
+                    modalProvider.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. Am Morgen habt ihr habt ihr, jedoch die Spieler ${diedStr} tot in ihren Häusern gefunden.` })
+                else if (newState === GameState.Night)
+                    modalProvider.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. Die Spieler ${diedStr} sind Tot.` })
+            }
             return Promise.resolve(undefined);
         }
 
@@ -119,8 +129,8 @@
         public onActionCompleted(parameters: string[] | null): Promise<void> {
             if (parameters !== null) {
                 modalProvider.show({
-                    title: actionNames[runningAction!.type ?? 0],
-                    contentText: actionCompletions[runningAction!.type ?? 0](parameters)
+                    title: actionNames[runningAction!.type ?? 0] || "undefined",
+                    contentText: actionCompletions[runningAction!.type ?? 0](parameters) || "Wenn du dies siehst ist etwas schiefgelaufen..."
                 });
             }
             
@@ -150,13 +160,8 @@
 
 <PageTitle title="Werwolf - Spiel {gameId}" />
 
-{#if gameState === GameState.Preparation}
-    <div class="text-center mb-4">
-        <p>Andere Spieler können beitreten indem Sie diese Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
-        <p>Direktes beitreten ist auch über <a href="{webUrl}?gameId={gameId}">diesen Link</a> möglich.</p>
-    </div>
-{:else if selfRole !== undefined}
-    <div class="accordion w-100 mb-3" id="collapseRoleParent">
+{#if selfRole !== undefined}
+    <div class="accordion w-100 mb-4" id="collapseRoleParent">
         <div class="accordion-item">
             <h2 class="accordion-header">
                 <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRole" aria-controls="collapseRole">
@@ -173,12 +178,19 @@
     </div>
 {/if}
 
-{#if runningAction !== null}
-    <div class="text-center mb-3">
-        <h5>{actionNames[runningAction.type ?? 0]}</h5>
-        <p>{actionDescriptions[runningAction.type ?? 0]}</p>
-    </div>
-{/if}
+<div class="text-center mb-4">
+    {#if runningAction !== null}
+        <h5>{actionNames[runningAction.type ?? 0] || "undefined"}</h5>
+        <p>{actionDescriptions[runningAction.type ?? 0] || "Dies solltest du eigentlich nicht sehen :)"}</p>
+    {:else if gameState === GameState.Preparation}
+        <p>Andere Spieler können beitreten indem Sie diese Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
+        <p>Direktes beitreten ist auch über <a href="{webUrl}?gameId={gameId}">diesen Link</a> möglich.</p>
+    {:else if gameState === GameState.Day}
+        <p>Der Tag ist angebrochen. Diskutiert und entscheidet euch für einen Spieler, der am Abend hingerichtet werden soll.</p>
+    {:else if gameState === GameState.Night}
+        <p>Die Nacht ist angebrochen! Alle gehen schlafen, außer den Werwölfen...</p>
+    {/if}
+</div>
 
 <div class="flex-grow-1 container-fluid d-flex flex-column align-items-center">
     <!-- Player display and selection -->
@@ -201,6 +213,7 @@
 
                 <div class="flex-grow-1"></div>
 
+                
                 {#if (player.id ?? 0) in currentVotes && currentVotes[player.id ?? 0].length > 0}
                     <span class="badge text-bg-secondary" use:tooltip={{
                         title: currentVotes[player.id ?? 0].map(id => players.find(p => (p.id ?? 0) === id)?.name).join(', '),

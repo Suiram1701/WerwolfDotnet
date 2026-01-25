@@ -73,6 +73,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     public event Action<GameContext, PhaseAction, string[]?>? OnPhaseActionCompleted;
     
     private readonly ILogger _logger;
+    private GameOptions? _gameOptions;
     private CancellationTokenSource? _gameLoopCts;
     private Task? _gameLoop;
     
@@ -181,7 +182,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         _players = [.. _players.Shuffle()];
     }
 
-    public void StartGame(RoleOptions options)
+    public void StartGame(GameOptions options)
     {
         ThrowWhenNotInit();
          if (State > GameState.Locked)
@@ -201,7 +202,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
              shuffledPlayers[i].Role = roles[i];
          for (int i = assignmentCount; i < shuffledPlayers.Length; i++)
              shuffledPlayers[i].Role = new Villager();
-         
+
+         _gameOptions = options;
          _gameLoopCts = new CancellationTokenSource();
          _gameLoop = _RunAsync(_gameLoopCts.Token);
     }
