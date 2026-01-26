@@ -12,7 +12,7 @@ public interface IGameHub
     public Task PlayersUpdated(IEnumerable<PlayerDto> players);
     
     [HubMethodName("onGameStateUpdated")]
-    public Task GameStateUpdated(GameState state, IEnumerable<int> diedPlayers);
+    public Task GameStateUpdated(GameState state, IReadOnlyDictionary<int, CauseOfDeath> diedPlayers);
 
     [HubMethodName("onPlayerRoleUpdated")]
     public Task PlayerRoleUpdated(Role role);

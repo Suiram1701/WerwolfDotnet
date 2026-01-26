@@ -12,10 +12,20 @@
 /** @format int32 */
 export enum ActionType {
   MayorVoting = 0,
-  WerwolfVoting = 1,
-  SeerSelection = 2,
-  WitchHealSelection = 3,
-  WitchKillSelection = 4,
+  WerwolfKilling = 1,
+  WerwolfSelection = 2,
+  SeerSelection = 3,
+  WitchHealSelection = 4,
+  WitchKillSelection = 5,
+}
+
+/** @format int32 */
+export enum CauseOfDeath {
+  WerwolfKilling = 0,
+  WerwolfKill = 1,
+  WitchPoisoning = 2,
+  WitchExplosion = 3,
+  None = -1,
 }
 
 /** A Dto for returning a game. */

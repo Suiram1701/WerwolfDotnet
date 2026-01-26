@@ -210,10 +210,15 @@ public class GameManager(
         { _logger.LogError(ex, ex.Message); }
     }
     
-    private async void OnGameStateChangedAsync(GameContext ctx, GameState newState, Player[] diedPlayers)
+    private async void OnGameStateChangedAsync(GameContext ctx, GameState newState, IReadOnlyDictionary<Player, CauseOfDeath> diedPlayers)
     {
         try
-        { await _hubContext.Clients.Game(ctx.Id).GameStateUpdated(newState, diedPlayers.Select(p => p.Id)); }
+        {
+            IReadOnlyDictionary<int, CauseOfDeath> deathOnes = diedPlayers
+                .Select(kvp => KeyValuePair.Create(kvp.Key.Id, newState == GameState.Day ? CauseOfDeath.None : kvp.Value))     // Censor cause of death when someone was killed in night
+                .ToDictionary();
+            await _hubContext.Clients.Game(ctx.Id).GameStateUpdated(newState, deathOnes);
+        }
         catch (Exception ex)
         { _logger.LogError(ex, ex.Message); }
     }

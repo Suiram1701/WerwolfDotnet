@@ -3,7 +3,8 @@ namespace WerwolfDotnet;
 public enum ActionType
 {
     MayorVoting,
-    WerwolfVoting,
+    WerwolfKilling,
+    WerwolfSelection,
     SeerSelection,
     WitchHealSelection,
     WitchKillSelection,

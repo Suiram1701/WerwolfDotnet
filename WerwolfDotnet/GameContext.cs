@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
@@ -57,9 +58,9 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     public event Action<GameContext, int, int?>? OnGameMetadataChanged;
     
     /// <summary>
-    /// Invoked when the state of the game changed. Player[] are the players who died during the previous state.
+    /// Invoked when the state of the game changed. (Player, CauseOfDeath) are the players who died during the previous state mapped to the cause of death.
     /// </summary>
-    public event Action<GameContext, GameState, Player[]>? OnGameStateChanged;
+    public event Action<GameContext, GameState, IReadOnlyDictionary<Player, CauseOfDeath>>? OnGameStateChanged;
     
     /// <summary>
     /// Invoked when one or more players are requested to take action. 
@@ -72,7 +73,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// </summary>
     public event Action<GameContext, PhaseAction, string[]?>? OnPhaseActionCompleted;
     
-    private readonly ILogger _logger;
+    internal readonly ILogger Logger;
+    
     private GameOptions? _gameOptions;
     private CancellationTokenSource? _gameLoopCts;
     private Task? _gameLoop;
@@ -98,7 +100,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         }
 
         MaxPlayers = maxPlayers;
-        _logger = logger;
+        Logger = logger;
     }
     
     public void InitializeGame(Player gameMaster)
@@ -109,7 +111,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         GameMaster = gameMaster;
         _players.Add(gameMaster);
         State = GameState.Preparation;
-        OnGameStateChanged?.Invoke(this, State, []);
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, CauseOfDeath>(0));
     }
 
     public bool VerifyPassword(string? password)
@@ -131,7 +133,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     {
         ThrowWhenNotInit();
         _players.Add(player);
-        _logger.LogInformation("Player {playerName} ({playerId}) joined the game", player.Name, player.Id);
+        Logger.LogInformation("Player {playerName} ({playerId}) joined the game", player.Name, player.Id);
     }
 
     public bool RemovePlayer(Player player)
@@ -140,7 +142,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         
         if (!_players.Remove(player))
             return false;
-        _logger.LogInformation("Player {playerName} ({playerId}) left the game", player.Name, player.Id);
+        Logger.LogInformation("Player {playerName} ({playerId}) left the game", player.Name, player.Id);
 
         if (player.Equals(GameMaster))
         {
@@ -149,12 +151,12 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
             {
                 GameMaster = newGm;
                 OnGameMetadataChanged?.Invoke(this, newGm.Id, Mayor?.Id);
-                _logger.LogInformation("Game master left the game. New game master {newGm} ({newGmId}) selected.", newGm.Name, newGm.Id);
+                Logger.LogInformation("Game master left the game. New game master {newGm} ({newGmId}) selected.", newGm.Name, newGm.Id);
             }
             else
             {
                 Dispose();     // No one else is part of the game. 
-                _logger.LogInformation("Game master left the game. No one else could be selected as new GM -> Disposing game...");
+                Logger.LogInformation("Game master left the game. No one else could be selected as new GM -> Disposing game...");
             }
         }
         
@@ -170,9 +172,9 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         State = State != GameState.Locked
             ? GameState.Locked
             : GameState.Preparation;
-        OnGameStateChanged?.Invoke(this, State, []);
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, CauseOfDeath>(0));
         
-        _logger.LogTrace("Toggled game state to {state}.", State);
+        Logger.LogTrace("Toggled game state to {state}.", State);
         return true;
     }
     

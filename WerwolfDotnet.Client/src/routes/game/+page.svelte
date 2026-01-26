@@ -4,7 +4,7 @@
     import { onMount, getContext } from "svelte";
     import { type Readable } from "svelte/store";
     import { config } from "../../config";
-    import { GameState, Role, type PlayerDto, type SelectionOptionsDto } from "../../Api";
+    import {GameState, Role, type PlayerDto, type SelectionOptionsDto, CauseOfDeath} from "../../Api";
     import { roleNames, roleDescriptions } from "../../textes/roles";
     import {actionNames, actionDescriptions, actionCompletions} from "../../textes/actions";
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
@@ -13,6 +13,7 @@
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
     import { tooltip } from "$lib/actions/tooltip";
+    import {causeOfDeaths} from "../../textes/causeOfDeaths";
 
     const webUrl = page.url.protocol + "//" + page.url.host;     // Port is part of the host
     
@@ -80,26 +81,42 @@
             return Promise.resolve();
         }
         
-        onGameStateUpdated(newState: GameState, diedPlayers: number[]): Promise<void> {
+        onGameStateUpdated(newState: GameState, diedPlayers: Record<number, CauseOfDeath>): Promise<void> {
             gameState = newState;
             for (const player of players) {
-                if (diedPlayers.includes(player.id!))
+                if (player.id! in diedPlayers)
                     player.alive = false;
             }
             
-            if (diedPlayers.includes(selfId!))
+            if (selfId! in diedPlayers)
             {
                 modalProvider.show({ title: "Du bist gestorben", contentText: "Du bist gestorben. Ab sofort kannst du dem Spiel nur noch zuschauen." });
             }
-            else if (diedPlayers.length > 0)
+            else if (Object.keys(diedPlayers).length > 0)
             {
-                const diedStr = diedPlayers.map(id => players.find(p => p.id === id)).join(", ");
+                let mapped: Partial<Record<CauseOfDeath, number[]>> = {};
+                for (const player in diedPlayers) {
+                    const cause = diedPlayers[player];
+                    if (cause in mapped)
+                        mapped[cause]!.push(Number(player));
+                    else
+                        mapped[cause] = [Number(player)];
+                }
+
+                let diedStr: string = "";
+                for (const cause of Object.keys(CauseOfDeath).map(k => Number(k) as CauseOfDeath))
+                {
+                    const diedFromCause: string[] = mapped[cause]?.map(id => players.find(p => p.id! === id)!.name!) ?? [];
+                    if (diedFromCause.length > 0)
+                        diedStr += causeOfDeaths[cause](diedFromCause) + " ";
+                }
+                
                 if (newState === GameState.Day)
-                    modalProvider.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. Am Morgen habt ihr habt ihr, jedoch die Spieler ${diedStr} tot in ihren Häusern gefunden.` })
+                    modalProvider.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr}` })
                 else if (newState === GameState.Night)
-                    modalProvider.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. Die Spieler ${diedStr} sind Tot.` })
+                    modalProvider.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. ${diedStr}` })
             }
-            return Promise.resolve(undefined);
+            return Promise.resolve();
         }
 
         public onPlayerRoleUpdated(newRoleName: Role): Promise<void> {

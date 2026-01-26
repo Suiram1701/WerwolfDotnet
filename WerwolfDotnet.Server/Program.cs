@@ -33,7 +33,7 @@ builder.Services.AddSignalR();
 builder.Services.AddSwaggerGen(options =>
 {
     options.DocumentFilter<ExportAllModelsFilter>();
-    options.DocumentFilter<ExportModelFilter>([new[] { typeof(GameState), typeof(Role) }]);
+    options.DocumentFilter<ExportModelFilter>([new[] { typeof(GameState), typeof(Role), typeof(CauseOfDeath) }]);
     options.SchemaFilter<EnumNamesSchemaFilter>();
     
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";

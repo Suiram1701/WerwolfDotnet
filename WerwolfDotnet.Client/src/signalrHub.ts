@@ -1,4 +1,4 @@
-import { type SelectionOptionsDto, GameState, Role, type PlayerDto } from "./Api";
+import { type SelectionOptionsDto, GameState, Role, CauseOfDeath, type PlayerDto } from "./Api";
 import { HubConnection } from "@microsoft/signalr"
 
 export class GameHubServer {
@@ -48,7 +48,7 @@ export abstract class GameHubClientBase {
     
     public abstract onPlayersUpdated(players: PlayerDto[]): Promise<void>;
     
-    public abstract onGameStateUpdated(newState: GameState, diedPlayers: number[]): Promise<void>;
+    public abstract onGameStateUpdated(newState: GameState, diedPlayers: Record<number, CauseOfDeath>): Promise<void>;
     
     public abstract onPlayerRoleUpdated(roleName: Role): Promise<void>;
     

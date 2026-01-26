@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
+using Microsoft.Extensions.Logging;
 using WerwolfDotnet.Roles;
 
 namespace WerwolfDotnet;
@@ -25,13 +26,14 @@ public class Player : IEquatable<Player>
     /// <summary>
     /// The current status of the player.
     /// </summary>
-    public PlayerState Status { get; internal set; } = PlayerState.Alive;
+    public PlayerState Status { get; private set; } = PlayerState.Alive;
 
     /// <summary>
     /// Indicates whether this player can be selected to kill or can do an action.
     /// </summary>
     public bool IsAlive => Status != PlayerState.Death;
 
+    private CauseOfDeath? _causeOfDeath;
     private readonly byte[] _authSecretHash;
     private readonly GameContext _game;
     
@@ -53,6 +55,34 @@ public class Player : IEquatable<Player>
         return SHA256.HashData(tokenBytes).SequenceEqual(_authSecretHash);
     }
 
+    internal void Kill(CauseOfDeath causeOfDeath, Player? killer)
+    {
+        if (Status != PlayerState.Alive)
+            return;
+
+        Status = PlayerState.PendingDeath;
+        _causeOfDeath = causeOfDeath;
+        if (killer is null)
+            _game.Logger.LogTrace("Player {name} ({id}) was killed in {causeOfDeath}.", Name, Id, causeOfDeath.ToString());
+        else
+            _game.Logger.LogTrace("Player {name} ({id}) was killed by {killerName} ({killerId}) in {causeOfDeath}.", Name, Id, killer.Name, killer.Id, causeOfDeath.ToString());
+    }
+
+    internal void Revive(Player doneBy)
+    {
+        if (Status != PlayerState.PendingDeath)
+            return;
+        Status = PlayerState.Alive;
+        _game.Logger.LogTrace("Player {name} ({id}) was saved by {name2} ({id2}).", Name, Id, doneBy.Name, doneBy.Id);
+    }
+
+    internal CauseOfDeath KillInternal()
+    {
+        CauseOfDeath cause = _causeOfDeath ?? CauseOfDeath.None;
+        Status = PlayerState.Death;
+        return cause;
+    }
+    
     public bool Equals(Player? other)
     {
         if (other is null)

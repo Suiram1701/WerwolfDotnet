@@ -7,15 +7,15 @@ partial class GameContext
     private async Task _RunAsync(CancellationToken ct)
     {
         State = GameState.Night;
-        OnGameStateChanged?.Invoke(this, State, []);
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, CauseOfDeath>(0));
         
         while (!ct.IsCancellationRequested)
         {
             await _RunNightAsync(ct);
-            _EvaluatePreviousState(GameState.Day);
+            _EvaluatePreviousState(nextState: GameState.Day);
             
             await _RunDayAsync(ct);
-            _EvaluatePreviousState(GameState.Night);
+            _EvaluatePreviousState(nextState: GameState.Night);
         }
     }
     
@@ -49,20 +49,32 @@ partial class GameContext
                 CompletePlayerAction([]);
             }
         }
+        
+        await RequestPlayerActionAsync(new PhaseAction
+        {
+            Type = ActionType.WerwolfKilling,
+            Minimum = 0,
+            Maximum = 1,
+            Participants = [.._players.Where(p => p.IsAlive)]
+        });
+
+        if (RunningAction!.GetMostVotedPlayer() is { } playerToExecute)
+            playerToExecute.Kill(CauseOfDeath.WerwolfKilling, null);
+        CompletePlayerAction();
     }
 
     private async Task _HandleWerwolfsAsync(CancellationToken ct)
     {
         await RequestPlayerActionAsync(new PhaseAction
         {
-            Type = ActionType.WerwolfVoting,
+            Type = ActionType.WerwolfSelection,
             ExcludeParticipants = true,
             Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type == Role.Werwolf)]
         });
 
         if (RunningAction!.GetMostVotedPlayer() is { } playerToDie)
         {
-            playerToDie.Status = PlayerState.PendingDeath;
+            playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
             CompletePlayerAction([playerToDie.Name]);
         }
         else
@@ -109,7 +121,7 @@ partial class GameContext
             
                 if (RunningAction!.PlayerVotes[witch].SingleOrDefault() is { } playerToHeal)
                 {
-                    playerToHeal.Status = PlayerState.Alive;
+                    playerToHeal.Revive(witch);
                     role.CanHeal = false;
                 }
                 CompletePlayerAction();
@@ -130,7 +142,7 @@ partial class GameContext
             
                 if (RunningAction!.PlayerVotes[witch].SingleOrDefault() is { } playerToKill)
                 {
-                    playerToKill.Status = PlayerState.PendingDeath;
+                    playerToKill.Kill(CauseOfDeath.WitchPoisoning, witch);
                     role.CanKill = false;
                 }
                 CompletePlayerAction();
@@ -138,28 +150,24 @@ partial class GameContext
         }
     }
     
-    private void _EvaluatePreviousState(GameState newState)
+    private void _EvaluatePreviousState(GameState nextState)
     {
-        State = newState;
-
+        State = nextState;
+        
         if (_gameOptions!.ExplodingWitchHome)
         {
             foreach (Player diedWitch in _players.Where(p => p.Role!.Type == Role.Witch && p.Status == PlayerState.PendingDeath))
             {
                 int i = _players.IndexOf(diedWitch);
-                _players[i <= 0 ? _players.Count - 1 : i - 1].Status = PlayerState.PendingDeath;     // Player before the witch
-                _players[i >= _players.Count - 1 ? 0 : i + 1].Status = PlayerState.PendingDeath;     // Player after the witch
+                _players[i <= 0 ? _players.Count - 1 : i - 1].Kill(CauseOfDeath.WitchExplosion, diedWitch);     // Player before the witch
+                _players[i >= _players.Count - 1 ? 0 : i + 1].Kill(CauseOfDeath.WitchExplosion, diedWitch);     // Player after the witch
             }
         }
 
-        Player[] diedPlayers = _players
+        IReadOnlyDictionary<Player, CauseOfDeath> diedPlayers = _players
             .Where(p => p.Status == PlayerState.PendingDeath)
-            .Select(p =>
-            {
-                p.Status = PlayerState.Death;
-                return p;
-            })
-            .ToArray();
+            .Select(p => KeyValuePair.Create(p, p.KillInternal()))
+            .ToDictionary();
         OnGameStateChanged?.Invoke(this, State, diedPlayers);
     }
 }
