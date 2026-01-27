@@ -4,11 +4,11 @@
     import { onMount, getContext } from "svelte";
     import { type Readable } from "svelte/store";
     import { config } from "../../config";
-    import {GameState, Role, type PlayerDto, type SelectionOptionsDto, CauseOfDeath} from "../../Api";
+    import { GameState, Role, type PlayerDto, type SelectionOptionsDto, CauseOfDeath } from "../../Api";
     import { roleNames, roleDescriptions } from "../../textes/roles";
-    import {actionNames, actionDescriptions, actionCompletions} from "../../textes/actions";
+    import { actionNames, actionDescriptions, actionCompletions } from "../../textes/actions";
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
-    import { GameHubServer, GameHubClientBase } from "../../signalrHub";
+    import { GameHubServer, GameHubClientBase, type DeathDetails } from "../../signalrHub";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
@@ -81,7 +81,7 @@
             return Promise.resolve();
         }
         
-        onGameStateUpdated(newState: GameState, diedPlayers: Record<number, CauseOfDeath>): Promise<void> {
+        onGameStateUpdated(newState: GameState, diedPlayers: Record<number, DeathDetails>): Promise<void> {
             gameState = newState;
             for (const player of players) {
                 if (player.id! in diedPlayers)
@@ -96,7 +96,7 @@
             {
                 let mapped: Partial<Record<CauseOfDeath, number[]>> = {};
                 for (const player in diedPlayers) {
-                    const cause = diedPlayers[player];
+                    const cause = diedPlayers[player].cause;
                     if (cause in mapped)
                         mapped[cause]!.push(Number(player));
                     else
@@ -110,6 +110,9 @@
                     if (diedFromCause.length > 0)
                         diedStr += causeOfDeaths[cause](diedFromCause) + " ";
                 }
+                
+                for (const entry of Object.entries(diedPlayers).filter(entry => entry[1].role !== Role.None))
+                    diedStr += `${players.find(p => p.id! === Number(entry[0]))!.name} hat die Rolle ${roleNames[entry[1].role]}. `;
                 
                 if (newState === GameState.Day)
                     modalProvider.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr}` })

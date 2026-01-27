@@ -7,7 +7,7 @@ partial class GameContext
     private async Task _RunAsync(CancellationToken ct)
     {
         State = GameState.Night;
-        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, CauseOfDeath>(0));
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
         
         while (!ct.IsCancellationRequested)
         {
@@ -164,9 +164,16 @@ partial class GameContext
             }
         }
 
-        IReadOnlyDictionary<Player, CauseOfDeath> diedPlayers = _players
+        IReadOnlyDictionary<Player, (CauseOfDeath, Role)> diedPlayers = _players
             .Where(p => p.Status == PlayerState.PendingDeath)
-            .Select(p => KeyValuePair.Create(p, p.KillInternal()))
+            .Select(p =>
+            {
+                CauseOfDeath cause = p.KillInternal();
+                Role displayedRole = _gameOptions.RevealRoleForCauses.Contains(cause) ? p.Role!.Type : Role.None;
+                cause = nextState == GameState.Night ? cause : CauseOfDeath.None;     // The displayed caused (censored when switching to day)
+                
+                return KeyValuePair.Create(p, (cause, displayedRole));
+            })
             .ToDictionary();
         OnGameStateChanged?.Invoke(this, State, diedPlayers);
     }

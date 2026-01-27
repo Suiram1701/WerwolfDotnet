@@ -60,7 +60,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// <summary>
     /// Invoked when the state of the game changed. (Player, CauseOfDeath) are the players who died during the previous state mapped to the cause of death.
     /// </summary>
-    public event Action<GameContext, GameState, IReadOnlyDictionary<Player, CauseOfDeath>>? OnGameStateChanged;
+    public event Action<GameContext, GameState, IReadOnlyDictionary<Player, (CauseOfDeath, Role)>>? OnGameStateChanged;
     
     /// <summary>
     /// Invoked when one or more players are requested to take action. 
@@ -111,7 +111,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         GameMaster = gameMaster;
         _players.Add(gameMaster);
         State = GameState.Preparation;
-        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, CauseOfDeath>(0));
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
     }
 
     public bool VerifyPassword(string? password)
@@ -172,7 +172,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         State = State != GameState.Locked
             ? GameState.Locked
             : GameState.Preparation;
-        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, CauseOfDeath>(0));
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
         
         Logger.LogTrace("Toggled game state to {state}.", State);
         return true;

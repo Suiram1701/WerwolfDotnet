@@ -98,6 +98,7 @@ export enum Role {
   Werwolf = 1,
   Seer = 2,
   Witch = 3,
+  None = -1,
 }
 
 export interface SelectionOptionsDto {

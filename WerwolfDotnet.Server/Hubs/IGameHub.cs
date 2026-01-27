@@ -12,7 +12,7 @@ public interface IGameHub
     public Task PlayersUpdated(IEnumerable<PlayerDto> players);
     
     [HubMethodName("onGameStateUpdated")]
-    public Task GameStateUpdated(GameState state, IReadOnlyDictionary<int, CauseOfDeath> diedPlayers);
+    public Task GameStateUpdated(GameState state, IReadOnlyDictionary<int, DeathDetails> diedPlayers);
 
     [HubMethodName("onPlayerRoleUpdated")]
     public Task PlayerRoleUpdated(Role role);
@@ -29,3 +29,5 @@ public interface IGameHub
     [HubMethodName("onForceDisconnect")]
     public Task ForceDisconnect(bool kicked = false);
 }
+
+public record DeathDetails(CauseOfDeath Cause, Role Role);     // Required because SignalR doesn't transfer tuples

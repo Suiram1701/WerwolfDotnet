@@ -48,7 +48,7 @@ export abstract class GameHubClientBase {
     
     public abstract onPlayersUpdated(players: PlayerDto[]): Promise<void>;
     
-    public abstract onGameStateUpdated(newState: GameState, diedPlayers: Record<number, CauseOfDeath>): Promise<void>;
+    public abstract onGameStateUpdated(newState: GameState, diedPlayers: Record<number, DeathDetails>): Promise<void>;
     
     public abstract onPlayerRoleUpdated(roleName: Role): Promise<void>;
     
@@ -60,3 +60,5 @@ export abstract class GameHubClientBase {
     
     public abstract onForceDisconnect(kicked: boolean): Promise<void>;
 }
+
+export type DeathDetails = { cause: CauseOfDeath, role: Role };
