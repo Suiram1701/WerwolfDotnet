@@ -6,5 +6,6 @@ public enum Role
     Villager,
     Werwolf,
     Seer,
-    Witch
+    Witch,
+    Hunter
 }

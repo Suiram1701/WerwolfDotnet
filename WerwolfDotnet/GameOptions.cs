@@ -10,5 +10,9 @@ public class GameOptions
 
     public bool ExplodingWitchHome { get; init; } = false;
     
-    public HashSet<CauseOfDeath> RevealRoleForCauses { get; init; } = [CauseOfDeath.WerwolfKilling, CauseOfDeath.WitchExplosion];
+    public int AmountHunters { get; init; } = 1;
+    
+    public bool HunterMustKill { get; init; } = false;
+    
+    public CauseOfDeath[] RevealRoleForCauses { get; init; } = [CauseOfDeath.WerwolfKilling, CauseOfDeath.WitchExplosion];
 }

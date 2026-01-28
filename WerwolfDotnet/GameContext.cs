@@ -193,7 +193,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
          IRole[] roles = [
              ..Enumerable.Repeat<IRole?>(null, options.AmountWerwolfs).Select(_ => new Werwolf()),
              ..Enumerable.Repeat<IRole?>(null, options.AmountSeers).Select(_ => new Seer()),
-             ..Enumerable.Repeat<IRole?>(null, options.AmountWitches).Select(_ => new Witch())
+             ..Enumerable.Repeat<IRole?>(null, options.AmountWitches).Select(_ => new Witch()),
+             ..Enumerable.Repeat<IRole?>(null, options.AmountHunters).Select(_ => new Hunter())
          ];
          roles = [..roles.Shuffle()];
          

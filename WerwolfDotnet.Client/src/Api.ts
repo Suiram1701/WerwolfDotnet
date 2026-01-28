@@ -17,6 +17,7 @@ export enum ActionType {
   SeerSelection = 3,
   WitchHealSelection = 4,
   WitchKillSelection = 5,
+  HunterSelection = 6,
 }
 
 /** @format int32 */
@@ -25,6 +26,7 @@ export enum CauseOfDeath {
   WerwolfKill = 1,
   WitchPoisoning = 2,
   WitchExplosion = 3,
+  ShootByHunter = 4,
   None = -1,
 }
 
@@ -98,6 +100,7 @@ export enum Role {
   Werwolf = 1,
   Seer = 2,
   Witch = 3,
+  Hunter = 4,
   None = -1,
 }
 

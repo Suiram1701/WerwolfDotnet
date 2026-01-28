@@ -8,6 +8,7 @@ export const actionNames: Readonly<Record<ActionType, string>> = {
     [ActionType.SeerSelection]: "Seher/-in erwacht",
     [ActionType.WitchHealSelection]: "Hexe erwacht (heilen)",
     [ActionType.WitchKillSelection]: "Hexe erwacht (töten)",
+    [ActionType.HunterSelection]: "Du bist am Sterben"
 }
 
 export const actionDescriptions: Readonly<Record<ActionType, string>> = {
@@ -17,6 +18,7 @@ export const actionDescriptions: Readonly<Record<ActionType, string>> = {
     [ActionType.SeerSelection]: "Wähle einen Spieler dessen Rolle du sehen möchtest.",
     [ActionType.WitchHealSelection]: "Wähle eine Person, die du heilen möchtest (falls du möchtest).",
     [ActionType.WitchKillSelection]: "Wähle eine Person, die du mit deinem Todestrank töten möchtest (falls du möchtest).",
+    [ActionType.HunterSelection]: "Wähle einer Person, die du mit in den Tot reißen möchtest mit deinem Gewehr."
 }
 
 export const actionCompletions: Readonly<Record<ActionType, (args: string[]) => string>> = {
@@ -30,4 +32,5 @@ export const actionCompletions: Readonly<Record<ActionType, (args: string[]) => 
     [ActionType.SeerSelection]: args => `Du hast dich für ${args[0]} entschieden. Dieser Spieler hat die Rolle ${roleNames[Role[args[1] as keyof typeof Role]]}.`,
     [ActionType.WitchHealSelection]: _ => "",
     [ActionType.WitchKillSelection]: _ => "",
+    [ActionType.HunterSelection]: _ => ""
 }

@@ -12,10 +12,10 @@ partial class GameContext
         while (!ct.IsCancellationRequested)
         {
             await _RunNightAsync(ct);
-            _EvaluatePreviousState(nextState: GameState.Day);
+            await _EvaluatePreviousStateAsync(nextState: GameState.Day, ct);
             
             await _RunDayAsync(ct);
-            _EvaluatePreviousState(nextState: GameState.Night);
+            await _EvaluatePreviousStateAsync(nextState: GameState.Night, ct);
         }
     }
     
@@ -149,10 +149,29 @@ partial class GameContext
             }
         }
     }
-    
-    private void _EvaluatePreviousState(GameState nextState)
+
+    private async Task _HandleHuntersAsync(CancellationToken ct)
     {
-        State = nextState;
+        foreach (Player hunter in _players.Where(p => p.Status == PlayerState.PendingDeath && p.Role!.Type == Role.Hunter))
+        {
+            await RequestPlayerActionAsync(new PhaseAction
+            {
+                Type = ActionType.HunterSelection,
+                Minimum = _gameOptions!.HunterMustKill ? 1 : 0,
+                Maximum = 1,
+                ExcludeParticipants = true,
+                Participants = [hunter]
+            });
+
+            if (RunningAction!.GetMostVotedPlayer() is { } selectedOne)
+                selectedOne.Kill(CauseOfDeath.ShootByHunter, hunter);
+            CompletePlayerAction();
+        }
+    }
+    
+    private async Task _EvaluatePreviousStateAsync(GameState nextState, CancellationToken ct)
+    {
+        await _HandleHuntersAsync(ct);
         
         if (_gameOptions!.ExplodingWitchHome)
         {
@@ -164,6 +183,7 @@ partial class GameContext
             }
         }
 
+        State = nextState;
         IReadOnlyDictionary<Player, (CauseOfDeath, Role)> diedPlayers = _players
             .Where(p => p.Status == PlayerState.PendingDeath)
             .Select(p =>

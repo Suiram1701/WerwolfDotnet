@@ -8,4 +8,5 @@ public enum ActionType
     SeerSelection,
     WitchHealSelection,
     WitchKillSelection,
+    HunterSelection
 }
