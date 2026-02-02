@@ -21,15 +21,16 @@ export const actionDescriptions: Readonly<Record<ActionType, string>> = {
     [ActionType.HunterSelection]: "Wähle einer Person, die du mit in den Tot reißen möchtest mit deinem Gewehr."
 }
 
+// HTML allowed
 export const actionCompletions: Readonly<Record<ActionType, (args: string[]) => string>> = {
     [ActionType.MayorVoting]: args => args.length == 1
-        ? `Ihr habt euch auf ${args[0]} geeinigt. Er wird einer neuer Bürgermeister sein und das Dorf anführen.`
-        : "Ihr konntet euch auf keinen Bürgermeister einigen. Die Bürgermeisterwahl wird auf den nächsten Tag vertagt.",
+        ? `Ihr habt euch auf <b>${args[0]}</b> geeinigt. Er wird einer neuer Bürgermeister sein und das Dorf anführen.`
+        : "Ihr konntet euch auf <b>keinen Bürgermeister<b></b> einigen. Die Bürgermeisterwahl wird auf den nächsten Tag vertagt.",
     [ActionType.WerwolfKilling]: _ => "",
     [ActionType.WerwolfSelection]: args => args.length == 1
-        ? `Ihr habt euch auf ${args[0]} geeinigt. Dieser Spieler wird am morgen tot sein (solange keine andere Rolle eingreift).`
-        : "Ihr konntet euch auf keinen Spieler einigen, der Sterben soll.",
-    [ActionType.SeerSelection]: args => `Du hast dich für ${args[0]} entschieden. Dieser Spieler hat die Rolle ${roleNames[Role[args[1] as keyof typeof Role]]}.`,
+        ? `Ihr habt euch auf <b>${args[0]}</b> geeinigt. Dieser Spieler wird am morgen tot sein (solange keine andere Rolle eingreift).`
+        : "Ihr konntet euch auf <b>keinen Spieler</b> einigen, der Sterben soll.",
+    [ActionType.SeerSelection]: args => `Du hast dich für <b>${args[0]}</b> entschieden. Dieser Spieler hat die Rolle <b>${roleNames[Role[args[1] as keyof typeof Role]]}</b>.`,
     [ActionType.WitchHealSelection]: _ => "",
     [ActionType.WitchKillSelection]: _ => "",
     [ActionType.HunterSelection]: _ => ""

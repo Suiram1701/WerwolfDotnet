@@ -7,6 +7,7 @@
         content?: Snippet;
         contentText?: string;
         confirmText?: string;
+        allowHtmlText?: boolean;
         confirmColor?: string;
         canDismiss?: boolean;
         closeOnConfirm?: boolean;
@@ -31,19 +32,27 @@
         instance.show();
     }
     
-    export function hide() { instance.hide(); }     // Don't set modal to undefined. The Modal content will disappear before the modal itself finished the animation
+    export function hide() { instance.hide(); }     // Don't set modal to undefined. The Modal content will disappear before the modal it's self finished the animation
 </script>
 
 <div {id} class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{modal?.title}</h5>
+                <h5 class="modal-title">
+                    {#if modal?.allowHtmlText ?? false}
+                        {@html modal?.title}
+                    {:else}
+                        {modal?.title}
+                    {/if}
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 {#if modal?.content}
                     {@render modal.content?.()}
+                {:else if modal?.allowHtmlText ?? false}
+                    {@html modal?.contentText}
                 {:else}
                     {modal?.contentText}
                 {/if}
@@ -56,7 +65,13 @@
                     modal?.onConfirm?.()
                     if (modal?.onConfirm === undefined || modal?.closeOnConfirm)
                         hide();
-                }}>{modal?.confirmText ?? "Verstanden"}</button>
+                }}>
+                    {#if modal?.allowHtmlText ?? false}
+                        {@html modal?.confirmText ?? "Verstanden"}
+                    {:else}
+                        {modal?.confirmText ?? "Verstanden"}
+                    {/if}
+                </button>
             </div>
         </div>
     </div>

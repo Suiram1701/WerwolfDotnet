@@ -107,7 +107,7 @@ partial class GameContext
         foreach (Player witch in _players.Where(p => p.IsAlive && p.Role!.Type == Role.Witch))
         {
             var role = (Witch)witch.Role!;
-            if (role.CanHeal)
+            if (role.CanHeal && _players.Any(p => p.Status == PlayerState.PendingDeath))
             {
                 // Healing
                 await RequestPlayerActionAsync(new PhaseAction

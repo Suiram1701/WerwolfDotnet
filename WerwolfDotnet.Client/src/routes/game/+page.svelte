@@ -1,14 +1,14 @@
 <script lang="ts">
     import { page } from "$app/state"
     import { goto } from "$app/navigation";
-    import { onMount, getContext } from "svelte";
+    import { getContext, onMount } from "svelte";
     import { type Readable } from "svelte/store";
     import { config } from "../../config";
-    import { GameState, Role, type PlayerDto, type SelectionOptionsDto, CauseOfDeath } from "../../Api";
-    import { roleNames, roleDescriptions } from "../../textes/roles";
-    import { actionNames, actionDescriptions, actionCompletions } from "../../textes/actions";
+    import { CauseOfDeath, GameState, type PlayerDto, Role, type SelectionOptionsDto } from "../../Api";
+    import { roleDescriptions, roleNames } from "../../textes/roles";
+    import { actionCompletions, actionDescriptions, actionNames } from "../../textes/actions";
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
-    import { GameHubServer, GameHubClientBase, type DeathDetails } from "../../signalrHub";
+    import { type DeathDetails, GameHubClientBase, GameHubServer } from "../../signalrHub";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
@@ -71,7 +71,7 @@
 
         onGameMetaUpdated(gameMasterId: number, mayorId: number | null): Promise<void> {
             if (gameMeta !== undefined && gameMeta.gameMaster !== gameMasterId && gameMasterId === selfId)
-                modalProvider.show({ title: "Game-master wechsel", contentText: "Der aktuelle Game-master hat das Spiel verlassen. Sie sind nun der neue Game-master." });
+                modalProvider.show({ title: "Game-master wechsel", contentText: "Der aktuelle Game-master hat das Spiel verlassen. Sie sind nun der neue Game-master.", canDismiss: false });
             gameMeta = { gameMaster: gameMasterId, mayor: mayorId };
             return Promise.resolve();
         }
@@ -82,17 +82,26 @@
         }
         
         onGameStateUpdated(newState: GameState, diedPlayers: Record<number, DeathDetails>): Promise<void> {
+            if (gameState === undefined || gameState <= GameState.Locked) {     // Frontend has just initialized. No one can be displayed as died during this
+                gameState = newState;
+                return Promise.resolve();
+            }
+
             gameState = newState;
             for (const player of players) {
                 if (player.id! in diedPlayers)
                     player.alive = false;
             }
-            
+
             if (selfId! in diedPlayers)
             {
                 modalProvider.show({ title: "Du bist gestorben", contentText: "Du bist gestorben. Ab sofort kannst du dem Spiel nur noch zuschauen." });
+                return Promise.resolve();
             }
-            else if (Object.keys(diedPlayers).length > 0)
+            
+            // Builds a human-readable form of all died players.
+            let diedStr: string = "";
+            if (Object.keys(diedPlayers).length > 0)
             {
                 let mapped: Partial<Record<CauseOfDeath, number[]>> = {};
                 for (const player in diedPlayers) {
@@ -102,23 +111,35 @@
                     else
                         mapped[cause] = [Number(player)];
                 }
-
-                let diedStr: string = "";
+                
                 for (const cause of Object.keys(CauseOfDeath).map(k => Number(k) as CauseOfDeath))
                 {
-                    const diedFromCause: string[] = mapped[cause]?.map(id => players.find(p => p.id! === id)!.name!) ?? [];
+                    const diedFromCause: number[] = mapped[cause] ?? [];
                     if (diedFromCause.length > 0)
-                        diedStr += causeOfDeaths[cause](diedFromCause) + " ";
+                        diedStr += `${causeOfDeaths[cause](mapped[cause]!.map(id => players.find(p => p.id! === id)!.name!) ?? [])} `;
+                    
+                    if (diedFromCause.length === 1 && diedPlayers[diedFromCause[0]]?.role !== Role.None)
+                    {
+                        diedStr += `Er war <b>${roleNames[diedPlayers[diedFromCause[0]].role]}</b>. `;
+                    }
+                    else if (diedFromCause.filter(id => diedPlayers[id].role !== Role.None).length > 1)
+                    {
+                        diedStr += diedFromCause
+                            .filter(id => diedPlayers[id].role !== Role.None)
+                            .map(playerId => `<b>${players.find(p => p.id === playerId)!.name}</b> war <b>${roleNames[diedPlayers[playerId].role]}</b>`)
+                            .join(", ");
+                        diedStr += ". ";
+                    }
                 }
-                
-                for (const entry of Object.entries(diedPlayers).filter(entry => entry[1].role !== Role.None))
-                    diedStr += `${players.find(p => p.id! === Number(entry[0]))!.name} hat die Rolle ${roleNames[entry[1].role]}. `;
-                
-                if (newState === GameState.Day)
-                    modalProvider.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr}` })
-                else if (newState === GameState.Night)
-                    modalProvider.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. ${diedStr}` })
             }
+            else {
+                diedStr = "Es ist niemand gestorben."
+            }
+
+            if (newState === GameState.Day)
+                modalProvider.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr}`, allowHtmlText: true, canDismiss: false });
+            else if (newState === GameState.Night)
+                modalProvider.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. ${diedStr}`, allowHtmlText: true, canDismiss: false });
             return Promise.resolve();
         }
 
@@ -150,7 +171,9 @@
             if (parameters !== null) {
                 modalProvider.show({
                     title: actionNames[runningAction!.type ?? 0] || "undefined",
-                    contentText: actionCompletions[runningAction!.type ?? 0](parameters) || "Wenn du dies siehst ist etwas schiefgelaufen..."
+                    contentText: actionCompletions[runningAction!.type ?? 0](parameters) || "Wenn du dies siehst ist etwas schiefgelaufen...",
+                    allowHtmlText: true,
+                    canDismiss: false
                 });
             }
             
