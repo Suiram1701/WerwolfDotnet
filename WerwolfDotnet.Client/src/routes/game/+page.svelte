@@ -95,7 +95,7 @@
 
             if (selfId! in diedPlayers)
             {
-                modalProvider.show({ title: "Du bist gestorben", contentText: "Du bist gestorben. Ab sofort kannst du dem Spiel nur noch zuschauen." });
+                modalProvider.show({ title: "Du bist gestorben", contentText: "Du bist gestorben. Ab sofort kannst du dem Spiel nur noch zuschauen.", canDismiss: false });
                 return Promise.resolve();
             }
             
@@ -259,10 +259,17 @@
                 
                 {#if (player.id ?? 0) in currentVotes && currentVotes[player.id ?? 0].length > 0}
                     <span class="badge text-bg-secondary" use:tooltip={{
-                        title: currentVotes[player.id ?? 0].map(id => players.find(p => (p.id ?? 0) === id)?.name).join(', '),
+                        title: currentVotes[player.id ?? 0].map(id => {
+                            const name = players.find(p => (p.id ?? 0) === id)?.name;
+                            return gameMeta?.mayor === id ? `2x ${name}` : name;
+                        }).join(', '),
                         placement: "top"
                     }}>
-                        {currentVotes[player.id ?? 0].length}
+                        {#if currentVotes[player.id ?? 0].includes(gameMeta?.mayor ?? -1)}     <!-- Include the mayor vote -->
+                            {currentVotes[player.id ?? 0].length + 1}
+                        {:else}
+                            {currentVotes[player.id ?? 0].length}
+                        {/if}
                     </span>
                 {/if}
                 

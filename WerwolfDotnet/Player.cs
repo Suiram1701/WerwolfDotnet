@@ -5,7 +5,7 @@ using WerwolfDotnet.Roles;
 
 namespace WerwolfDotnet;
 
-[DebuggerDisplay($"Player: Id = {nameof(Id)}, Name = {nameof(Name)}, Status = {nameof(Status)}, Role = {nameof(Role)}")]
+[DebuggerDisplay($"Player: {{{nameof(Name)}}} ({{{nameof(Id)}}}), Status = {{{nameof(Status)}}}, Role = {{{nameof(Role)}}}")]
 public class Player : IEquatable<Player>
 {
     /// <summary>

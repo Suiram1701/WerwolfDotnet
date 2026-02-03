@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using WerwolfDotnet.Roles;
 
 namespace WerwolfDotnet;
@@ -36,18 +37,16 @@ partial class GameContext
                 Minimum = 0,
                 Maximum = 1,
                 Participants = [.._players.Where(p => p.IsAlive)]
-            });
-            
-            if (RunningAction!.GetMostVotedPlayer() is { } newMayor)
+            }, (action, _) =>
             {
-                Mayor = newMayor;
-                OnGameMetadataChanged?.Invoke(this, GameMaster.Id, newMayor.Id);
-                CompletePlayerAction([newMayor.Name]);
-            }
-            else
-            {
-                CompletePlayerAction([]);
-            }
+                if (action.GetMostVotedPlayer() is { } newMayor)
+                {
+                    Mayor = newMayor;
+                    OnGameMetadataChanged?.Invoke(this, GameMaster.Id, newMayor.Id);
+                    return Task.FromResult<string[]?>([newMayor.Name]);
+                }
+                return Task.FromResult<string[]?>([]);
+            }, ct);
         }
         
         await RequestPlayerActionAsync(new PhaseAction
@@ -56,31 +55,29 @@ partial class GameContext
             Minimum = 0,
             Maximum = 1,
             Participants = [.._players.Where(p => p.IsAlive)]
-        });
-
-        if (RunningAction!.GetMostVotedPlayer() is { } playerToExecute)
-            playerToExecute.Kill(CauseOfDeath.WerwolfKilling, null);
-        CompletePlayerAction();
+        }, (action, _) =>
+        {
+            if (action.GetMostVotedPlayer(Mayor is not null ? [Mayor] : null) is { } playerToExecute)
+                playerToExecute.Kill(CauseOfDeath.WerwolfKilling, null);
+            return Task.FromResult<string[]?>(null);
+        }, ct);
     }
 
-    private async Task _HandleWerwolfsAsync(CancellationToken ct)
+    private Task _HandleWerwolfsAsync(CancellationToken ct)
     {
-        await RequestPlayerActionAsync(new PhaseAction
+        return RequestPlayerActionAsync(new PhaseAction
         {
             Type = ActionType.WerwolfSelection,
             ExcludeParticipants = true,
             Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type == Role.Werwolf)]
-        });
-
-        if (RunningAction!.GetMostVotedPlayer() is { } playerToDie)
+        }, (action, _) =>
         {
+            if (action.GetMostVotedPlayer() is not { } playerToDie)
+                return Task.FromResult<string[]?>([]);     // Empty parameters will indicate that no one died.
+            
             playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
-            CompletePlayerAction([playerToDie.Name]);
-        }
-        else
-        {
-            CompletePlayerAction([]);     // Empty parameters will indicate that no one died.
-        }
+            return Task.FromResult<string[]?>([playerToDie.Name]);
+        }, ct);
     }
 
     private async Task _HandleSeersAsync(CancellationToken ct)
@@ -93,12 +90,17 @@ partial class GameContext
                 Type = ActionType.SeerSelection,
                 ExcludeParticipants = true,
                 Participants = [seer]
-            });
-
-            if (RunningAction!.GetMostVotedPlayer() is { } selectedOne)
-                CompletePlayerAction([selectedOne.Name, selectedOne.Role!.Type.ToString()]);
-            else
-                CompletePlayerAction();
+            }, (action, _) =>
+            {
+                if (action.GetMostVotedPlayer() is { } selectedOne)
+                {
+                    Logger.LogTrace(
+                        "Seer {seerName} ({seerId}) saw role of {playerName} ({playerId}): {roleName}",
+                        seer.Name, seer.Id, selectedOne.Name, selectedOne.Id, selectedOne.Role!.Type);
+                    return Task.FromResult<string[]?>([selectedOne.Name, selectedOne.Role!.Type.ToString()]);
+                }
+                return Task.FromResult<string[]?>(null);
+            }, ct);
         }
     }
 
@@ -117,14 +119,15 @@ partial class GameContext
                     Maximum = 1,
                     Participants = [witch],
                     ExcludedPlayers = _players.Where(p => p.Status != PlayerState.PendingDeath)
-                });
-            
-                if (RunningAction!.PlayerVotes[witch].SingleOrDefault() is { } playerToHeal)
+                }, (action, _) =>
                 {
-                    playerToHeal.Revive(witch);
-                    role.CanHeal = false;
-                }
-                CompletePlayerAction();
+                    if (action.PlayerVotes[witch].SingleOrDefault() is { } playerToHeal)
+                    {
+                        playerToHeal.Revive(witch);
+                        role.CanHeal = false;
+                    }
+                    return Task.FromResult<string[]?>(null);
+                }, ct);
             }
 
             if (role.CanKill)
@@ -138,14 +141,15 @@ partial class GameContext
                     Participants = [witch],
                     // ExcludeParticipants = true,     // Why not allow the witch to kill herself :)
                     ExcludedPlayers = _players.Where(p => !p.IsAlive)
-                });
-            
-                if (RunningAction!.PlayerVotes[witch].SingleOrDefault() is { } playerToKill)
+                }, (action, _) =>
                 {
-                    playerToKill.Kill(CauseOfDeath.WitchPoisoning, witch);
-                    role.CanKill = false;
-                }
-                CompletePlayerAction();
+                    if (action.PlayerVotes[witch].SingleOrDefault() is { } playerToKill)
+                    {
+                        playerToKill.Kill(CauseOfDeath.WitchPoisoning, witch);
+                        role.CanKill = false;
+                    }
+                    return Task.FromResult<string[]?>(null);
+                }, ct);
             }
         }
     }
@@ -161,11 +165,12 @@ partial class GameContext
                 Maximum = 1,
                 ExcludeParticipants = true,
                 Participants = [hunter]
-            });
-
-            if (RunningAction!.GetMostVotedPlayer() is { } selectedOne)
-                selectedOne.Kill(CauseOfDeath.ShootByHunter, hunter);
-            CompletePlayerAction();
+            }, (action, _) =>
+            {
+                if (action.GetMostVotedPlayer() is { } selectedOne)
+                    selectedOne.Kill(CauseOfDeath.ShootByHunter, hunter);
+                return Task.FromResult<string[]?>(null);
+            }, ct);
         }
     }
     

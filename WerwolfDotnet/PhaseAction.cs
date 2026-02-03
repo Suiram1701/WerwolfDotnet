@@ -1,8 +1,11 @@
+using System.Diagnostics;
+
 namespace WerwolfDotnet;
 
 /// <summary>
 /// Represents a current 
 /// </summary>
+[DebuggerDisplay($"Type = {{{nameof(Type)}}}, Votes = {{{nameof(PlayerVotes)}.Count}} / {{{nameof(Participants)}.Count}}")]
 public sealed class PhaseAction
 {
     /// <summary>
@@ -87,17 +90,23 @@ public sealed class PhaseAction
         return votesForPlayer.AsReadOnly();
     }
 
-    public Player? GetMostVotedPlayer()
+    /// <summary>
+    /// Calculates the player who was voted the most.
+    /// </summary>
+    /// <param name="doubleValuedVotes">A collection of players whose votes a valued double.</param>
+    /// <returns>The Most voted player. When <c>null</c> its a tie.</returns>
+    public Player? GetMostVotedPlayer(Player[]? doubleValuedVotes = null)
     {
         Dictionary<Player, int> votesForPlayer = new();
-        foreach ((_, Player[] votesFor) in _playerVotes)
+        foreach ((Player player, Player[] votesFor) in _playerVotes)
         {
             foreach (Player votedOne in votesFor)
             {
+                int value = doubleValuedVotes?.Contains(player) ?? false ? 2 : 1;
                 if (votesForPlayer.TryGetValue(votedOne, out int count))
-                    votesForPlayer[votedOne] = ++count;
+                    votesForPlayer[votedOne] = count + value;
                 else
-                    votesForPlayer[votedOne] = 1;
+                    votesForPlayer[votedOne] = value;
             }
         }
 

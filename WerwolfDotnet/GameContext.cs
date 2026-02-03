@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,7 +9,7 @@ namespace WerwolfDotnet;
 /// <summary>
 /// A whole context of a game. Contains everything.
 /// </summary>
-[DebuggerDisplay($"Game: Code = {nameof(Id)}, Game-master = {nameof(GameMaster)}.{nameof(GameMaster.Id)}, Players = {nameof(Players)}.{nameof(Players.Count)}")]
+[DebuggerDisplay($"Game: {{{nameof(Id)}}}, Game-master = {{{nameof(GameMaster)}.{nameof(GameMaster.Id)}}}, Players = {{{nameof(Players)}.Count}}")]
 public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
 {
     /// <summary>
@@ -78,6 +77,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     private GameOptions? _gameOptions;
     private CancellationTokenSource? _gameLoopCts;
     private Task? _gameLoop;
+
+    private bool _disposed = false;
     
     /// <summary>
     /// Create a new instance
@@ -105,6 +106,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     
     public void InitializeGame(Player gameMaster)
     {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(GameContext));
         if (GameMaster is not null || State != GameState.NotInitialized)
             throw new InvalidOperationException("The game were already initialized!");
         
@@ -190,15 +193,17 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
          if (State > GameState.Locked)
              throw new InvalidOperationException("Game game has already been started!");
 
+         foreach (Player wwPlayer in _players.Shuffle().Take(options.AmountWerwolfs))     // Assign werwolfs first to ensure there is at least one.
+             wwPlayer.Role = new Werwolf();
+         
          IRole[] roles = [
-             ..Enumerable.Repeat<IRole?>(null, options.AmountWerwolfs).Select(_ => new Werwolf()),
              ..Enumerable.Repeat<IRole?>(null, options.AmountSeers).Select(_ => new Seer()),
              ..Enumerable.Repeat<IRole?>(null, options.AmountWitches).Select(_ => new Witch()),
              ..Enumerable.Repeat<IRole?>(null, options.AmountHunters).Select(_ => new Hunter())
          ];
          roles = [..roles.Shuffle()];
          
-         Player[] shuffledPlayers = [.._players.Shuffle()];
+         Player[] shuffledPlayers = [.._players.Where(p => p.Role is null).Shuffle()];
          
          int assignmentCount = Math.Min(roles.Length, shuffledPlayers.Length);
          for (var i = 0; i < assignmentCount; i++)
@@ -215,25 +220,33 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// Starts a new action which requests from one or more players a selection.
     /// </summary>
     /// <param name="action"></param>
+    /// <param name="completedCallback">Gets invoked when the action finished (or was canceled).</param>
+    /// <param name="ct">A cancellation token which cancels the whole action.</param>
     /// <returns>A tasks which waits until every player made a decision.</returns>
-    private Task RequestPlayerActionAsync(PhaseAction action)
+    private async Task RequestPlayerActionAsync(PhaseAction action, Func<PhaseAction, CancellationToken, Task<string[]?>> completedCallback, CancellationToken ct)
     {
         TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using CancellationTokenRegistration ctr = ct.Register(_ => tcs.SetCanceled(ct), null);
         action.OnCompleted += _ => tcs.TrySetResult();
         
         RunningAction = action;
         OnPhaseAction?.Invoke(this, action);
 
-        return tcs.Task;
-    }
-
-    private void CompletePlayerAction(string[]? parameters = null)
-    {
-        if (RunningAction is null)
-            return;
-        
-        OnPhaseActionCompleted?.Invoke(this, RunningAction, parameters);
-        RunningAction = null;
+        string[]? result = null;
+        try
+        {
+            await tcs.Task;
+            result = await completedCallback(action, ct);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "An exception occurred during a PhaseAction: {message}", ex.Message);
+        }
+        finally
+        {
+            OnPhaseActionCompleted?.Invoke(this, action, result);     // Frontend can (should) assume that every phase action is ended properly.
+            RunningAction = null;
+        }
     }
     
     public bool Equals(GameContext? other)
@@ -251,14 +264,15 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     
     public void Dispose()
     {
-        _gameLoopCts?.Cancel();
-        _gameLoop?.Dispose();
-        
+        _disposed = true;
+        _gameLoopCts?.Cancel();     // Don't dispose the task itself. It will throw
         State = GameState.NotInitialized;
     }
     
     private void ThrowWhenNotInit()
     {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(GameContext));
         if (State == GameState.NotInitialized)
             throw new InvalidOperationException("A game hasn't been initialized yet!");
     }

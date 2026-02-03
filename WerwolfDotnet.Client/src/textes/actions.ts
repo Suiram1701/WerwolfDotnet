@@ -24,8 +24,8 @@ export const actionDescriptions: Readonly<Record<ActionType, string>> = {
 // HTML allowed
 export const actionCompletions: Readonly<Record<ActionType, (args: string[]) => string>> = {
     [ActionType.MayorVoting]: args => args.length == 1
-        ? `Ihr habt euch auf <b>${args[0]}</b> geeinigt. Er wird einer neuer Bürgermeister sein und das Dorf anführen.`
-        : "Ihr konntet euch auf <b>keinen Bürgermeister<b></b> einigen. Die Bürgermeisterwahl wird auf den nächsten Tag vertagt.",
+        ? `Ihr habt euch auf <b>${args[0]}</b> geeinigt. Er wird euer neuer Bürgermeister sein und das Dorf anführen.`
+        : "Ihr konntet euch auf <b>keinen Bürgermeister</b> einigen. Die Bürgermeisterwahl wird auf den nächsten Tag vertagt.",
     [ActionType.WerwolfKilling]: _ => "",
     [ActionType.WerwolfSelection]: args => args.length == 1
         ? `Ihr habt euch auf <b>${args[0]}</b> geeinigt. Dieser Spieler wird am morgen tot sein (solange keine andere Rolle eingreift).`

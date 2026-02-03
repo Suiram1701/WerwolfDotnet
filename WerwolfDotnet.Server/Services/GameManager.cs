@@ -82,9 +82,9 @@ public class GameManager(
     /// </summary>
     /// <param name="id">The game ID</param>
     /// <returns>The game. When not found <c>null</c></returns>
-    public async Task<GameContext?> GetGameById(int id)
+    public Task<GameContext?> GetGameById(int id)
     {
-        return await _sessionStore.GetAsync(id).ConfigureAwait(false);
+        return _sessionStore.GetAsync(id);
     }
 
     /// <summary>
@@ -140,13 +140,17 @@ public class GameManager(
         }
         
         // empty session -> auto remove
-        ctx.Dispose();
-        ctx.OnGameMetadataChanged -= OnGameMetadataChangedAsync;
-        ctx.OnGameStateChanged -= OnGameStateChangedAsync;
-        ctx.OnPhaseAction -= OnPhaseActionAsync;
-        ctx.OnPhaseActionCompleted -= OnPhaseActionCompletedAsync;
+        try
+        { ctx.Dispose(); }
+        finally
+        {
+            ctx.OnGameMetadataChanged -= OnGameMetadataChangedAsync;
+            ctx.OnGameStateChanged -= OnGameStateChangedAsync;
+            ctx.OnPhaseAction -= OnPhaseActionAsync;
+            ctx.OnPhaseActionCompleted -= OnPhaseActionCompletedAsync;
         
-        await _sessionStore.RemoveAsync(ctx).ConfigureAwait(false);
+            await _sessionStore.RemoveAsync(ctx).ConfigureAwait(false);
+        }
         return true;
     }
 
