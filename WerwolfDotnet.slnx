@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="WerwolfDotnet.Server/WerwolfDotnet.Server.csproj" />
   <Folder Name="/Solution Files/">
+    <File Path="Dockerfile" />
     <File Path="LICENSE.txt" />
     <File Path="README.md" />
   </Folder>

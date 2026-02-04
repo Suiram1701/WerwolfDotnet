@@ -76,6 +76,9 @@ app.UseCors(websiteClientOrigin);
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapStaticAssets();
 app.MapControllers();
 app.MapHub<GameHub>(GameHubPath);
+app.MapFallbackToFile("app.html");
+
 app.Run();
