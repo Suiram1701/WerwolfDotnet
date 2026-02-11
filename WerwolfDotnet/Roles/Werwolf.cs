@@ -1,6 +1,8 @@
 namespace WerwolfDotnet.Roles;
 
-public sealed class Werwolf : IRole
+public sealed class Werwolf : RoleBase
 {
-    public Role Type => Role.Werwolf;
+    public override Role Type => Role.Werwolf;
+    
+    // The Werwolf action is handled separately in GameContext._RunNightAsync(CancellationToken) because it's a multi-player action.
 }

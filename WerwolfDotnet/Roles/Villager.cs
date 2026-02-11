@@ -1,6 +1,6 @@
 namespace WerwolfDotnet.Roles;
 
-public sealed class Villager : IRole
+public sealed class Villager : RoleBase
 {
-    public Role Type => Role.Villager;
+    public override Role Type => Role.Villager;
 }

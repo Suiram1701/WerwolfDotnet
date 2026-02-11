@@ -21,7 +21,7 @@ public class Player : IEquatable<Player>
     /// <summary>
     /// The role the player has at the time. Only <c>null</c> when the game hasn't started yet
     /// </summary>
-    public IRole? Role { get; internal set; }
+    public RoleBase? Role { get; internal set; }
 
     /// <summary>
     /// The current status of the player.

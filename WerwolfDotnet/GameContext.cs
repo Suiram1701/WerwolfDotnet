@@ -73,8 +73,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     public event Action<GameContext, PhaseAction, string[]?>? OnPhaseActionCompleted;
     
     internal readonly ILogger Logger;
+    internal GameOptions? GameOptions;
     
-    private GameOptions? _gameOptions;
     private CancellationTokenSource? _gameLoopCts;
     private Task? _gameLoop;
 
@@ -196,10 +196,10 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
          foreach (Player wwPlayer in _players.Shuffle().Take(options.AmountWerwolfs))     // Assign werwolfs first to ensure there is at least one.
              wwPlayer.Role = new Werwolf();
          
-         IRole[] roles = [
-             ..Enumerable.Repeat<IRole?>(null, options.AmountSeers).Select(_ => new Seer()),
-             ..Enumerable.Repeat<IRole?>(null, options.AmountWitches).Select(_ => new Witch()),
-             ..Enumerable.Repeat<IRole?>(null, options.AmountHunters).Select(_ => new Hunter())
+         RoleBase[] roles = [
+             ..Enumerable.Repeat<RoleBase?>(null, options.AmountSeers).Select(_ => new Seer()),
+             ..Enumerable.Repeat<RoleBase?>(null, options.AmountWitches).Select(_ => new Witch()),
+             ..Enumerable.Repeat<RoleBase?>(null, options.AmountHunters).Select(_ => new Hunter())
          ];
          roles = [..roles.Shuffle()];
          
@@ -211,7 +211,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
          for (int i = assignmentCount; i < shuffledPlayers.Length; i++)
              shuffledPlayers[i].Role = new Villager();
 
-         _gameOptions = options;
+         GameOptions = options;
          _gameLoopCts = new CancellationTokenSource();
          _gameLoop = _RunAsync(_gameLoopCts.Token);
     }
@@ -223,7 +223,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// <param name="completedCallback">Gets invoked when the action finished (or was canceled).</param>
     /// <param name="ct">A cancellation token which cancels the whole action.</param>
     /// <returns>A tasks which waits until every player made a decision.</returns>
-    private async Task RequestPlayerActionAsync(PhaseAction action, Func<PhaseAction, CancellationToken, Task<string[]?>> completedCallback, CancellationToken ct)
+    internal async Task RequestPlayerActionAsync(PhaseAction action, Func<PhaseAction, CancellationToken, Task<string[]?>> completedCallback, CancellationToken ct)
     {
         TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         await using CancellationTokenRegistration ctr = ct.Register(_ => tcs.SetCanceled(ct), null);
