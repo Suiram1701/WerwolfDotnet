@@ -92,25 +92,46 @@ partial class GameContext
     
     private async Task _EvaluatePreviousStateAsync(GameState nextState, CancellationToken ct)
     {
-        foreach (Player player in _players
-                     .Where(p => p.Status == PlayerState.PendingDeath && GameOptions!.NightExecutionOrder.Contains(p.Role!.Type))
-                     .OrderBy(p => GameOptions!.NightExecutionOrder.IndexOf(p.Role!.Type)))
+        Dictionary<Player, (CauseOfDeath, Role)> diedPlayers = new();
+        bool newDeathPlayer;
+        do
         {
-            await player.Role!.OnDeathAsync(this, player, ct);
-        }
+            newDeathPlayer = false;
+            foreach (Player player in _players.Where(p => p.Status == PlayerState.PendingDeath))
+            {
+                newDeathPlayer = true;
+                
+                await player.Role!.OnDeathAsync(this, player, ct);
+                if (GameOptions!.MayorDecidesNextMayor && player.Equals(Mayor))     // Mayor dies
+                {
+                    await RequestPlayerActionAsync(new PhaseAction
+                    {
+                        Type = ActionType.NextMayorDecision,
+                        Minimum = 0,
+                        Maximum = 1,
+                        Participants = [player],
+                        ExcludeParticipants = false,
+                        ExcludedPlayers = _players.Where(p => p.Status != PlayerState.Alive)
+                    }, (action, _) =>
+                    {
+                        Mayor = action.PlayerVotes[player].FirstOrDefault();
+                        return Task.FromResult<string[]?>(null);
+                    }, ct);
+                }
+                else if (player.Equals(Mayor))
+                {
+                    Mayor = null;
+                }
+                
+                CauseOfDeath cause = player.KillInternal();
+                Role displayedRole = GameOptions!.RevealRoleForCauses.Contains(cause) ? player.Role!.Type : Role.None;
+                cause = nextState == GameState.Night ? cause : CauseOfDeath.None;     // The displayed caused (censored when switching to day)
+
+                diedPlayers[player] = (cause, displayedRole);
+            }
+        } while (newDeathPlayer);     // Loop multiple times over in case other players died during Death-Handler
 
         State = nextState;
-        IReadOnlyDictionary<Player, (CauseOfDeath, Role)> diedPlayers = _players
-            .Where(p => p.Status == PlayerState.PendingDeath)
-            .Select(p =>
-            {
-                CauseOfDeath cause = p.KillInternal();
-                Role displayedRole = GameOptions!.RevealRoleForCauses.Contains(cause) ? p.Role!.Type : Role.None;
-                cause = nextState == GameState.Night ? cause : CauseOfDeath.None;     // The displayed caused (censored when switching to day)
-                
-                return KeyValuePair.Create(p, (cause, displayedRole));
-            })
-            .ToDictionary();
         OnGameStateChanged?.Invoke(this, State, diedPlayers);
     }
 }

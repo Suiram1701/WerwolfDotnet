@@ -10,6 +10,6 @@ public abstract class RoleBase
     internal virtual Task OnDayAsync(GameContext ctx, Player self, CancellationToken ct) => Task.CompletedTask;
     
     internal virtual Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct) => Task.CompletedTask;
-    
+
     internal virtual Task OnDeathAsync(GameContext ctx, Player self, CancellationToken ct) => Task.CompletedTask;
 }

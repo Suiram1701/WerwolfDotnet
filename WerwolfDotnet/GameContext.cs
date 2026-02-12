@@ -192,7 +192,9 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         ThrowWhenNotInit();
          if (State > GameState.Locked)
              throw new InvalidOperationException("Game game has already been started!");
-
+         if (options.NightExecutionOrder.Distinct().Count() < options.NightExecutionOrder.Length)
+             throw new ArgumentException($"{options.NightExecutionOrder} was expected to contain unique elements!", nameof(options));
+         
          foreach (Player wwPlayer in _players.Shuffle().Take(options.AmountWerwolfs))     // Assign werwolfs first to ensure there is at least one.
              wwPlayer.Role = new Werwolf();
          

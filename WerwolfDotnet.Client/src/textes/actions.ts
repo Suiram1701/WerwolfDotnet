@@ -3,6 +3,7 @@ import { roleNames } from "./roles";
 
 export const actionNames: Readonly<Record<ActionType, string>> = {
     [ActionType.MayorVoting]: "Bürgermeisterwahl",
+    [ActionType.NextMayorDecision]: "Nachfolgender Bürgermeister",
     [ActionType.WerwolfKilling]: "Vollstreckung",
     [ActionType.WerwolfSelection]: "Die Werwölfe erwachen",
     [ActionType.SeerSelection]: "Seher/-in erwacht",
@@ -13,6 +14,7 @@ export const actionNames: Readonly<Record<ActionType, string>> = {
 
 export const actionDescriptions: Readonly<Record<ActionType, string>> = {
     [ActionType.MayorVoting]: "Wähle einen Spieler aus dem Ihr besonders vertraut. Dessen Stimmte wird bei Abstimmungen mehr gewichtung haben.",
+    [ActionType.NextMayorDecision]: "Du bist am sterben. Wähle einen anderen Spieler aus dem Ihr besonders vertraut und das Amt fortführen soll.",
     [ActionType.WerwolfKilling]: "Der Tag ist vorbei. Einigt euch auf einen Spieler und richtet ihn gemeinsam hin. Danach bricht die Nacht an.",
     [ActionType.WerwolfSelection]: "Wählt ein Opfer, was heute Nacht sterben soll.",
     [ActionType.SeerSelection]: "Wähle einen Spieler dessen Rolle du sehen möchtest.",
@@ -26,6 +28,7 @@ export const actionCompletions: Readonly<Record<ActionType, (args: string[]) => 
     [ActionType.MayorVoting]: args => args.length == 1
         ? `Ihr habt euch auf <b>${args[0]}</b> geeinigt. Er wird euer neuer Bürgermeister sein und das Dorf anführen.`
         : "Ihr konntet euch auf <b>keinen Bürgermeister</b> einigen. Die Bürgermeisterwahl wird auf den nächsten Tag vertagt.",
+    [ActionType.NextMayorDecision]: _ => "",
     [ActionType.WerwolfKilling]: _ => "",
     [ActionType.WerwolfSelection]: args => args.length == 1
         ? `Ihr habt euch auf <b>${args[0]}</b> geeinigt. Dieser Spieler wird am morgen tot sein (solange keine andere Rolle eingreift).`

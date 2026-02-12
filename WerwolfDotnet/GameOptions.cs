@@ -14,6 +14,8 @@ public class GameOptions
     
     public bool HunterMustKill { get; init; } = false;
     
+    public bool MayorDecidesNextMayor { get; init; } = true;
+    
     public Role[] NightExecutionOrder { get; init; } = [Role.Werwolf, Role.Seer, Role.Witch];
     
     public CauseOfDeath[] RevealRoleForCauses { get; init; } = [CauseOfDeath.WerwolfKilling, CauseOfDeath.WitchExplosion];

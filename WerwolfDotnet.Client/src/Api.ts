@@ -12,12 +12,13 @@
 /** @format int32 */
 export enum ActionType {
   MayorVoting = 0,
-  WerwolfKilling = 1,
-  WerwolfSelection = 2,
-  SeerSelection = 3,
-  WitchHealSelection = 4,
-  WitchKillSelection = 5,
-  HunterSelection = 6,
+  NextMayorDecision = 1,
+  WerwolfKilling = 2,
+  WerwolfSelection = 3,
+  SeerSelection = 4,
+  WitchHealSelection = 5,
+  WitchKillSelection = 6,
+  HunterSelection = 7,
 }
 
 /** @format int32 */
