@@ -40,8 +40,8 @@ partial class GameContext
                 await RequestPlayerActionAsync(new PhaseAction
                 {
                     Type = ActionType.WerwolfSelection,
-                    ExcludeParticipants = true,
-                    Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type == Role.Werwolf)]
+                    Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type == Role.Werwolf)],
+                    VotablePlayers = [.._players.Where(p => p.IsAlive && p.Role!.Type != Role.Werwolf)]
                 }, (action, _) =>
                 {
                     if (action.GetMostVotedPlayer() is not { } playerToDie)
@@ -67,7 +67,8 @@ partial class GameContext
                 Type = ActionType.MayorVoting,
                 Minimum = 0,
                 Maximum = 1,
-                Participants = [.._players.Where(p => p.IsAlive)]
+                Participants = [.._players.Where(p => p.IsAlive)],
+                VotablePlayers = [.._players.Where(p => p.IsAlive)]
             }, (action, _) =>
             {
                 if (action.GetMostVotedPlayer() is { } newMayor)
@@ -79,19 +80,37 @@ partial class GameContext
                 return Task.FromResult<string[]?>([]);
             }, ct);
         }
-        
+
+        Player[] accusedPlayers = [];
         await RequestPlayerActionAsync(new PhaseAction
         {
-            Type = ActionType.WerwolfKilling,
+            Type = ActionType.WerwolfAccuses,
             Minimum = 0,
-            Maximum = 1,
-            Participants = [.._players.Where(p => p.IsAlive)]
+            Maximum = _players.Count,
+            Participants = [.._players.Where(p => p.IsAlive)],
+            VotablePlayers = [.._players.Where(p => p.IsAlive)]
         }, (action, _) =>
         {
-            if (action.GetMostVotedPlayer(Mayor is not null ? [Mayor] : null) is { } playerToExecute)
-                playerToExecute.Kill(CauseOfDeath.WerwolfKilling, null);
+            accusedPlayers = [..action.PlayerVotes.Values.SelectMany(v => v)];
             return Task.FromResult<string[]?>(null);
         }, ct);
+        
+        if (accusedPlayers.Length > 0)
+        {
+            await RequestPlayerActionAsync(new PhaseAction
+            {
+                Type = ActionType.WerwolfKilling,
+                Minimum = 1,
+                Maximum = 1,
+                Participants = [.._players.Where(p => p.IsAlive)],
+                VotablePlayers = accusedPlayers
+            }, (action, _) =>
+            {
+                if (action.GetMostVotedPlayer(Mayor is not null ? [Mayor] : null) is { } playerToExecute)
+                    playerToExecute.Kill(CauseOfDeath.WerwolfKilling, null);
+                return Task.FromResult<string[]?>(null);
+            }, ct);
+        }
         
         foreach (Player player in _players
                      .Where(p => p.IsAlive && GameOptions!.NightExecutionOrder.Contains(p.Role!.Type))
@@ -121,8 +140,7 @@ partial class GameContext
                         Minimum = 0,
                         Maximum = 1,
                         Participants = [player],
-                        ExcludeParticipants = false,
-                        ExcludedPlayers = _players.Where(p => p.Status != PlayerState.Alive)
+                        VotablePlayers = [.._players.Where(p => p.Status == PlayerState.Alive)]
                     }, (action, _) =>
                     {
                         Mayor = action.PlayerVotes[player].FirstOrDefault();

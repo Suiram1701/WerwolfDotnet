@@ -4,6 +4,7 @@ import { roleNames } from "./roles";
 export const actionNames: Readonly<Record<ActionType, string>> = {
     [ActionType.MayorVoting]: "Bürgermeisterwahl",
     [ActionType.NextMayorDecision]: "Nachfolgender Bürgermeister",
+    [ActionType.WerwolfAccuses]: "Anklagen",
     [ActionType.WerwolfKilling]: "Vollstreckung",
     [ActionType.WerwolfSelection]: "Die Werwölfe erwachen",
     [ActionType.SeerSelection]: "Seher/-in erwacht",
@@ -16,6 +17,7 @@ export const actionNames: Readonly<Record<ActionType, string>> = {
 export const actionDescriptions: Readonly<Record<ActionType, string>> = {
     [ActionType.MayorVoting]: "Wähle einen Spieler aus dem Ihr besonders vertraut. Dessen Stimmte wird bei Abstimmungen mehr gewichtung haben.",
     [ActionType.NextMayorDecision]: "Du bist am sterben. Wähle einen anderen Spieler aus dem Ihr besonders vertraut und das Amt fortführen soll.",
+    [ActionType.WerwolfAccuses]: "Es ist Abend. Wählt die Personen, die euch verdächtigt vorkommen. Die Vollstreckung erfolgt nach einer separaten Abstimmung.",
     [ActionType.WerwolfKilling]: "Der Tag ist vorbei. Einigt euch auf einen Spieler und richtet ihn gemeinsam hin. Danach bricht die Nacht an.",
     [ActionType.WerwolfSelection]: "Wählt ein Opfer, was heute Nacht sterben soll.",
     [ActionType.SeerSelection]: "Wähle einen Spieler dessen Rolle du sehen möchtest.",

@@ -19,7 +19,7 @@ public sealed class Witch : RoleBase
                 Minimum = 0,
                 Maximum = 1,
                 Participants = [self],
-                ExcludedPlayers = ctx.Players.Where(p => p.Status != PlayerState.PendingDeath)
+                VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.PendingDeath)]
             }, (action, _) =>
             {
                 if (action.PlayerVotes[self].SingleOrDefault() is { } playerToHeal)
@@ -40,8 +40,8 @@ public sealed class Witch : RoleBase
                 Minimum = 0,
                 Maximum = 1,
                 Participants = [self],
-                // ExcludeParticipants = true,     // Why not allow the witch to kill herself :)
-                ExcludedPlayers = ctx.Players.Where(p => !p.IsAlive)
+                // ExcludeSelf = true,     // Why not allow the witch to kill herself :)
+                VotablePlayers = [..ctx.Players.Where(p => p.IsAlive)]
             }, (action, _) =>
             {
                 if (action.PlayerVotes[self].SingleOrDefault() is { } playerToKill)

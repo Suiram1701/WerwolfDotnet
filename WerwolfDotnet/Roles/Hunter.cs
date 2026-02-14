@@ -11,8 +11,8 @@ public sealed class Hunter : RoleBase
             Type = ActionType.HunterSelection,
             Minimum = ctx.GameOptions!.HunterMustKill ? 1 : 0,
             Maximum = 1,
-            ExcludeParticipants = true,
-            Participants = [self]
+            Participants = [self],
+            VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.Alive)]
         }, (action, _) =>
         {
             if (action.GetMostVotedPlayer() is { } selectedOne)

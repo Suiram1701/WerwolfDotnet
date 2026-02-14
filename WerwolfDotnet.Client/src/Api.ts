@@ -13,13 +13,14 @@
 export enum ActionType {
   MayorVoting = 0,
   NextMayorDecision = 1,
-  WerwolfKilling = 2,
-  WerwolfSelection = 3,
-  SeerSelection = 4,
-  WitchHealSelection = 5,
-  WitchKillSelection = 6,
-  HunterSelection = 7,
-  AmorSelection = 8,
+  WerwolfAccuses = 2,
+  WerwolfKilling = 3,
+  WerwolfSelection = 4,
+  SeerSelection = 5,
+  WitchHealSelection = 6,
+  WitchKillSelection = 7,
+  HunterSelection = 8,
+  AmorSelection = 9,
 }
 
 /** @format int32 */
@@ -120,7 +121,7 @@ export interface SelectionOptionsDto {
    * @format int32
    */
   maximum?: number;
-  excludedPlayers?: number[] | null;
+  votablePlayers?: number[] | null;
 }
 
 export type QueryParamsType = Record<string | number, any>;

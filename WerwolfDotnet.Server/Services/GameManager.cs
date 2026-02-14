@@ -199,7 +199,7 @@ public class GameManager(
         // Only required for multi-player actions (notify other participants).
         if (succeeded && action.Participants.Count > 1)
         {
-            IReadOnlyDictionary<int, int[]> votedPlayers = action.GetVotedPlayers()
+            IReadOnlyDictionary<int, int[]> votedPlayers = action.PlayerVotes
                 .Select(kvp => KeyValuePair.Create(kvp.Key.Id, kvp.Value.Select(p => p.Id).ToArray()))
                 .ToDictionary();
             await _hubContext.Clients.Players(ctx.Id, action.Participants.Select(p => p.Id)).VotesUpdated(votedPlayers);

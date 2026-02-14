@@ -24,19 +24,14 @@ public sealed class PhaseAction
     public int Maximum { get; init; } = 1;
 
     /// <summary>
-    /// Indicates whether the one 
+    /// Indicates whether to exclude the voter it's self from being voted.
     /// </summary>
     public bool ExcludeSelf { get; init; } = false;
-    
+        
     /// <summary>
-    /// Indicates whether other participants can't be selected.
+    /// Specifies players who can be voted.
     /// </summary>
-    public bool ExcludeParticipants { get; init; } = false;
-    
-    /// <summary>
-    /// Specifies players to exclude from vote-ability (if no covered by Self or Participants)
-    /// </summary>
-    public IEnumerable<Player> ExcludedPlayers { get; init; } = [];
+    public required IReadOnlyCollection<Player> VotablePlayers { get; init; }
     
     /// <summary>
     /// Players who participate on the same action.
@@ -55,11 +50,7 @@ public sealed class PhaseAction
     {
         if (selection.Length < Minimum || selection.Length > Maximum)
             return false;
-        if (ExcludeSelf && selection.Contains(self))
-            return false;
-        if (ExcludeParticipants && selection.Any(p => Participants.Contains(p)))
-            return false;
-        if (selection.Any(p => ExcludedPlayers.Contains(p)))
+        if (selection.Any(p => !VotablePlayers.Contains(p)))
             return false;
 
         _playerVotes[self] = selection;
@@ -70,39 +61,22 @@ public sealed class PhaseAction
     }
 
     /// <summary>
-    /// A reversed collection of <see cref="PlayerVotes"/>. On contrast to <see cref="PlayerVotes"/> it mapps players to the players who voted for them.
-    /// </summary>
-    /// <returns>The reversed collection.</returns>
-    public IReadOnlyDictionary<Player, Player[]> GetVotedPlayers()
-    {
-        Dictionary<Player, Player[]> votesForPlayer = new();
-        foreach ((Player by, Player[] votesFor) in _playerVotes)
-        {
-            foreach (Player votedOne in votesFor)
-            {
-                if (votesForPlayer.TryGetValue(votedOne, out Player[]? votes))
-                    votesForPlayer[votedOne] = votes.Append(by).ToArray();
-                else
-                    votesForPlayer[votedOne] = [by];
-            }
-        }
-
-        return votesForPlayer.AsReadOnly();
-    }
-
-    /// <summary>
     /// Calculates the player who was voted the most.
     /// </summary>
     /// <param name="doubleValuedVotes">A collection of players whose votes a valued double.</param>
     /// <returns>The Most voted player. When <c>null</c> its a tie.</returns>
     public Player? GetMostVotedPlayer(Player[]? doubleValuedVotes = null)
     {
+        var abstention = 0;
         Dictionary<Player, int> votesForPlayer = new();
         foreach ((Player player, Player[] votesFor) in _playerVotes)
         {
+            int value = doubleValuedVotes?.Contains(player) ?? false ? 2 : 1;
+            if (votesFor.Length == 0)
+                abstention += value;
+            
             foreach (Player votedOne in votesFor)
             {
-                int value = doubleValuedVotes?.Contains(player) ?? false ? 2 : 1;
                 if (votesForPlayer.TryGetValue(votedOne, out int count))
                     votesForPlayer[votedOne] = count + value;
                 else
@@ -111,6 +85,9 @@ public sealed class PhaseAction
         }
 
         int maxVotes = votesForPlayer.Values.Count > 0 ? votesForPlayer.Values.Max() : 0;
+        if (abstention >= maxVotes)
+            return null;
+        
         return votesForPlayer
             .Where(kvp => kvp.Value == maxVotes)
             .Select(kvp => kvp.Key)

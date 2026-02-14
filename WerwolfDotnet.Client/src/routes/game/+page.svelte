@@ -31,7 +31,8 @@
     
     let runningAction: SelectionOptionsDto | null = $state(null);
     let selectedPlayers: number[] = $state([]);
-    let currentVotes: Record<number, number[]> = $state([]);
+    let playerToVotes: Record<number, number[]> = $state([]);
+    let emptyVotedPlayers: number[] = $state([]);
     
     let connection: HubConnection;
     let gameHub: GameHubServer;
@@ -155,15 +156,20 @@
         }
         
         public onVotesUpdated(votes: Record<number, number[]>): Promise<void> {
-            currentVotes = votes;
+            selectedPlayers = selfId! in votes ? votes[selfId!] : [];
             
-            let ownVotes: number[] = [];
-            for (const key in votes) {
-                if (votes[key].includes(selfId!))
-                    ownVotes.push(Number(key));
+            const votesForPlayer: Record<number, number[]> = {};
+            for (const by in votes) {
+                for (const votedOne of votes[by]) {
+                    if (votedOne in votesForPlayer)
+                        votesForPlayer[votedOne].push(Number(by));
+                    else
+                        votesForPlayer[votedOne] = [Number(by)];
+                }
             }
-            selectedPlayers = ownVotes;
-            
+            playerToVotes = votesForPlayer;
+
+            emptyVotedPlayers = Object.entries(votes).filter(t => t[1].length === 0).map(t => Number(t[0]))
             return Promise.resolve();
         }
 
@@ -178,7 +184,8 @@
             }
             
             runningAction = null;
-            currentVotes = [];
+            playerToVotes = [];
+            emptyVotedPlayers = [];
             return Promise.resolve();
         }
         
@@ -246,29 +253,27 @@
                     <!-- Decide between radio (one selection) and checkbox (multiple selections) -->
                     {#if runningAction.maximum === 1}
                         <input class="form-check-input me-2" id="playerAction{player.id}" type="radio" value="{player.id}" bind:group={selectedPlayers[0]}
-                               name="playerAction" disabled="{runningAction.excludedPlayers?.includes(player.id ?? -1) || !player.alive}" />
+                               name="playerAction" disabled="{!runningAction.votablePlayers?.includes(player.id ?? -1)}" />
                     {:else}
                         <input class="form-check-input me-2" id="playerAction{player.id}" type="checkbox" value="{player.id}" bind:group={selectedPlayers}
-                               name="playerAction" disabled="{runningAction.excludedPlayers?.includes(player.id ?? -1) || !player.alive}" />
+                               name="playerAction" disabled="{!runningAction.votablePlayers?.includes(player.id ?? -1)}" />
                     {/if}
                     <label class="form-check-label" for="playerAction{player.id}">{player.name}</label>
                 {/if}
 
                 <div class="flex-grow-1"></div>
-
-                
-                {#if (player.id ?? 0) in currentVotes && currentVotes[player.id ?? 0].length > 0}
+                {#if (player.id ?? 0) in playerToVotes && playerToVotes[player.id ?? 0].length > 0}
                     <span class="badge text-bg-secondary" use:tooltip={{
-                        title: currentVotes[player.id ?? 0].map(id => {
-                            const name = players.find(p => (p.id ?? 0) === id)?.name;
+                        title: playerToVotes[player.id ?? 0].map(id => {
+                            const name = players.find(p => p.id === id)?.name;
                             return gameMeta?.mayor === id ? `2x ${name}` : name;
                         }).join(', '),
                         placement: "top"
                     }}>
-                        {#if currentVotes[player.id ?? 0].includes(gameMeta?.mayor ?? -1)}     <!-- Include the mayor vote -->
-                            {currentVotes[player.id ?? 0].length + 1}
+                        {#if playerToVotes[player.id ?? 0].includes(gameMeta?.mayor ?? -1)}     <!-- Include the mayor vote -->
+                            {playerToVotes[player.id ?? 0].length + 1}
                         {:else}
-                            {currentVotes[player.id ?? 0].length}
+                            {playerToVotes[player.id ?? 0].length}
                         {/if}
                     </span>
                 {/if}
@@ -290,11 +295,30 @@
             </li>
         {/each}
         
-        {#if runningAction !== null && runningAction.minimum === 0 && runningAction.maximum === 1}
+        {#if runningAction !== null && runningAction.minimum === 0}
             <li class="list-group-item d-flex align-items-center d-flex align-items-center">
-                <input class="form-check-input me-2" id="playerAction-NoOne" name="playerAction" type="radio"
-                       checked="{selectedPlayers.length === 0}" onclick={() => selectedPlayers = []}>
+                {#if runningAction.maximum === 1}
+                    <input class="form-check-input me-2" id="playerAction-NoOne" name="playerAction" type="radio"
+                           checked="{selectedPlayers.length === 0}" onclick={() => selectedPlayers = []}>
+                {/if}
                 <label class="form-check-label" for="playerAction-NoOne">Niemand auswählen</label>
+
+                <div class="flex-grow-1"></div>
+                {#if emptyVotedPlayers.length > 0}
+                    <span class="badge text-bg-secondary" use:tooltip={{
+                        title: emptyVotedPlayers.map(id => {
+                            const name = players.find(p => p.id === id)?.name;
+                            return gameMeta?.mayor === id ? `2x ${name}` : name;
+                        }).join(', '),
+                        placement: "top"
+                    }}>
+                        {#if emptyVotedPlayers.includes(gameMeta?.mayor ?? -1)}     <!-- Include the mayor vote -->
+                            {emptyVotedPlayers.length + 1}
+                        {:else}
+                            {emptyVotedPlayers.length}
+                        {/if}
+                    </span>
+                {/if}
             </li>
         {/if}
     </ul>

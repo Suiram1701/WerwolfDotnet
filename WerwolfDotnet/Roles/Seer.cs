@@ -11,8 +11,8 @@ public sealed class Seer : RoleBase
         await ctx.RequestPlayerActionAsync(new PhaseAction
         {
             Type = ActionType.SeerSelection,
-            ExcludeParticipants = true,
-            Participants = [self]
+            Participants = [self],
+            VotablePlayers = [..ctx.Players.Except([self])]
         }, (action, _) =>
         {
             if (action.GetMostVotedPlayer() is { } selectedOne)

@@ -4,6 +4,7 @@ public enum ActionType
 {
     MayorVoting,
     NextMayorDecision,
+    WerwolfAccuses,
     WerwolfKilling,
     WerwolfSelection,
     SeerSelection,

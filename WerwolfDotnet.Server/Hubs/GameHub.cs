@@ -33,7 +33,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
 
             if (action.Participants.Count > 1)
             {
-                IReadOnlyDictionary<int, int[]> votedPlayers = action.GetVotedPlayers()
+                IReadOnlyDictionary<int, int[]> votedPlayers = action.PlayerVotes
                     .Select(kvp => KeyValuePair.Create(kvp.Key.Id, kvp.Value.Select(p => p.Id).ToArray()))
                     .ToDictionary();
                 await Clients.Caller.VotesUpdated(votedPlayers);
