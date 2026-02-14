@@ -30,8 +30,6 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// <c>null</c> while <see cref="State"/> is in <see cref="GameState"/>.NotInitialized
     /// </remarks>
     public Player GameMaster { get; private set; } = null!;
-
-    public Player? Mayor { get; private set; }
     
     /// <summary>
     /// A sorted collection (in seating order) of all players.
@@ -72,8 +70,9 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// </summary>
     public event Action<GameContext, PhaseAction, string[]?>? OnPhaseActionCompleted;
     
-    internal readonly ILogger Logger;
-    internal GameOptions? GameOptions;
+    internal ILogger Logger { get; }
+    
+    internal GameOptions? GameOptions { get; private set; }
     
     private CancellationTokenSource? _gameLoopCts;
     private Task? _gameLoop;
@@ -201,7 +200,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
          RoleBase[] roles = [
              ..Enumerable.Repeat<RoleBase?>(null, options.AmountSeers).Select(_ => new Seer()),
              ..Enumerable.Repeat<RoleBase?>(null, options.AmountWitches).Select(_ => new Witch()),
-             ..Enumerable.Repeat<RoleBase?>(null, options.AmountHunters).Select(_ => new Hunter())
+             ..Enumerable.Repeat<RoleBase?>(null, options.AmountHunters).Select(_ => new Hunter()),
+             ..options.AmorExists ? new RoleBase[] { new Amor() } : []
          ];
          roles = [..roles.Shuffle()];
          
@@ -215,7 +215,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
 
          GameOptions = options;
          _gameLoopCts = new CancellationTokenSource();
-         _gameLoop = _RunAsync(_gameLoopCts.Token);
+         _gameLoop = RunAsync(_gameLoopCts.Token);
     }
 
     /// <summary>

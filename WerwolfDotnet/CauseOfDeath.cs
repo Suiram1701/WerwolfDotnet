@@ -7,5 +7,6 @@ public enum CauseOfDeath
     WerwolfKill,
     WitchPoisoning,
     WitchExplosion,
-    ShootByHunter
+    ShootByHunter,
+    DeathByHearthBreak
 }

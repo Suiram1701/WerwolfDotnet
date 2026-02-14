@@ -2,25 +2,36 @@ namespace WerwolfDotnet;
 
 partial class GameContext
 {
-    private async Task _RunAsync(CancellationToken ct)
+    /// <summary>
+    /// The current mayor of the village.
+    /// </summary>
+    public Player? Mayor { get; private set; }
+
+    /// <summary>
+    /// Maps which player has fallen in love with whom (triggers <c>CauseOfDeath.DeathByHeathBreak</c>).
+    /// </summary>
+    public IReadOnlyDictionary<Player, Player> PlayersInLove => _playersInLove.AsReadOnly();
+    private readonly Dictionary<Player, Player> _playersInLove = new(2);
+    
+    private async Task RunAsync(CancellationToken ct)
     {
         State = GameState.Night;
         OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
         
         while (!ct.IsCancellationRequested)
         {
-            await _RunNightAsync(ct);
-            await _EvaluatePreviousStateAsync(nextState: GameState.Day, ct);
+            await RunNightAsync(ct);
+            await EvaluatePreviousStateAsync(nextState: GameState.Day, ct);
             
-            await _RunDayAsync(ct);
-            await _EvaluatePreviousStateAsync(nextState: GameState.Night, ct);
+            await RunDayAsync(ct);
+            await EvaluatePreviousStateAsync(nextState: GameState.Night, ct);
         }
     }
     
-    private async Task _RunNightAsync(CancellationToken ct)
+    private async Task RunNightAsync(CancellationToken ct)
     {
         foreach (Player player in _players
-                     .Where(p => p.IsAlive && GameOptions!.NightExecutionOrder.Contains(p.Role!.Type))
+                     .Where(p => p.IsAlive)
                      .OrderBy(p => GameOptions!.NightExecutionOrder.IndexOf(p.Role!.Type)))
         {
             if (player.Role!.Type == Role.Werwolf)
@@ -47,7 +58,7 @@ partial class GameContext
         }
     }
 
-    private async Task _RunDayAsync(CancellationToken ct)
+    private async Task RunDayAsync(CancellationToken ct)
     {
         if (Mayor is null)
         {
@@ -90,7 +101,7 @@ partial class GameContext
         }
     }
     
-    private async Task _EvaluatePreviousStateAsync(GameState nextState, CancellationToken ct)
+    private async Task EvaluatePreviousStateAsync(GameState nextState, CancellationToken ct)
     {
         Dictionary<Player, (CauseOfDeath, Role)> diedPlayers = new();
         bool newDeathPlayer;
@@ -123,6 +134,9 @@ partial class GameContext
                     Mayor = null;
                 }
                 
+                if (_playersInLove.TryGetValue(player, out Player? lovedOne))     // Loved one dies
+                    lovedOne.Kill(CauseOfDeath.DeathByHearthBreak, player);
+                
                 CauseOfDeath cause = player.KillInternal();
                 Role displayedRole = GameOptions!.RevealRoleForCauses.Contains(cause) ? player.Role!.Type : Role.None;
                 cause = nextState == GameState.Night ? cause : CauseOfDeath.None;     // The displayed caused (censored when switching to day)
@@ -133,5 +147,11 @@ partial class GameContext
 
         State = nextState;
         OnGameStateChanged?.Invoke(this, State, diedPlayers);
+    }
+
+    internal void PlayersFallInLove(Player player1, Player player2)
+    {
+        _playersInLove[player1] = player2;
+        _playersInLove[player2] = player1;
     }
 }

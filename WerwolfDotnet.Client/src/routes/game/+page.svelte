@@ -171,7 +171,7 @@
             if (parameters !== null) {
                 modalProvider.show({
                     title: actionNames[runningAction!.type ?? 0] || "undefined",
-                    contentText: actionCompletions[runningAction!.type ?? 0](parameters) || "Wenn du dies siehst ist etwas schiefgelaufen...",
+                    contentText: actionCompletions[runningAction!.type ?? 0]?.(parameters) || "Wenn du dies siehst ist etwas schiefgelaufen...",
                     allowHtmlText: true,
                     canDismiss: false
                 });

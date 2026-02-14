@@ -7,5 +7,6 @@ public enum Role
     Werwolf,
     Seer,
     Witch,
-    Hunter
+    Hunter,
+    Amor
 }

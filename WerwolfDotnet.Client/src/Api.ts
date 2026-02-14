@@ -19,6 +19,7 @@ export enum ActionType {
   WitchHealSelection = 5,
   WitchKillSelection = 6,
   HunterSelection = 7,
+  AmorSelection = 8,
 }
 
 /** @format int32 */
@@ -28,6 +29,7 @@ export enum CauseOfDeath {
   WitchPoisoning = 2,
   WitchExplosion = 3,
   ShootByHunter = 4,
+  DeathByHearthBreak = 5,
   None = -1,
 }
 
@@ -102,6 +104,7 @@ export enum Role {
   Seer = 2,
   Witch = 3,
   Hunter = 4,
+  Amor = 5,
   None = -1,
 }
 

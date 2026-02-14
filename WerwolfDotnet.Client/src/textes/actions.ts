@@ -9,7 +9,8 @@ export const actionNames: Readonly<Record<ActionType, string>> = {
     [ActionType.SeerSelection]: "Seher/-in erwacht",
     [ActionType.WitchHealSelection]: "Hexe erwacht (heilen)",
     [ActionType.WitchKillSelection]: "Hexe erwacht (töten)",
-    [ActionType.HunterSelection]: "Du bist am Sterben"
+    [ActionType.HunterSelection]: "Du bist am Sterben",
+    [ActionType.AmorSelection]: "Amor schießt"
 }
 
 export const actionDescriptions: Readonly<Record<ActionType, string>> = {
@@ -20,21 +21,17 @@ export const actionDescriptions: Readonly<Record<ActionType, string>> = {
     [ActionType.SeerSelection]: "Wähle einen Spieler dessen Rolle du sehen möchtest.",
     [ActionType.WitchHealSelection]: "Wähle eine Person, die du heilen möchtest (falls du möchtest).",
     [ActionType.WitchKillSelection]: "Wähle eine Person, die du mit deinem Todestrank töten möchtest (falls du möchtest).",
-    [ActionType.HunterSelection]: "Wähle einer Person, die du mit in den Tot reißen möchtest mit deinem Gewehr."
+    [ActionType.HunterSelection]: "Wähle einer Person, die du mit in den Tot reißen möchtest mit deinem Gewehr.",
+    [ActionType.AmorSelection]: "Wähle zwei Spieler, die du miteinander Verlieben möchtest."
 }
 
 // HTML allowed
-export const actionCompletions: Readonly<Record<ActionType, (args: string[]) => string>> = {
+export const actionCompletions: Partial<Record<ActionType, (args: string[]) => string>> = {
     [ActionType.MayorVoting]: args => args.length == 1
         ? `Ihr habt euch auf <b>${args[0]}</b> geeinigt. Er wird euer neuer Bürgermeister sein und das Dorf anführen.`
         : "Ihr konntet euch auf <b>keinen Bürgermeister</b> einigen. Die Bürgermeisterwahl wird auf den nächsten Tag vertagt.",
-    [ActionType.NextMayorDecision]: _ => "",
-    [ActionType.WerwolfKilling]: _ => "",
     [ActionType.WerwolfSelection]: args => args.length == 1
         ? `Ihr habt euch auf <b>${args[0]}</b> geeinigt. Dieser Spieler wird am morgen tot sein (solange keine andere Rolle eingreift).`
         : "Ihr konntet euch auf <b>keinen Spieler</b> einigen, der Sterben soll.",
     [ActionType.SeerSelection]: args => `Du hast dich für <b>${args[0]}</b> entschieden. Dieser Spieler hat die Rolle <b>${roleNames[Role[args[1] as keyof typeof Role]]}</b>.`,
-    [ActionType.WitchHealSelection]: _ => "",
-    [ActionType.WitchKillSelection]: _ => "",
-    [ActionType.HunterSelection]: _ => ""
 }
