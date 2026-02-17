@@ -100,13 +100,13 @@ export interface PlayerDto {
 
 /** @format int32 */
 export enum Role {
-  Villager = 0,
-  Werwolf = 1,
+  None = 0,
+  Villager = 1,
   Seer = 2,
   Witch = 3,
   Hunter = 4,
   Amor = 5,
-  None = -1,
+  Werwolf = -1,
 }
 
 export interface SelectionOptionsDto {

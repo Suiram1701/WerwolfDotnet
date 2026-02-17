@@ -52,14 +52,14 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         return base.OnDisconnectedAsync(exception);
     }
 
-    [HubMethodName("toggleGameLock")]
-    public async Task OnToggleGameLocked()
+    [HubMethodName("setGameLocked")]
+    public async Task OnSetGameLocked(bool locked)
     {
         GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
         if (!CheckGameMaster(ctx, "toggle game lock"))
             return;
 
-        await _manager.ToggleGameLockedAsync(ctx);
+        await _manager.SetGameLockedAsync(ctx, locked);
     }
 
     [HubMethodName("shufflePlayers")]
@@ -90,6 +90,16 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
 
         Player[] votes = [..ctx.Players.Where(p => selectedPlayers.Contains(p.Id))];
         await _manager.RegisterPlayerActionAsync(ctx, self, votes);
+    }
+
+    [HubMethodName("stopGame")]
+    public async Task OnBackToLobby()
+    {
+        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        if (!CheckGameMaster(ctx, "start game"))
+            return;
+        
+        await _manager.StopGameAsync(ctx);
     }
     
     [HubMethodName("leaveGame")]

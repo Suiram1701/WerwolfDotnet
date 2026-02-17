@@ -154,9 +154,9 @@ public class GameManager(
         return true;
     }
 
-    public async Task<bool> ToggleGameLockedAsync(GameContext ctx)
+    public async Task<bool> SetGameLockedAsync(GameContext ctx, bool locked)
     {
-        if (!ctx.ToggleJoinLock())
+        if (!ctx.SetJoinLock(locked))
             return false;
         
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
@@ -176,7 +176,7 @@ public class GameManager(
 
     public async Task StartGameAsync(GameContext ctx)
     {
-        if (ctx.State > GameState.Locked)      // Game is already running
+        if (ctx.State > 0)      // Game is already running
             return;
         if (ctx.Players.Count < 3)     // Not enough players
             return;
@@ -186,6 +186,15 @@ public class GameManager(
 
         IEnumerable<Task> notifications = ctx.Players.Select(p => _hubContext.Clients.Player(ctx.Id, p.Id).PlayerRoleUpdated(p.Role!.Type));
         await Task.WhenAll(notifications).ConfigureAwait(false);
+    }
+
+    public Task StopGameAsync(GameContext ctx)
+    {
+        if (ctx.State <= 0)
+            return Task.CompletedTask;
+        
+        ctx.StopGame();
+        return _sessionStore.UpdateAsync(ctx);
     }
 
     public async Task RegisterPlayerActionAsync(GameContext ctx, Player self, Player[] selection)

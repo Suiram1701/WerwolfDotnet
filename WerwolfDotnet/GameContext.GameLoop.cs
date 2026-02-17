@@ -17,14 +17,20 @@ partial class GameContext
     {
         State = GameState.Night;
         OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
-        
-        while (!ct.IsCancellationRequested)
+
+        try
         {
-            await RunNightAsync(ct);
-            await EvaluatePreviousStateAsync(nextState: GameState.Day, ct);
-            
-            await RunDayAsync(ct);
-            await EvaluatePreviousStateAsync(nextState: GameState.Night, ct);
+            while (!ct.IsCancellationRequested)
+            {
+                await RunNightAsync(ct);
+                await EvaluatePreviousStateAsync(nextState: GameState.Day, ct);
+
+                await RunDayAsync(ct);
+                await EvaluatePreviousStateAsync(nextState: GameState.Night, ct);
+            }
+        }
+        catch (TaskCanceledException)
+        {
         }
     }
     
@@ -34,27 +40,34 @@ partial class GameContext
                      .Where(p => p.IsAlive)
                      .OrderBy(p => GameOptions!.NightExecutionOrder.IndexOf(p.Role!.Type)))
         {
-            if (player.Role!.Type == Role.Werwolf)
+            try
             {
-                // Werwölfe
-                await RequestPlayerActionAsync(new PhaseAction
+                if (player.Role!.Type == Role.Werwolf)
                 {
-                    Type = ActionType.WerwolfSelection,
-                    Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type == Role.Werwolf)],
-                    VotablePlayers = [.._players.Where(p => p.IsAlive && p.Role!.Type != Role.Werwolf)]
-                }, (action, _) =>
+                    // Werwölfe
+                    await RequestPlayerActionAsync(new PhaseAction
+                    {
+                        Type = ActionType.WerwolfSelection,
+                        Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type == Role.Werwolf)],
+                        VotablePlayers = [.._players.Where(p => p.IsAlive && p.Role!.Type != Role.Werwolf)]
+                    }, (action, _) =>
+                    {
+                        if (action.GetMostVotedPlayer() is not { } playerToDie)
+                            return Task.FromResult<string[]?>([]); // Empty parameters will indicate that no one died.
+
+                        playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
+                        return Task.FromResult<string[]?>([playerToDie.Name]);
+                    }, ct);
+                }
+                else
                 {
-                    if (action.GetMostVotedPlayer() is not { } playerToDie)
-                        return Task.FromResult<string[]?>([]);     // Empty parameters will indicate that no one died.
-            
-                    playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
-                    return Task.FromResult<string[]?>([playerToDie.Name]);
-                }, ct);
+                    await player.Role!.OnNightAsync(this, player, ct);
+                }
             }
-            else
+            catch (TaskCanceledException)     // Throw again when the whole game was canceled. Otherwise, ignore it and continue
             {
-                await player.Role!.OnNightAsync(this, player, ct);
             }
+            ct.ThrowIfCancellationRequested();
         }
     }
 

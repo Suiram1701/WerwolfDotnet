@@ -8,8 +8,8 @@ export class GameHubServer {
         this.connection = connection;
     }
     
-    public async toggleGameLocked(): Promise<void> {
-        await this.connection.invoke("toggleGameLock");
+    public async setGameLocked(locked: boolean): Promise<void> {
+        await this.connection.invoke("setGameLocked", locked);
     }
     
     public async shufflePlayers(): Promise<void> {
@@ -24,16 +24,17 @@ export class GameHubServer {
         await this.connection.invoke("playerAction", selectedPlayer);
     }
     
+    public async stopGame(): Promise<void> {
+        await this.connection.invoke("stopGame");
+    }
+    
     public async leaveGame(playerId: number | null = null): Promise<void> {
         await this.connection.invoke("leaveGame", playerId);
     } 
 }
 
 export abstract class GameHubClientBase {
-    private connection: HubConnection;
-    
     protected constructor(connection: HubConnection) {
-        this.connection = connection;
         connection.on("onGameMetaUpdated", this.onGameMetaUpdated);
         connection.on("onPlayersUpdated", this.onPlayersUpdated);
         connection.on("onGameStateUpdated", this.onGameStateUpdated);
@@ -41,6 +42,7 @@ export abstract class GameHubClientBase {
         connection.on("onActionRequested", this.onActionRequested);
         connection.on("onVotesUpdated", this.onVotesUpdated);
         connection.on("onActionCompleted", this.onActionCompleted);
+        connection.on("onGameEnded", this.onGameEnded);
         connection.on("onForceDisconnect", this.onForceDisconnect);
     }
 
@@ -57,6 +59,8 @@ export abstract class GameHubClientBase {
     public abstract onVotesUpdated(votes: Record<number, number[]>): Promise<void>;
     
     public abstract onActionCompleted(parameters: string[] | null): Promise<void>;
+    
+    public abstract onGameEnded(villageWin: boolean, playerRoles: Record<number, Role>): Promise<void>;
     
     public abstract onForceDisconnect(kicked: boolean): Promise<void>;
 }

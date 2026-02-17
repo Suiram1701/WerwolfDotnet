@@ -188,6 +188,10 @@
             emptyVotedPlayers = [];
             return Promise.resolve();
         }
+
+        onGameEnded(villageWin: boolean, playerRoles: Record<number, Role>): Promise<void> {
+            throw new Error("Not yet implemented");
+        }
         
         async onForceDisconnect(kicked: boolean): Promise<void> {
             await connection.stop();
@@ -333,32 +337,49 @@
     <div class="flex-grow-1"></div>
     
     <!-- Admin buttons -->
-    {#if selfId === gameMeta?.gameMaster && (gameState ?? -2) <= GameState.Locked}
+    {#if selfId === gameMeta?.gameMaster && (gameState ?? -2) <= 0}
         <div class="d-flex main-content mb-3">
-            <button class="btn btn-primary w-100" type="button" onclick={() => gameHub.startGame()} disabled="{players.length < 3}">Spiel starten</button>
-            <button class="btn btn-info w-100 mx-2" type="button" onclick={() => gameHub.shufflePlayers()}>Spieler durchmischen</button>
+            <button class="btn btn-primary w-100" type="button" onclick={ async () => gameHub.startGame()} disabled="{players.length < 3}">Spiel starten</button>
+            <button class="btn btn-info w-100 mx-2" type="button" onclick={ async () => await gameHub.shufflePlayers()}>Spieler durchmischen</button>
 
             {#if gameState !== GameState.Locked}
-                <button class="btn btn-warning w-100" type="button" onclick={() => gameHub.toggleGameLocked()}>Beitreten blockieren</button>
+                <button class="btn btn-warning w-100" type="button" onclick={ async () => await gameHub.setGameLocked(true)}>Beitreten blockieren</button>
             {:else}
-                <button class="btn btn-success w-100" type="button" onclick={() => gameHub.toggleGameLocked()}>Beitreten erlauben</button>
+                <button class="btn btn-success w-100" type="button" onclick={ async () => await gameHub.setGameLocked(false)}>Beitreten erlauben</button>
             {/if}
         </div>
     {/if}
     
-    <!-- Leave button -->
-    <button class="btn btn-danger main-content" type="button" onclick={() => {
-        modalProvider.show({
-            title: "Spiel verlassen?",
-            contentText: "Möchten Sie das Spiel wirklich verlassen?",
-            confirmText: "Verlassen",
-            confirmColor: "danger",
-            onConfirm: () => {
-                gameHub.leaveGame();
-                goto("/");
-            }
-        });
-    }}>Spiel verlassen</button>
+    <div class="d-flex main-content mb-3">
+        <!-- Leave button -->
+        <button class="btn btn-danger w-100" type="button" onclick={() => {
+            modalProvider.show({
+                title: "Spiel verlassen?",
+                contentText: "Möchten Sie das Spiel wirklich verlassen?",
+                confirmText: "Verlassen",
+                confirmColor: "danger",
+                onConfirm: async () => {
+                    await gameHub.leaveGame();
+                    goto("/");
+                }
+            });
+        }}>Spiel verlassen</button>
+
+        {#if selfId === gameMeta?.gameMaster && (gameState ?? -2) > 0}
+            <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => {
+                modalProvider.show({
+                    title: "Spiel beenden?",
+                    contentText: "Möchten Sie das Spiel wirklich beenden? (Spieler bleiben in der Sitzung)",
+                    confirmText: "Beenden",
+                    confirmColor: "danger",
+                    onConfirm: async () => {
+                        await gameHub.stopGame()
+                        modalProvider.hide();
+                    }
+                });
+            }}>Spiel beenden (zurück zur Lobby)</button>
+        {/if}
+    </div>
 </div>
 
 <style>

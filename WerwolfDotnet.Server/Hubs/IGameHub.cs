@@ -25,6 +25,9 @@ public interface IGameHub
     
     [HubMethodName("onActionCompleted")]
     public Task PlayerActionCompleted(string[]? parameters);
+
+    [HubMethodName("onGameEnded")]
+    public Task GameEnds(bool villageWin, IReadOnlyDictionary<int, Role> playerRoles);     // TODO: Not yet implemented
     
     [HubMethodName("onForceDisconnect")]
     public Task ForceDisconnect(bool kicked = false);

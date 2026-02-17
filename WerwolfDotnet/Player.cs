@@ -82,6 +82,13 @@ public class Player : IEquatable<Player>
         Status = PlayerState.Death;
         return cause;
     }
+
+    internal void Reset()
+    {
+        Status = PlayerState.Alive;
+        Role = null;
+        _causeOfDeath = null;
+    }
     
     public bool Equals(Player? other)
     {

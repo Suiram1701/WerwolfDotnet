@@ -165,18 +165,18 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         return true;
     }
 
-    public bool ToggleJoinLock()
+    public bool SetJoinLock(bool @lock)
     {
         ThrowWhenNotInit();
 
-        if (State > GameState.Locked)     // Game is already running
+        if (State > 0)     // Game is already running
             return false;
-        State = State != GameState.Locked
+        State = @lock
             ? GameState.Locked
             : GameState.Preparation;
         OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
         
-        Logger.LogTrace("Toggled game state to {state}.", State);
+        Logger.LogTrace("Set game state to {state}.", State);
         return true;
     }
     
@@ -189,7 +189,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     public void StartGame(GameOptions options)
     {
         ThrowWhenNotInit();
-         if (State > GameState.Locked)
+         if (State > 0)
              throw new InvalidOperationException("Game game has already been started!");
          if (options.NightExecutionOrder.Distinct().Count() < options.NightExecutionOrder.Length)
              throw new ArgumentException($"{options.NightExecutionOrder} was expected to contain unique elements!", nameof(options));
@@ -216,6 +216,27 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
          GameOptions = options;
          _gameLoopCts = new CancellationTokenSource();
          _gameLoop = RunAsync(_gameLoopCts.Token);
+         Logger.LogInformation("Game startet");
+    }
+
+    public void StopGame()
+    {
+        ThrowWhenNotInit();
+        if (State <= 0)
+            return;
+        
+        _gameLoopCts?.Cancel();
+
+        foreach (Player player in _players)
+            player.Reset();
+        
+        State = GameState.Preparation;
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
+        Logger.LogInformation("Game stopped");
+        
+        _gameLoopCts = null;
+        _gameLoop = null;
+        GameOptions = null;
     }
 
     /// <summary>
@@ -233,21 +254,29 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         
         RunningAction = action;
         OnPhaseAction?.Invoke(this, action);
-
-        string[]? result = null;
+        
         try
         {
             await tcs.Task;
-            result = await completedCallback(action, ct);
         }
-        catch (Exception ex)
+        catch (TaskCanceledException ex)
         {
-            Logger.LogError(ex, "An exception occurred during a PhaseAction: {message}", ex.Message);
+            Logger.LogWarning(ex, "PhaseAction {type} was cancelled due to timeout/stop", action.Type);
+            throw;
         }
         finally
         {
-            OnPhaseActionCompleted?.Invoke(this, action, result);     // Frontend can (should) assume that every phase action is ended properly.
-            RunningAction = null;
+            string[]? result = null;
+            try
+            {
+                result = await completedCallback(action, ct);
+            }
+            finally
+            {
+                // Frontend can (should) assume that every phase action is ended properly.
+                OnPhaseActionCompleted?.Invoke(this, action, result);
+                RunningAction = null;
+            }
         }
     }
     
@@ -268,7 +297,14 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     {
         _disposed = true;
         _gameLoopCts?.Cancel();     // Don't dispose the task itself. It will throw
+        
+        foreach (Player player in _players)
+            player.Reset();
         State = GameState.NotInitialized;
+        
+        _gameLoopCts = null;
+        _gameLoop = null;
+        GameOptions = null;
     }
     
     private void ThrowWhenNotInit()

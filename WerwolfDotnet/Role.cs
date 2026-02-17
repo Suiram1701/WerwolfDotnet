@@ -2,9 +2,9 @@ namespace WerwolfDotnet;
 
 public enum Role
 {
-    None = -1,
+    Werwolf = -1,
+    None = 0,
     Villager,
-    Werwolf,
     Seer,
     Witch,
     Hunter,
