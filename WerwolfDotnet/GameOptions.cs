@@ -4,7 +4,7 @@ public class GameOptions
 {
     public int AmountWerwolfs { get; init; } = 1;
 
-    public int AmountSeers { get; init; } = 0;
+    public int AmountSeers { get; init; } = 1;
     
     public int AmountWitches { get; init; } = 1;
 

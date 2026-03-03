@@ -1,3 +1,6 @@
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
+
 namespace WerwolfDotnet;
 
 partial class GameContext
@@ -11,7 +14,7 @@ partial class GameContext
     /// Maps which player has fallen in love with whom (triggers <c>CauseOfDeath.DeathByHeathBreak</c>).
     /// </summary>
     public IReadOnlyDictionary<Player, Player> PlayersInLove => _playersInLove.AsReadOnly();
-    private readonly Dictionary<Player, Player> _playersInLove = new(2);
+    private readonly Dictionary<Player, Player> _playersInLove = new(2);     // There is only a pair
     
     private async Task RunAsync(CancellationToken ct)
     {
@@ -176,6 +179,8 @@ partial class GameContext
             }
         } while (newDeathPlayer);     // Loop multiple times over in case other players died during Death-Handler
 
+        CheckPlayerWin();     // Throws when the game ends
+        
         State = nextState;
         OnGameStateChanged?.Invoke(this, State, diedPlayers);
     }
@@ -185,4 +190,32 @@ partial class GameContext
         _playersInLove[player1] = player2;
         _playersInLove[player2] = player1;
     }
+
+    private void CheckPlayerWin()
+    {
+        if (_players.Count == _playersInLove.Count && _players.All(p => p.IsAlive && _playersInLove.ContainsKey(p)))
+            GameWon(Fraction.Lovers);
+        
+        int amountWerwolfs = _players.Count(p => p.Status == PlayerState.Alive && p.Role!.Type < 0);
+        if (amountWerwolfs == 0)     // Village win
+            GameWon(Fraction.Village);
+        
+        int amountVillagers = _players.Count(p => p.Status == PlayerState.Alive && p.Role!.Type > 0);
+        if (amountWerwolfs >= amountVillagers)     // Werwolf win
+            GameWon(Fraction.Werwolf);
+    }
+    
+    [DoesNotReturn]
+    private void GameWon(Fraction wonBy)
+    {
+        Logger.LogInformation("Game won by fraction {fraction}", wonBy);
+        
+        State = GameState.GameWon;
+        OnGameWon?.Invoke(this, wonBy);
+            
+        _gameLoopCts!.Cancel();
+        _gameLoopCts.Token.ThrowIfCancellationRequested();
+#pragma warning disable CS8763 // Method does not return because of ThrowIfCancellationRequested
+    }
+#pragma warning restore CS8763
 }

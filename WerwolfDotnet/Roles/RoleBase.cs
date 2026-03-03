@@ -6,6 +6,8 @@ namespace WerwolfDotnet.Roles;
 public abstract class RoleBase
 {
     public abstract Role Type { get; }
+
+    public virtual bool AlliesVisible => false;
     
     internal virtual Task OnDayAsync(GameContext ctx, Player self, CancellationToken ct) => Task.CompletedTask;
     

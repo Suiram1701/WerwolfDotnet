@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
+using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.Models;
 using WerwolfDotnet.Server.Options;
@@ -70,6 +71,7 @@ public class GameManager(
         context.OnGameStateChanged += OnGameStateChangedAsync;
         context.OnPhaseAction += OnPhaseActionAsync;
         context.OnPhaseActionCompleted += OnPhaseActionCompletedAsync;
+        context.OnGameWon += OnGameWonAsync;
 
         await _sessionStore.AddAsync(context);
         _logger.LogInformation("Game {gameId} created. Game master is {gameMasterName} ({gameMasterId})", gameId, gameMasterName, 0);
@@ -117,7 +119,7 @@ public class GameManager(
         ctx.AddPlayer(player);
 
         await _sessionStore.UpdateAsync(ctx);     // No need to log (done by game context)
-        await _hubContext.Clients.Game(ctx.Id).PlayersUpdated(ctx.Players.Select(p => new PlayerDto(p)));
+        await UpdatePlayersAsync(ctx, null);
         return (player, authToken);
     }
 
@@ -135,7 +137,7 @@ public class GameManager(
         if (ctx.Players.Count > 0)
         {
             await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
-            await _hubContext.Clients.Game(ctx.Id).PlayersUpdated(ctx.Players.Select(p => new PlayerDto(p)));
+            await Task.WhenAll(ctx.Players.Select(p => UpdatePlayersAsync(ctx, p)));     // Call for every player because the game could be running and therefore some roles could be revealed
             return true;
         }
         
@@ -148,6 +150,7 @@ public class GameManager(
             ctx.OnGameStateChanged -= OnGameStateChangedAsync;
             ctx.OnPhaseAction -= OnPhaseActionAsync;
             ctx.OnPhaseActionCompleted -= OnPhaseActionCompletedAsync;
+            ctx.OnGameWon -= OnGameWonAsync;
         
             await _sessionStore.RemoveAsync(ctx).ConfigureAwait(false);
         }
@@ -170,7 +173,7 @@ public class GameManager(
         
         ctx.ShufflePlayers();
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
-        await _hubContext.Clients.Game(ctx.Id).PlayersUpdated(ctx.Players.ToDtoCollection());
+        await UpdatePlayersAsync(ctx, null);
         return true;
     }
 
@@ -184,7 +187,7 @@ public class GameManager(
         ctx.StartGame(new GameOptions());
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
 
-        IEnumerable<Task> notifications = ctx.Players.Select(p => _hubContext.Clients.Player(ctx.Id, p.Id).PlayerRoleUpdated(p.Role!.Type));
+        IEnumerable<Task> notifications = ctx.Players.Select(p => UpdatePlayerRoleAsync(ctx, p));
         await Task.WhenAll(notifications).ConfigureAwait(false);
     }
 
@@ -195,6 +198,57 @@ public class GameManager(
         
         ctx.StopGame();
         return _sessionStore.UpdateAsync(ctx);
+    }
+
+    /// <summary>
+    /// Sends an update of the player list.
+    /// </summary>
+    /// <remarks>
+    /// When <paramref name="recipient"/> is <c>null</c> the update a broadcasted and when not
+    /// it's adapted to the player (in terms of role visibility) and send to him.
+    /// </remarks>
+    /// <param name="ctx">The game this action should be done in.</param>
+    /// <param name="recipient">An optional recipient of the update.</param>
+    /// <returns>A task to await</returns>
+    public Task UpdatePlayersAsync(GameContext ctx, Player? recipient)
+    {
+        var seer = recipient?.Role as Seer;
+        
+        IEnumerable<PlayerDto> dtos = ctx.Players.ToDtoCollection(p => ctx.State == GameState.GameWon
+            ? p.Role?.Type
+            : (seer?.WatchedPlayers.TryGetValue(p, out Role r) ?? false) ? r : null);
+        return recipient is null
+            ? _hubContext.Clients.Game(ctx.Id).PlayersUpdated(dtos)
+            : _hubContext.Clients.Player(ctx.Id, recipient.Id).PlayersUpdated(dtos);
+    }
+    
+    /// <summary>
+    /// Sends an update of a players role to him. Additionally, player relations are re-evaluated and send.
+    /// </summary>
+    /// <param name="ctx">The game this is about.</param>
+    /// <param name="player">The player to update.</param>
+    /// <returns>A task to await.</returns>
+    public Task UpdatePlayerRoleAsync(GameContext ctx, Player player)
+    {
+        if (player.Role is null)
+            return Task.CompletedTask;
+        
+        Dictionary<int, PlayerRelation[]> relations = new();
+        if (player.Role?.AlliesVisible ?? false)
+        {
+            foreach (Player ally in ctx.Players.Where(p => p.Role?.Type == player.Role.Type && !player.Equals(p)))
+                relations[ally.Id] = [PlayerRelation.Ally];
+        }
+
+        if (ctx.PlayersInLove.TryGetValue(player, out Player? lovedOne))
+        {
+            if (relations.TryGetValue(lovedOne.Id, out PlayerRelation[]? currentRelation))
+                relations[lovedOne.Id] = [..currentRelation, PlayerRelation.Lover];
+            else
+                relations[lovedOne.Id] = [PlayerRelation.Lover];
+        }
+
+        return _hubContext.Clients.Player(ctx.Id, player.Id).PlayerRoleUpdated(player.Role!.Type, relations);
     }
 
     public async Task RegisterPlayerActionAsync(GameContext ctx, Player self, Player[] selection)
@@ -215,6 +269,7 @@ public class GameManager(
         }
     }
 
+    // try-catch is "required" everywhere because of async-void 
     private async void OnGameMetadataChangedAsync(GameContext ctx, int gameMasterId, int? mayorId)
     {
         try
@@ -253,6 +308,29 @@ public class GameManager(
         {
             await _hubContext.Clients.Players(ctx.Id, action.Participants.Select(p => p.Id))
                 .PlayerActionCompleted(parameters);
+
+            switch (action.Type)     // Some actions have side effects on other players
+            {
+                case ActionType.SeerSelection:
+                    await UpdatePlayersAsync(ctx, action.Participants.Single());
+                    break;
+                case ActionType.AmorSelection:
+                    await Task.WhenAll(action.PlayerVotes.Values
+                        .SelectMany(l => l)
+                        .Select(p => UpdatePlayerRoleAsync(ctx, p)));
+                    break;
+            }
+        }
+        catch (Exception ex)
+        { _logger.LogError(ex, ex.Message); }
+    }
+
+    private async void OnGameWonAsync(GameContext ctx, Fraction fraction)
+    {
+        try
+        {
+            await _hubContext.Clients.Game(ctx.Id).GameWon(fraction);
+            await UpdatePlayersAsync(ctx, null);     // Trigger update to load the roles
         }
         catch (Exception ex)
         { _logger.LogError(ex, ex.Message); }

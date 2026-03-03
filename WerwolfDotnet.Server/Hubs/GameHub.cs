@@ -22,10 +22,8 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
 
         await Clients.Caller.GameMetaUpdated(ctx.GameMaster.Id, ctx.Mayor?.Id);
         await Clients.Caller.GameStateUpdated(ctx.State, new Dictionary<int, DeathDetails>(0));
-        await Clients.Caller.PlayersUpdated(ctx.Players.ToDtoCollection());
-
-        if (player.Role is not null)
-            await Clients.Caller.PlayerRoleUpdated(player.Role.Type);
+        await _manager.UpdatePlayersAsync(ctx, player);
+        await _manager.UpdatePlayerRoleAsync(ctx, player);
 
         if (ctx.RunningAction is { } action && action.Participants.Contains(player))
         {

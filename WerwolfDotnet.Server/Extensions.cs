@@ -6,8 +6,8 @@ namespace WerwolfDotnet.Server;
 
 public static class Extensions
 {
-    public static IEnumerable<PlayerDto> ToDtoCollection(this IEnumerable<Player> players) =>
-        players.Select(p => new PlayerDto(p));
+    public static IEnumerable<PlayerDto> ToDtoCollection(this IEnumerable<Player> players, Func<Player, Role?>? toRole = null) =>
+        players.Select(p => new PlayerDto(p, toRole?.Invoke(p)));
     
     extension(ClaimsPrincipal user)
     {

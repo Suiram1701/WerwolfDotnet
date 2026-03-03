@@ -29,4 +29,9 @@ public enum GameState
     /// Its night. No one (except the Werwolfs) are allowed to talk.
     /// </summary>
     Night = 2,
+    
+    /// <summary>
+    /// The game has ended and one of the fractions won the game.
+    /// </summary>
+    GameWon = 3
 }

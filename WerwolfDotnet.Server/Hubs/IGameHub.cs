@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using WerwolfDotnet.Server.Models;
+using WerwolfDotnet.Server.Services;
 
 namespace WerwolfDotnet.Server.Hubs;
 
@@ -8,14 +9,20 @@ public interface IGameHub
     [HubMethodName("onGameMetaUpdated")]
     public Task GameMetaUpdated(int gameMasterId, int? mayorId);
     
+    /// <remarks>
+    /// NOTE: Do not use directly as soon as the game started!
+    /// </remarks>
     [HubMethodName("onPlayersUpdated")]
     public Task PlayersUpdated(IEnumerable<PlayerDto> players);
     
     [HubMethodName("onGameStateUpdated")]
     public Task GameStateUpdated(GameState state, IReadOnlyDictionary<int, DeathDetails> diedPlayers);
 
+    /// <remarks>
+    /// NOTE: Do not use directly! Use <see cref="GameManager.UpdatePlayerRoleAsync"/> instead.
+    /// </remarks>
     [HubMethodName("onPlayerRoleUpdated")]
-    public Task PlayerRoleUpdated(Role role);
+    public Task PlayerRoleUpdated(Role role, IReadOnlyDictionary<int, PlayerRelation[]> selfRelations);
     
     [HubMethodName("onActionRequested")]
     public Task PlayerActionRequested(SelectionOptionsDto options);
@@ -26,8 +33,8 @@ public interface IGameHub
     [HubMethodName("onActionCompleted")]
     public Task PlayerActionCompleted(string[]? parameters);
 
-    [HubMethodName("onGameEnded")]
-    public Task GameEnds(bool villageWin, IReadOnlyDictionary<int, Role> playerRoles);     // TODO: Not yet implemented
+    [HubMethodName("onGameWon")]
+    public Task GameWon(Fraction fraction);
     
     [HubMethodName("onForceDisconnect")]
     public Task ForceDisconnect(bool kicked = false);

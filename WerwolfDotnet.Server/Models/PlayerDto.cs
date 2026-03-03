@@ -1,6 +1,6 @@
 namespace WerwolfDotnet.Server.Models;
 
-public class PlayerDto(Player player)
+public class PlayerDto(Player player, Role? visibleRole = null)
 {
     /// <summary>
     /// The id (only unique in the game session) of the player.
@@ -12,6 +12,11 @@ public class PlayerDto(Player player)
     /// </summary>
     public string Name { get; } = player.Name;
 
+    /// <summary>
+    /// The role of the player. Is set independently of the "real" role.
+    /// </summary>
+    public Role? Role { get; } = visibleRole;
+    
     /// <summary>
     /// Indicates whether this player is currently alive.
     /// </summary>

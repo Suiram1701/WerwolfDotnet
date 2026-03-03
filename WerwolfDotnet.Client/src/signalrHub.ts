@@ -1,4 +1,4 @@
-import { type SelectionOptionsDto, GameState, Role, CauseOfDeath, type PlayerDto } from "./Api";
+import { type SelectionOptionsDto, GameState, Role, CauseOfDeath, PlayerRelation, Fraction, type PlayerDto } from "./Api";
 import { HubConnection } from "@microsoft/signalr"
 
 export class GameHubServer {
@@ -42,26 +42,18 @@ export abstract class GameHubClientBase {
         connection.on("onActionRequested", this.onActionRequested);
         connection.on("onVotesUpdated", this.onVotesUpdated);
         connection.on("onActionCompleted", this.onActionCompleted);
-        connection.on("onGameEnded", this.onGameEnded);
+        connection.on("onGameWon", this.onGameWon);
         connection.on("onForceDisconnect", this.onForceDisconnect);
     }
 
     public abstract onGameMetaUpdated(gameMasterId: number, mayorId: number | null): Promise<void>;
-    
     public abstract onPlayersUpdated(players: PlayerDto[]): Promise<void>;
-    
     public abstract onGameStateUpdated(newState: GameState, diedPlayers: Record<number, DeathDetails>): Promise<void>;
-    
-    public abstract onPlayerRoleUpdated(roleName: Role): Promise<void>;
-    
+    public abstract onPlayerRoleUpdated(roleName: Role, relations: Record<number, PlayerRelation[]>): Promise<void>;
     public abstract onActionRequested(action: SelectionOptionsDto): Promise<void>;
-    
     public abstract onVotesUpdated(votes: Record<number, number[]>): Promise<void>;
-    
     public abstract onActionCompleted(parameters: string[] | null): Promise<void>;
-    
-    public abstract onGameEnded(villageWin: boolean, playerRoles: Record<number, Role>): Promise<void>;
-    
+    public abstract onGameWon(wonFraction: Fraction): Promise<void>;
     public abstract onForceDisconnect(kicked: boolean): Promise<void>;
 }
 

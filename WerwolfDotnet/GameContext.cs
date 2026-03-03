@@ -46,7 +46,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// The current state of the game. Indicates everything from whether it's running to which role is next.
     /// </summary>
     public GameState State { get; private set; } = GameState.NotInitialized;
-    
+
     public PhaseAction? RunningAction { get; private set; }
 
     /// <summary>
@@ -69,6 +69,11 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// When <c>null</c> nothing should be shown.
     /// </summary>
     public event Action<GameContext, PhaseAction, string[]?>? OnPhaseActionCompleted;
+
+    /// <summary>
+    /// Invoked when one of the fractions has won the game. First bool is whether the village won the game.
+    /// </summary>
+    public event Action<GameContext, Fraction>? OnGameWon;
     
     internal ILogger Logger { get; }
     

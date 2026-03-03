@@ -1,19 +1,23 @@
 <script lang="ts">
     import { page } from "$app/state"
-    import { goto } from "$app/navigation";
+    import { goto, invalidateAll } from "$app/navigation";
     import { getContext, onMount } from "svelte";
     import { type Readable } from "svelte/store";
     import { config } from "../../config";
-    import { CauseOfDeath, GameState, type PlayerDto, Role, type SelectionOptionsDto } from "../../Api";
-    import { roleDescriptions, roleNames } from "../../textes/roles";
-    import { actionCompletions, actionDescriptions, actionNames } from "../../textes/actions";
+    import {
+        CauseOfDeath, Fraction, GameState, PlayerRelation, Role,
+        type PlayerDto, type SelectionOptionsDto
+    } from "../../Api";
     import { getPlayerToken, removePlayerToken } from "../../gameSessionStore";
     import { type DeathDetails, GameHubClientBase, GameHubServer } from "../../signalrHub";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
+    import { roleDescriptions, roleNames } from "../../textes/roles";
+    import { actionCompletions, actionDescriptions, actionNames } from "../../textes/actions";
+    import { causeOfDeaths } from "../../textes/causeOfDeaths";
+    import { fractions, fractionWin } from "../../textes/fractions";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
     import { tooltip } from "$lib/actions/tooltip";
-    import {causeOfDeaths} from "../../textes/causeOfDeaths";
 
     const webUrl = page.url.protocol + "//" + page.url.host;     // Port is part of the host
     
@@ -26,6 +30,7 @@
     let selfRole: Role | undefined = $state();
     
     let players: PlayerDto[] = $state([]);
+    let playerRelation: Record<number, PlayerRelation[]> = $state([]);
     let gameState: GameState | undefined = $state();
     let gameMeta: { gameMaster: number, mayor: number | null } | undefined = undefined;
     
@@ -83,11 +88,15 @@
         }
         
         onGameStateUpdated(newState: GameState, diedPlayers: Record<number, DeathDetails>): Promise<void> {
-            if (gameState === undefined || gameState <= GameState.Locked) {     // Frontend has just initialized. No one can be displayed as died during this
+            if (gameState === GameState.GameWon && newState <= 0) {
+                window.location.reload();     // Reset the whole frontend. In my opinion is the risk to break something with a manuell reset.
+                return Promise.resolve();
+            }
+            else if (gameState === undefined || gameState <= 0) {     // Frontend has just initialized. No one can be displayed as died during this
                 gameState = newState;
                 return Promise.resolve();
             }
-
+            
             gameState = newState;
             for (const player of players) {
                 if (player.id! in diedPlayers)
@@ -100,43 +109,7 @@
                 return Promise.resolve();
             }
             
-            // Builds a human-readable form of all died players.
-            let diedStr: string = "";
-            if (Object.keys(diedPlayers).length > 0)
-            {
-                let mapped: Partial<Record<CauseOfDeath, number[]>> = {};
-                for (const player in diedPlayers) {
-                    const cause = diedPlayers[player].cause;
-                    if (cause in mapped)
-                        mapped[cause]!.push(Number(player));
-                    else
-                        mapped[cause] = [Number(player)];
-                }
-                
-                for (const cause of Object.keys(CauseOfDeath).map(k => Number(k) as CauseOfDeath))
-                {
-                    const diedFromCause: number[] = mapped[cause] ?? [];
-                    if (diedFromCause.length > 0)
-                        diedStr += `${causeOfDeaths[cause](mapped[cause]!.map(id => players.find(p => p.id! === id)!.name!) ?? [])} `;
-                    
-                    if (diedFromCause.length === 1 && diedPlayers[diedFromCause[0]]?.role !== Role.None)
-                    {
-                        diedStr += `Er war <b>${roleNames[diedPlayers[diedFromCause[0]].role]}</b>. `;
-                    }
-                    else if (diedFromCause.filter(id => diedPlayers[id].role !== Role.None).length > 1)
-                    {
-                        diedStr += diedFromCause
-                            .filter(id => diedPlayers[id].role !== Role.None)
-                            .map(playerId => `<b>${players.find(p => p.id === playerId)!.name}</b> war <b>${roleNames[diedPlayers[playerId].role]}</b>`)
-                            .join(", ");
-                        diedStr += ". ";
-                    }
-                }
-            }
-            else {
-                diedStr = "Es ist niemand gestorben."
-            }
-
+            const diedStr: string = buildDeathString(diedPlayers);
             if (newState === GameState.Day)
                 modalProvider.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr}`, allowHtmlText: true, canDismiss: false });
             else if (newState === GameState.Night)
@@ -144,18 +117,19 @@
             return Promise.resolve();
         }
 
-        public onPlayerRoleUpdated(newRoleName: Role): Promise<void> {
+        onPlayerRoleUpdated(newRoleName: Role, relations: Record<number, PlayerRelation[]>): Promise<void> {
             selfRole = newRoleName;
+            playerRelation = relations;
             return Promise.resolve();
         }
 
-        public onActionRequested(action: SelectionOptionsDto): Promise<void> {
+        onActionRequested(action: SelectionOptionsDto): Promise<void> {
             selectedPlayers = [];
             runningAction = action;
             return Promise.resolve();
         }
         
-        public onVotesUpdated(votes: Record<number, number[]>): Promise<void> {
+        onVotesUpdated(votes: Record<number, number[]>): Promise<void> {
             selectedPlayers = selfId! in votes ? votes[selfId!] : [];
             
             const votesForPlayer: Record<number, number[]> = {};
@@ -173,7 +147,7 @@
             return Promise.resolve();
         }
 
-        public onActionCompleted(parameters: string[] | null): Promise<void> {
+        onActionCompleted(parameters: string[] | null): Promise<void> {
             if (parameters !== null) {
                 modalProvider.show({
                     title: actionNames[runningAction!.type ?? 0] || "undefined",
@@ -189,8 +163,14 @@
             return Promise.resolve();
         }
 
-        onGameEnded(villageWin: boolean, playerRoles: Record<number, Role>): Promise<void> {
-            throw new Error("Not yet implemented");
+        onGameWon(winFraction: Fraction): Promise<void> {
+            gameState = GameState.GameWon;
+            modalProvider.show({
+                title: `Die ${fractions[winFraction]}`,
+                contentText: `Die ${fractions[winFraction]} haben gewonnen. ${fractionWin[winFraction]}`
+            });
+            
+            return Promise.resolve();
         }
         
         async onForceDisconnect(kicked: boolean): Promise<void> {
@@ -201,6 +181,44 @@
             else
                 goto("/");
         }
+    }
+    
+    function buildDeathString(diedPlayers: Record<number, DeathDetails>): string {
+        if (Object.keys(diedPlayers).length > 0)
+        {
+            let diedStr: string = "";
+            let mapped: Partial<Record<CauseOfDeath, number[]>> = {};
+            for (const player in diedPlayers) {
+                const cause = diedPlayers[player].cause;
+                if (cause in mapped)
+                    mapped[cause]!.push(Number(player));
+                else
+                    mapped[cause] = [Number(player)];
+            }
+
+            for (const cause of Object.keys(CauseOfDeath).map(k => Number(k) as CauseOfDeath))
+            {
+                const diedFromCause: number[] = mapped[cause] ?? [];
+                if (diedFromCause.length > 0)
+                    diedStr += `${causeOfDeaths[cause](mapped[cause]!.map(id => players.find(p => p.id! === id)!.name!) ?? [])} `;
+
+                if (diedFromCause.length === 1 && diedPlayers[diedFromCause[0]]?.role !== Role.None)
+                {
+                    diedStr += `Er war <b>${roleNames[diedPlayers[diedFromCause[0]].role]}</b>. `;
+                }
+                else if (diedFromCause.filter(id => diedPlayers[id].role !== Role.None).length > 1)
+                {
+                    diedStr += diedFromCause
+                        .filter(id => diedPlayers[id].role !== Role.None)
+                        .map(playerId => `<b>${players.find(p => p.id === playerId)!.name}</b> war <b>${roleNames[diedPlayers[playerId].role]}</b>`)
+                        .join(", ");
+                    diedStr += ". ";
+                }
+            }
+            return diedStr;
+        }
+        
+        return "Es ist niemand gestorben.";
     }
     
     function getPlayerCSSClasses(player: PlayerDto): string {
@@ -243,6 +261,11 @@
         <p>Der Tag ist angebrochen. Diskutiert und entscheidet euch für einen Spieler, der am Abend hingerichtet werden soll.</p>
     {:else if gameState === GameState.Night}
         <p>Die Nacht ist angebrochen! Alle gehen schlafen, außer den Werwölfen...</p>
+    {:else if gameState === GameState.GameWon}
+        <p>
+            Die Spielrunde ist zu ende. Frage den Game-Master ob dieser die Runde beendet und eine neue beginnt. <br>
+            <small>Fall Bugs, Glitches oder andere Fehler aufgetreten sind können diese gerne per <a href="https://github.com/Suiram1701/WerwolfDotnet/issues" target="_blank">GitHub</a> gemeldet werden :)</small>
+        </p>
     {/if}
 </div>
 
@@ -263,6 +286,10 @@
                                name="playerAction" disabled="{!runningAction.votablePlayers?.includes(player.id ?? -1)}" />
                     {/if}
                     <label class="form-check-label" for="playerAction{player.id}">{player.name}</label>
+                {/if}
+
+                {#if player.role !== undefined && player.role !== null }
+                    -> {roleNames[player.role]}
                 {/if}
 
                 <div class="flex-grow-1"></div>

@@ -34,6 +34,13 @@ export enum CauseOfDeath {
   None = -1,
 }
 
+/** @format int32 */
+export enum Fraction {
+  Village = 0,
+  Werwolf = 1,
+  Lovers = 2,
+}
+
 /** A Dto for returning a game. */
 export interface GameDto {
   /**
@@ -64,6 +71,7 @@ export enum GameState {
   Locked = 0,
   Day = 1,
   Night = 2,
+  GameWon = 3,
   NotInitialized = -2,
   Preparation = -1,
 }
@@ -94,8 +102,16 @@ export interface PlayerDto {
   id?: number;
   /** The name of the player. */
   name?: string | null;
+  role?: Role;
   /** Indicates whether this player is currently alive. */
   alive?: boolean;
+}
+
+/** @format int32 */
+export enum PlayerRelation {
+  None = 0,
+  Ally = 1,
+  Lover = 2,
 }
 
 /** @format int32 */
