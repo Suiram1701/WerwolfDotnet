@@ -5,7 +5,7 @@
     import { type Readable } from "svelte/store";
     import { config } from "../config";
     import { Api, type HttpResponse, type GameDto, type JoinGameDto, type JoinedGameDto} from "../Api";
-    import { storePlayerToken } from "../gameSessionStore";
+    import { storePlayerToken } from "../stores/gameSessionStore";
     import PageTitle from "$lib/components/PageTitle.svelte"
     import GameCard from "$lib/components/GameCard.svelte";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
