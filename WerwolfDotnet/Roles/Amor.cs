@@ -16,7 +16,7 @@ public sealed class Amor : RoleBase
             return;
         }
 
-        await ctx.RequestPlayerActionAsync(new PhaseAction
+        await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
         {
             Type = ActionType.AmorSelection,
             Minimum = 2,
@@ -26,6 +26,9 @@ public sealed class Amor : RoleBase
         }, (action, _) =>
         {
             Player[] votes = action.PlayerVotes[self];
+            if (votes.Length != 2)
+                return Task.FromResult<string[]?>(null);
+            
             ctx.PlayersFallInLove(votes[0], votes[1]);
             ctx.Logger.LogTrace(
                 "Amor {amor} ({amorId}) made {player1} ({player1Id}) to fall in Love with {player2} ({player2Id})",
@@ -33,7 +36,7 @@ public sealed class Amor : RoleBase
             
             Done = true;
             return Task.FromResult<string[]?>(null);
-        }, ct);
+        });
         await base.OnNightAsync(ctx, self, ct);
     }
 }

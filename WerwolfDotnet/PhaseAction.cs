@@ -6,7 +6,7 @@ namespace WerwolfDotnet;
 /// Represents a current 
 /// </summary>
 [DebuggerDisplay($"Type = {{{nameof(Type)}}}, Votes = {{{nameof(PlayerVotes)}.Count}} / {{{nameof(Participants)}.Count}}")]
-public sealed class PhaseAction
+public sealed class PhaseAction(CancellationToken ct)
 {
     /// <summary>
     /// The name of this action (localizer key)
@@ -43,8 +43,11 @@ public sealed class PhaseAction
     /// </summary>
     public IReadOnlyDictionary<Player, Player[]> PlayerVotes => _playerVotes.AsReadOnly();
     private readonly Dictionary<Player, Player[]> _playerVotes = new();
+
+    public CancellationToken CancellationToken => _cts.Token;
+    private readonly CancellationTokenSource _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
     
-    public event Action<PhaseAction>? OnCompleted;
+    public event Action<PhaseAction, CancellationToken>? OnCompleted;
     
     public bool RegisterVote(Player self, Player[] selection)
     {
@@ -56,10 +59,22 @@ public sealed class PhaseAction
         _playerVotes[self] = selection;
         
         if (PlayerVotes.Count == Participants.Count && PlayerVotes.All(v => v.Value.Length >= Minimum))
-            OnCompleted?.Invoke(this);
+            OnCompleted?.Invoke(this, CancellationToken);
         return true;
     }
 
+    public void CancelAction()
+    {
+        foreach (Player participant in Participants)
+        {
+            if (!_playerVotes.ContainsKey(participant))     // Add at least every participant to the dict.
+                _playerVotes[participant] = [];
+        }
+        
+        _cts.Cancel();
+        OnCompleted?.Invoke(this, CancellationToken);
+    }
+    
     /// <summary>
     /// Calculates the player who was voted the most.
     /// </summary>

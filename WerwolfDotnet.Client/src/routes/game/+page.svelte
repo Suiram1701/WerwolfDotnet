@@ -7,7 +7,7 @@
     import { getPlayerToken } from "../../stores/gameSessionStore";
     import { gamePageState } from "../../stores/pageStateStore";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
-    import { GameHub } from "../../signalrHub";
+    import { GameHub } from "../../gameHub";
     import { roleDescriptions, roleNames } from "../../textes/roles";
     import { actionDescriptions, actionNames } from "../../textes/actions";
     import { tooltip } from "$lib/actions/tooltip";
@@ -61,16 +61,6 @@
         else if (!player.alive)
             return "list-group-item-secondary";
         return "";
-    }
-    
-    function updatePlayerSelection(player: number, selected: boolean): void {
-        state.update(s => {
-            if (selected)
-                s.selectedPlayers.push(player);
-            else
-                s.selectedPlayers = s.selectedPlayers.filter(id => id !== player);
-            return s;
-        });
     }
 </script>
 
@@ -240,8 +230,7 @@
         }}>Spiel verlassen</button>
 
         {#if $state.selfId === $state.gameMeta?.gameMaster && ($state.gameState ?? -2) > 0}
-            <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => {
-                modalProvider.show({
+            <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({
                     title: "Spiel beenden?",
                     contentText: "Möchten Sie das Spiel wirklich beenden? (Spieler bleiben in der Sitzung)",
                     confirmText: "Beenden",
@@ -250,8 +239,20 @@
                         await gameHub.stopGame()
                         modalProvider.hide();
                     }
-                });
-            }}>Spiel beenden (zurück zur Lobby)</button>
+                })}>Spiel beenden (zurück zur Lobby)</button>
+
+            {#if config.gameMasterSkipAllowed}
+                <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({
+                    title: "Spieler Aktion überspringen?",
+                    contentText: "Diese Funktion sollte nur genutzt werden, wenn ein Nutzer AFK ist. Das Ergebnis der Aktion wird im voraus ausgewertet egal, ob Spieler noch nicht abgestimmt haben.",
+                    confirmText: "Überspringen",
+                    confirmColor: "danger",
+                    onConfirm: async () => {
+                        await gameHub.cancelCurrentAction();
+                        modalProvider.hide();
+                    }
+                })}>Aktuelle Aktion beenden</button>
+            {/if}
         {/if}
     </div>
 </div>

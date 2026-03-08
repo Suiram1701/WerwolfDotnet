@@ -249,13 +249,12 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// </summary>
     /// <param name="action"></param>
     /// <param name="completedCallback">Gets invoked when the action finished (or was canceled).</param>
-    /// <param name="ct">A cancellation token which cancels the whole action.</param>
     /// <returns>A tasks which waits until every player made a decision.</returns>
-    internal async Task RequestPlayerActionAsync(PhaseAction action, Func<PhaseAction, CancellationToken, Task<string[]?>> completedCallback, CancellationToken ct)
+    internal async Task RequestPlayerActionAsync(PhaseAction action, Func<PhaseAction, CancellationToken, Task<string[]?>> completedCallback)
     {
         TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        await using CancellationTokenRegistration ctr = ct.Register(_ => tcs.SetCanceled(ct), null);
-        action.OnCompleted += _ => tcs.TrySetResult();
+        await using CancellationTokenRegistration ctr = action.CancellationToken.Register(_ => tcs.SetCanceled(action.CancellationToken), null);
+        action.OnCompleted += (_, _) => tcs.TrySetResult();
         
         RunningAction = action;
         OnPhaseAction?.Invoke(this, action);
@@ -274,7 +273,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
             string[]? result = null;
             try
             {
-                result = await completedCallback(action, ct);
+                result = await completedCallback(action, action.CancellationToken);
             }
             finally
             {

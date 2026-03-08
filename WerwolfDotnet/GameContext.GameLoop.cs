@@ -48,7 +48,7 @@ partial class GameContext
                 if (player.Role!.Type == Role.Werwolf)
                 {
                     // Werwölfe
-                    await RequestPlayerActionAsync(new PhaseAction
+                    await RequestPlayerActionAsync(new PhaseAction(ct)
                     {
                         Type = ActionType.WerwolfSelection,
                         Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type == Role.Werwolf)],
@@ -60,7 +60,7 @@ partial class GameContext
 
                         playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
                         return Task.FromResult<string[]?>([playerToDie.Name]);
-                    }, ct);
+                    });
                 }
                 else
                 {
@@ -78,7 +78,7 @@ partial class GameContext
     {
         if (Mayor is null)
         {
-            await RequestPlayerActionAsync(new PhaseAction
+            await RequestPlayerActionAsync(new PhaseAction(ct)
             {
                 Type = ActionType.MayorVoting,
                 Minimum = 0,
@@ -94,11 +94,11 @@ partial class GameContext
                     return Task.FromResult<string[]?>([newMayor.Name]);
                 }
                 return Task.FromResult<string[]?>([]);
-            }, ct);
+            });
         }
 
         Player[] accusedPlayers = [];
-        await RequestPlayerActionAsync(new PhaseAction
+        await RequestPlayerActionAsync(new PhaseAction(ct)
         {
             Type = ActionType.WerwolfAccuses,
             Minimum = 0,
@@ -109,11 +109,11 @@ partial class GameContext
         {
             accusedPlayers = [..action.PlayerVotes.Values.SelectMany(v => v)];
             return Task.FromResult<string[]?>(null);
-        }, ct);
+        });
         
         if (accusedPlayers.Length > 0)
         {
-            await RequestPlayerActionAsync(new PhaseAction
+            await RequestPlayerActionAsync(new PhaseAction(ct)
             {
                 Type = ActionType.WerwolfKilling,
                 Minimum = 1,
@@ -125,7 +125,7 @@ partial class GameContext
                 if (action.GetMostVotedPlayer(Mayor is not null ? [Mayor] : null) is { } playerToExecute)
                     playerToExecute.Kill(CauseOfDeath.WerwolfKilling, null);
                 return Task.FromResult<string[]?>(null);
-            }, ct);
+            });
         }
         
         foreach (Player player in _players
@@ -150,7 +150,7 @@ partial class GameContext
                 await player.Role!.OnDeathAsync(this, player, ct);
                 if (GameOptions!.MayorDecidesNextMayor && player.Equals(Mayor))     // Mayor dies
                 {
-                    await RequestPlayerActionAsync(new PhaseAction
+                    await RequestPlayerActionAsync(new PhaseAction(ct)
                     {
                         Type = ActionType.NextMayorDecision,
                         Minimum = 0,
@@ -161,7 +161,7 @@ partial class GameContext
                     {
                         Mayor = action.PlayerVotes[player].FirstOrDefault();
                         return Task.FromResult<string[]?>(null);
-                    }, ct);
+                    });
                 }
                 else if (player.Equals(Mayor))
                 {

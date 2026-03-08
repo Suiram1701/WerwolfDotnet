@@ -14,7 +14,8 @@ public class GameManager(
     ILoggerFactory loggerFactory,
     IGameSessionStore sessionStore,
     IHubContext<GameHub, IGameHub> hubContext,
-    IOptionsMonitor<GameLobbyOptions> lobbyOptions)
+    IOptionsMonitor<GameLobbyOptions> lobbyOptions,
+    IOptionsMonitor<Options.GameOptions> gameOptions)
 {
     private readonly ILogger<GameManager> _logger = logger;
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
@@ -22,6 +23,8 @@ public class GameManager(
     private readonly IHubContext<GameHub, IGameHub> _hubContext = hubContext;
     
     private GameLobbyOptions LobbyOptions => lobbyOptions.CurrentValue;
+    
+    private Options.GameOptions GameOptions => gameOptions.CurrentValue;
 
     /// <summary>
     /// Checks whether the given player name is valid.
@@ -269,6 +272,15 @@ public class GameManager(
         }
     }
 
+    public Task CancelPlayerActionAsync(GameContext ctx)
+    {
+        if (!GameOptions.GameMasterSkipAllowed || ctx.RunningAction is not {} action)
+            return Task.CompletedTask;
+        
+        action.CancelAction();
+        return _sessionStore.UpdateAsync(ctx);
+    }
+    
     // try-catch is "required" everywhere because of async-void 
     private async void OnGameMetadataChangedAsync(GameContext ctx, int gameMasterId, int? mayorId)
     {

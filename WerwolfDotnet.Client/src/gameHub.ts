@@ -18,16 +18,16 @@ export class GameHub {
         gamePageState.subscribe(state => this.gamePage = state);
         this.modal = provider;
         
-        this.connection = connection;     // Wrapper is required here when subscribing because without it the "this-context" would get lost
-        this.connection.on("onGameMetaUpdated", (gmId, mayorId) => this.onGameMetaUpdated(gmId, mayorId));
-        this.connection.on("onPlayersUpdated", players => this.onPlayersUpdated(players));
-        this.connection.on("onGameStateUpdated", (state, diedPlayers) => this.onGameStateUpdated(state, diedPlayers));
-        this.connection.on("onPlayerRoleUpdated", (role, relations) => this.onPlayerRoleUpdated(role, relations));
-        this.connection.on("onActionRequested", action => this.onActionRequested(action));
-        this.connection.on("onVotesUpdated", votes => this.onVotesUpdated(votes));
-        this.connection.on("onActionCompleted", params => this.onActionCompleted(params));
-        this.connection.on("onGameWon", fraction => this.onGameWon(fraction));
-        this.connection.on("onForceDisconnect", kicked => this.onForceDisconnect(kicked));
+        this.connection = connection;
+        const methodNames: string[] = Object.getOwnPropertyNames(GameHub.prototype);
+        for (const methodName of methodNames) {
+            const value: unknown = (this as Record<string, unknown>)[methodName];
+            if (typeof value !== "function" || !methodName.startsWith("on"))
+                continue;
+            
+            const method: (...args: unknown[]) => unknown = value as (...args: unknown[]) => unknown;
+            this.connection.on(methodName, (...args) => method.call(this, ...args))     // Wrapper is required here when subscribing because without it the "this-context" would get lost
+        }
     }
     
     public async setGameLocked(locked: boolean): Promise<void> {
@@ -44,6 +44,10 @@ export class GameHub {
     
     public async playerAction(selectedPlayer: number[]): Promise<void> {
         await this.connection.invoke("playerAction", selectedPlayer);
+    }
+    
+    public async cancelCurrentAction(): Promise<void> {
+        await this.connection.invoke("cancelCurrentPlayerAction");
     }
     
     public async stopGame(): Promise<void> {

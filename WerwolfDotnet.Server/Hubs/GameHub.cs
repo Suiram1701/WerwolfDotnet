@@ -90,6 +90,16 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         await _manager.RegisterPlayerActionAsync(ctx, self, votes);
     }
 
+    [HubMethodName("cancelCurrentPlayerAction")]
+    public async Task OnCancelCurrentPlayerAction()
+    {
+        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        if (!CheckGameMaster(ctx, "pre-end player action"))
+            return;
+
+        await _manager.CancelPlayerActionAsync(ctx);
+    }
+    
     [HubMethodName("stopGame")]
     public async Task OnBackToLobby()
     {

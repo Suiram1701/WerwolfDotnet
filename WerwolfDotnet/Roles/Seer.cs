@@ -11,7 +11,7 @@ public sealed class Seer : RoleBase
     
     internal override async Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct)
     {
-        await ctx.RequestPlayerActionAsync(new PhaseAction
+        await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
         {
             Type = ActionType.SeerSelection,
             Participants = [self],
@@ -26,7 +26,7 @@ public sealed class Seer : RoleBase
                 self.Name, self.Id, selectedOne.Name, selectedOne.Id, selectedOne.Role!.Type);
             _watchedPlayers[selectedOne] = selectedOne.Role!.Type;
             return Task.FromResult<string[]?>([selectedOne.Name, selectedOne.Role!.Type.ToString()]);
-        }, ct);
+        });
         
         await base.OnNightAsync(ctx, self, ct);
     }

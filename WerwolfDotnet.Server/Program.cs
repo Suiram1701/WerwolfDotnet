@@ -7,12 +7,17 @@ using WerwolfDotnet.Server.OpenApiFilters;
 using WerwolfDotnet.Server.Options;
 using WerwolfDotnet.Server.Services;
 using WerwolfDotnet.Server.Services.Interfaces;
+using GameOptions = WerwolfDotnet.Server.Options.GameOptions;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddOptions<GameLobbyOptions>()
     .BindConfiguration("GameLobby")
+    .ValidateDataAnnotations();
+builder.Services
+    .AddOptions<GameOptions>()
+    .BindConfiguration("GameOptions")
     .ValidateDataAnnotations();
 
 builder.Services

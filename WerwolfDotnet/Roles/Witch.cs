@@ -13,7 +13,7 @@ public sealed class Witch : RoleBase
         if (CanHeal && ctx.Players.Any(p => p.Status == PlayerState.PendingDeath))
         {
             // Healing
-            await ctx.RequestPlayerActionAsync(new PhaseAction
+            await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
             {
                 Type = ActionType.WitchHealSelection,
                 Minimum = 0,
@@ -28,13 +28,13 @@ public sealed class Witch : RoleBase
                     CanHeal = false;
                 }
                 return Task.FromResult<string[]?>(null);
-            }, ct);
+            });
         }
 
         if (CanKill)
         {
             // Killing
-            await ctx.RequestPlayerActionAsync(new PhaseAction
+            await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
             {
                 Type = ActionType.WitchKillSelection,
                 Minimum = 0,
@@ -50,7 +50,7 @@ public sealed class Witch : RoleBase
                     CanKill = false;
                 }
                 return Task.FromResult<string[]?>(null);
-            }, ct);
+            });
         }
         
         await base.OnNightAsync(ctx, self, ct);
