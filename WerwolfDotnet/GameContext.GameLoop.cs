@@ -56,7 +56,7 @@ partial class GameContext
                     }, (action, _) =>
                     {
                         if (action.GetMostVotedPlayer() is not { } playerToDie)
-                            return Task.FromResult<string[]?>([]); // Empty parameters will indicate that no one died.
+                            return Task.FromResult<string[]?>([]);     // Empty parameters will indicate that no one died.
 
                         playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
                         return Task.FromResult<string[]?>([playerToDie.Name]);

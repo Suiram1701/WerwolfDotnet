@@ -102,10 +102,10 @@ public sealed class PhaseAction(CancellationToken ct)
         int maxVotes = votesForPlayer.Values.Count > 0 ? votesForPlayer.Values.Max() : 0;
         if (abstention >= maxVotes)
             return null;
-        
-        return votesForPlayer
+
+        Player[] mostVotedOnes = [..votesForPlayer
             .Where(kvp => kvp.Value == maxVotes)
-            .Select(kvp => kvp.Key)
-            .SingleOrDefault();
+            .Select(kvp => kvp.Key)];
+        return mostVotedOnes.Length == 1 ? mostVotedOnes[0] : null;
     }
 }
