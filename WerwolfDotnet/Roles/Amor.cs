@@ -30,9 +30,7 @@ public sealed class Amor : RoleBase
                 return Task.FromResult<string[]?>(null);
             
             ctx.PlayersFallInLove(votes[0], votes[1]);
-            ctx.Logger.LogTrace(
-                "Amor {amor} ({amorId}) made {player1} ({player1Id}) to fall in Love with {player2} ({player2Id})",
-                self.Name, self.Id, votes[0].Name, votes[0].Id, votes[1].Name, votes[1].Id);
+            ctx.Logger.LogTrace("Amor {amor} made {player1} to fall in Love with {player2})", self, votes[0], votes[1]);
             
             Done = true;
             return Task.FromResult<string[]?>(null);

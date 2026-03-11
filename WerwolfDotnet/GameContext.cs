@@ -206,6 +206,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
              ..Enumerable.Repeat<RoleBase?>(null, options.AmountSeers).Select(_ => new Seer()),
              ..Enumerable.Repeat<RoleBase?>(null, options.AmountWitches).Select(_ => new Witch()),
              ..Enumerable.Repeat<RoleBase?>(null, options.AmountHunters).Select(_ => new Hunter()),
+             ..Enumerable.Repeat<RoleBase?>(null, options.AmountVillageMattresses).Select(_ => new VillageMattress()),
              ..options.AmorExists ? new RoleBase[] { new Amor() } : []
          ];
          roles = [..roles.Shuffle()];
@@ -266,7 +267,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         catch (TaskCanceledException ex)
         {
             Logger.LogWarning(ex, "PhaseAction {type} was cancelled due to timeout/stop", action.Type);
-            throw;
+            action.OrgCancellationToken.ThrowIfCancellationRequested();
         }
         finally
         {

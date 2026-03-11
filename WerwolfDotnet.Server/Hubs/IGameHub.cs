@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Models;
 using WerwolfDotnet.Server.Services;
 

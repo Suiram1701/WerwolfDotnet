@@ -2,6 +2,7 @@ using System.Reflection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.SignalR;
 using WerwolfDotnet;
+using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.OpenApiFilters;
 using WerwolfDotnet.Server.Options;

@@ -21,9 +21,8 @@ public sealed class Seer : RoleBase
             if (action.GetMostVotedPlayer() is not { } selectedOne)
                 return Task.FromResult<string[]?>(null);
             
-            ctx.Logger.LogTrace(
-                "Seer {seerName} ({seerId}) saw role of {playerName} ({playerId}): {roleName}",
-                self.Name, self.Id, selectedOne.Name, selectedOne.Id, selectedOne.Role!.Type);
+            ctx.Logger.LogTrace("Seer {seer} saw role of {player}: {roleName}",
+                self, selectedOne, selectedOne.Role!.Type);
             _watchedPlayers[selectedOne] = selectedOne.Role!.Type;
             return Task.FromResult<string[]?>([selectedOne.Name, selectedOne.Role!.Type.ToString()]);
         });

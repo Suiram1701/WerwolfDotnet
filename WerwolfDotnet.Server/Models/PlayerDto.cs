@@ -1,3 +1,5 @@
+using WerwolfDotnet.Roles;
+
 namespace WerwolfDotnet.Server.Models;
 
 public class PlayerDto(Player player, Role? visibleRole = null)

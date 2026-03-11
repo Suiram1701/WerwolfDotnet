@@ -4,7 +4,7 @@ public sealed class Hunter : RoleBase
 {
     public override Role Type => Role.Hunter;
     
-    internal override async Task OnDeathAsync(GameContext ctx, Player self, CancellationToken ct)
+    internal override async Task OnDeathAsync(GameContext ctx, Player self, CauseOfDeath cause, CancellationToken ct)
     {
         await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
         {
@@ -20,6 +20,6 @@ public sealed class Hunter : RoleBase
             return Task.FromResult<string[]?>(null);
         });
         
-        await base.OnDeathAsync(ctx, self, ct);
+        await base.OnDeathAsync(ctx, self, cause, ct);
     }
 }

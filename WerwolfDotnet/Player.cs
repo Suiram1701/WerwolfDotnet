@@ -109,4 +109,6 @@ public class Player : IEquatable<Player>
     }
 
     public override int GetHashCode() => HashCode.Combine(_game.Id, Id);
+
+    public override string ToString() => $"{Name} ({Id})";
 }

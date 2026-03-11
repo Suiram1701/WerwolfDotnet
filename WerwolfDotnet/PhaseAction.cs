@@ -14,12 +14,12 @@ public sealed class PhaseAction(CancellationToken ct)
     public required ActionType Type { get; init; }
     
     /// <summary>
-    /// The minimum amount of players to select per player.
+    /// The minimum amount of players to select per player. default: 1
     /// </summary>
     public int Minimum { get; init; } = 1;
 
     /// <summary>
-    /// The maximum amount of players to select per player.
+    /// The maximum amount of players to select per player. default: 1
     /// </summary>
     public int Maximum { get; init; } = 1;
 
@@ -46,6 +46,8 @@ public sealed class PhaseAction(CancellationToken ct)
 
     public CancellationToken CancellationToken => _cts.Token;
     private readonly CancellationTokenSource _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+    
+    internal CancellationToken OrgCancellationToken => ct;
     
     public event Action<PhaseAction, CancellationToken>? OnCompleted;
     

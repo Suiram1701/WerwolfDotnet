@@ -1,3 +1,5 @@
+using WerwolfDotnet.Roles;
+
 namespace WerwolfDotnet;
 
 public class GameOptions
@@ -16,9 +18,11 @@ public class GameOptions
 
     public bool AmorExists { get; init; } = true;
     
+    public int AmountVillageMattresses { get; init; } = 1;
+    
     public bool MayorDecidesNextMayor { get; init; } = true;
     
-    public Role[] NightExecutionOrder { get; init; } = [Role.Amor, Role.Werwolf, Role.Seer, Role.Witch];
+    public Role[] NightExecutionOrder { get; init; } = [Role.Amor, Role.VillageMattress, Role.Werwolf, Role.Seer, Role.Witch];
     
     public CauseOfDeath[] RevealRoleForCauses { get; init; } = [CauseOfDeath.WerwolfKilling, CauseOfDeath.WitchExplosion];
 }

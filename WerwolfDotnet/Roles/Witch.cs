@@ -19,7 +19,7 @@ public sealed class Witch : RoleBase
                 Minimum = 0,
                 Maximum = 1,
                 Participants = [self],
-                VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.PendingDeath)]
+                VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.PendingDeath && !ctx.CurrentlyProtectedPlayers.ContainsKey(p))]
             }, (action, _) =>
             {
                 if (action.PlayerVotes[self].SingleOrDefault() is { } playerToHeal)
@@ -56,14 +56,14 @@ public sealed class Witch : RoleBase
         await base.OnNightAsync(ctx, self, ct);
     }
 
-    internal override Task OnDeathAsync(GameContext ctx, Player self, CancellationToken ct)
+    internal override Task OnDeathAsync(GameContext ctx, Player self, CauseOfDeath cause, CancellationToken ct)
     {
         if (!ctx.GameOptions!.ExplodingWitchHome)
-            return Task.CompletedTask;
+            return base.OnDeathAsync(ctx, self, cause, ct);
         
         int i = ctx.Players.Index().Single(t => t.Item.Equals(self)).Index;
         ctx.Players[i <= 0 ? ctx.Players.Count - 1 : i - 1].Kill(CauseOfDeath.WitchExplosion, self);     // Player before the witch
         ctx.Players[i >= ctx.Players.Count - 1 ? 0 : i + 1].Kill(CauseOfDeath.WitchExplosion, self);     // Player after the witch
-        return Task.CompletedTask;
+        return base.OnDeathAsync(ctx, self, cause, ct);
     }
 }

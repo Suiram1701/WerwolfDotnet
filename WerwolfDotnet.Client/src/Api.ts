@@ -21,6 +21,7 @@ export enum ActionType {
   WitchKillSelection = 7,
   HunterSelection = 8,
   AmorSelection = 9,
+  VillageMattressSelection = 10,
 }
 
 /** @format int32 */
@@ -122,6 +123,7 @@ export enum Role {
   Witch = 3,
   Hunter = 4,
   Amor = 5,
+  VillageMattress = 6,
   Werwolf = -1,
 }
 

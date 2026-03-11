@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Roles;
 
 namespace WerwolfDotnet;
 
@@ -15,6 +16,12 @@ partial class GameContext
     /// </summary>
     public IReadOnlyDictionary<Player, Player> PlayersInLove => _playersInLove.AsReadOnly();
     private readonly Dictionary<Player, Player> _playersInLove = new(2);     // There is only a pair
+    
+    /// <summary>
+    /// Contains all players that are at the time protected mapped to the player who protects them.
+    /// </summary>
+    public IReadOnlyDictionary<Player, Player> CurrentlyProtectedPlayers => _currentlyProtectedPlayers.AsReadOnly();     // TODO: Protection logic not yet implemented
+    private readonly Dictionary<Player, Player> _currentlyProtectedPlayers = [];
     
     private async Task RunAsync(CancellationToken ct)
     {
@@ -57,8 +64,9 @@ partial class GameContext
                     {
                         if (action.GetMostVotedPlayer() is not { } playerToDie)
                             return Task.FromResult<string[]?>([]);     // Empty parameters will indicate that no one died.
-
-                        playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
+                        
+                        if (playerToDie.Role is not VillageMattress { LastSleepover: not null })     // Special: Only checked here because everywhere else it just wouldn't work
+                            playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
                         return Task.FromResult<string[]?>([playerToDie.Name]);
                     });
                 }
@@ -146,9 +154,10 @@ partial class GameContext
             foreach (Player player in _players.Where(p => p.Status == PlayerState.PendingDeath))
             {
                 newDeathPlayer = true;
+                CauseOfDeath cause = player.KillInternal();
                 
-                await player.Role!.OnDeathAsync(this, player, ct);
-                if (GameOptions!.MayorDecidesNextMayor && player.Equals(Mayor))     // Mayor dies
+                await player.Role!.OnDeathAsync(this, player, cause, ct);
+                if (GameOptions!.MayorDecidesNextMayor && player.Equals(Mayor))     // Mayor dies, logic stays here 
                 {
                     await RequestPlayerActionAsync(new PhaseAction(ct)
                     {
@@ -168,17 +177,14 @@ partial class GameContext
                     Mayor = null;
                 }
                 
-                if (_playersInLove.TryGetValue(player, out Player? lovedOne))     // Loved one dies
-                    lovedOne.Kill(CauseOfDeath.DeathByHearthBreak, player);
-                
-                CauseOfDeath cause = player.KillInternal();
                 Role displayedRole = GameOptions!.RevealRoleForCauses.Contains(cause) ? player.Role!.Type : Role.None;
                 cause = nextState == GameState.Night ? cause : CauseOfDeath.None;     // The displayed caused (censored when switching to day)
 
                 diedPlayers[player] = (cause, displayedRole);
             }
         } while (newDeathPlayer);     // Loop multiple times over in case other players died during Death-Handler
-
+        _currentlyProtectedPlayers.Clear();
+        
         CheckPlayerWin();     // Throws when the game ends
         
         State = nextState;
@@ -191,6 +197,8 @@ partial class GameContext
         _playersInLove[player2] = player1;
     }
 
+    internal bool ProtectPlayer(Player player, Player doneBy) => _currentlyProtectedPlayers.TryAdd(player, doneBy);
+    
     private void CheckPlayerWin()
     {
         if (_players.Count == _playersInLove.Count && _players.All(p => p.IsAlive && _playersInLove.ContainsKey(p)))

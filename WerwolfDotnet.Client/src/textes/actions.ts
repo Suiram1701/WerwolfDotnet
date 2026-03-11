@@ -11,7 +11,8 @@ export const actionNames: Readonly<Record<ActionType, string>> = {
     [ActionType.WitchHealSelection]: "Hexe erwacht (heilen)",
     [ActionType.WitchKillSelection]: "Hexe erwacht (töten)",
     [ActionType.HunterSelection]: "Du bist am Sterben",
-    [ActionType.AmorSelection]: "Amor schießt"
+    [ActionType.AmorSelection]: "Amor schießt",
+    [ActionType.VillageMattressSelection]: "Übernachtungswahl"
 }
 
 export const actionDescriptions: Readonly<Record<ActionType, string>> = {
@@ -24,7 +25,8 @@ export const actionDescriptions: Readonly<Record<ActionType, string>> = {
     [ActionType.WitchHealSelection]: "Wähle eine Person, die du heilen möchtest (falls du möchtest).",
     [ActionType.WitchKillSelection]: "Wähle eine Person, die du mit deinem Todestrank töten möchtest (falls du möchtest).",
     [ActionType.HunterSelection]: "Wähle einer Person, die du mit in den Tot reißen möchtest mit deinem Gewehr.",
-    [ActionType.AmorSelection]: "Wähle zwei Spieler, die du miteinander Verlieben möchtest."
+    [ActionType.AmorSelection]: "Wähle zwei Spieler, die du miteinander Verlieben möchtest.",
+    [ActionType.VillageMattressSelection]: "Wähle einen Spieler bei dem du die Nacht verbringen möchtest (Du kannst nicht hintereinander bei derselben Person nächtigen)."
 }
 
 // HTML allowed

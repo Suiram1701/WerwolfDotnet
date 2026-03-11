@@ -11,5 +11,6 @@ public enum ActionType
     WitchHealSelection,
     WitchKillSelection,
     HunterSelection,
-    AmorSelection
+    AmorSelection,
+    VillageMattressSelection
 }

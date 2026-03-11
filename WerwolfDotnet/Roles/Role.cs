@@ -1,4 +1,4 @@
-namespace WerwolfDotnet;
+namespace WerwolfDotnet.Roles;
 
 /// <summary>
 /// All existing roles. When the (int)role is greater than 0 it belongs to the villager and when smaller than 0 to the werwolfs.
@@ -11,5 +11,6 @@ public enum Role
     Seer,
     Witch,
     Hunter,
-    Amor
+    Amor,
+    VillageMattress
 }
