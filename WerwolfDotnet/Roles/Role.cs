@@ -9,6 +9,7 @@ public enum Role
     None = 0,
     Villager,
     Seer,
+    SeerApprentice,
     Witch,
     Hunter,
     Amor,

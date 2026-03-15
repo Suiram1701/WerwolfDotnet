@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -196,20 +197,23 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         ThrowWhenNotInit();
          if (State > 0)
              throw new InvalidOperationException("Game game has already been started!");
+         if (options.AmountOfRoles.Keys.Any(t => !t.IsAssignableTo(typeof(RoleBase)) || t.GetConstructor(Type.EmptyTypes) is null))
+             throw new ArgumentException($"Every role type specified in {nameof(options.AmountOfRoles)} must inherit from {nameof(RoleBase)} and have a public parameterless constructor.", nameof(options));
          if (options.NightExecutionOrder.Distinct().Count() < options.NightExecutionOrder.Length)
              throw new ArgumentException($"{options.NightExecutionOrder} was expected to contain unique elements!", nameof(options));
-         
-         foreach (Player wwPlayer in _players.Shuffle().Take(options.AmountWerwolfs))     // Assign werwolfs first to ensure there is at least one.
+
+         if (!options.AmountOfRoles.TryGetValue(typeof(Werwolf), out int value) || value < 1)
+             throw new ArgumentException($"{nameof(options.AmountOfRoles)} at least have to contain {nameof(Werwolf)} with a minimum of 1", nameof(options));
+         foreach (Player wwPlayer in _players.Shuffle().Take(options.AmountOfRoles[typeof(Werwolf)]))     // Assign werwolfs first to ensure there is at least one.
              wwPlayer.Role = new Werwolf();
          
-         RoleBase[] roles = [
-             ..Enumerable.Repeat<RoleBase?>(null, options.AmountSeers).Select(_ => new Seer()),
-             ..Enumerable.Repeat<RoleBase?>(null, options.AmountWitches).Select(_ => new Witch()),
-             ..Enumerable.Repeat<RoleBase?>(null, options.AmountHunters).Select(_ => new Hunter()),
-             ..Enumerable.Repeat<RoleBase?>(null, options.AmountVillageMattresses).Select(_ => new VillageMattress()),
-             ..options.AmorExists ? new RoleBase[] { new Amor() } : []
-         ];
-         roles = [..roles.Shuffle()];
+         RoleBase[] roles = options.AmountOfRoles
+             .Where(kvp => kvp.Key != typeof(Werwolf))
+             .SelectMany(kvp =>
+                 Enumerable.Repeat<RoleBase>(null!, kvp.Value)
+                     .Select(_ => (RoleBase)Activator.CreateInstance(kvp.Key)!))
+             .Shuffle()
+             .ToArray();
          
          Player[] shuffledPlayers = [.._players.Where(p => p.Role is null).Shuffle()];
          

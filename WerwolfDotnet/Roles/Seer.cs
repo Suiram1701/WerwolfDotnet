@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace WerwolfDotnet.Roles;
 
-public sealed class Seer : RoleBase
+public class Seer : RoleBase
 {
     public override Role Type => Role.Seer;
 

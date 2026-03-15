@@ -120,10 +120,11 @@ export enum Role {
   None = 0,
   Villager = 1,
   Seer = 2,
-  Witch = 3,
-  Hunter = 4,
-  Amor = 5,
-  VillageMattress = 6,
+  SeerApprentice = 3,
+  Witch = 4,
+  Hunter = 5,
+  Amor = 6,
+  VillageMattress = 7,
   Werwolf = -1,
 }
 
