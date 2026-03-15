@@ -9,11 +9,13 @@ public class GameOptions
     {
         { typeof(Werwolf), 1 },
         { typeof(Seer), 1 },
-        { typeof(SeerApprentice), 1 },
+        { typeof(SeerApprentice), 0 },
         { typeof(Witch), 1 },
         { typeof(Hunter), 0 },
-        { typeof(Amor), 0 },
-        { typeof(VillageMattress), 0 }
+        { typeof(Amor), 1 },
+        { typeof(VillageMattress), 0 },
+        { typeof(TwoSisters), 0 },     // Has to be tested
+        { typeof(ThreeBrothers), 0 }
     }.AsReadOnly();
 
     public bool ExplodingWitchHome { get; init; } = false;

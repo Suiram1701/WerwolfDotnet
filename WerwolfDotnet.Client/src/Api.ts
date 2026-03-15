@@ -125,6 +125,8 @@ export enum Role {
   Hunter = 5,
   Amor = 6,
   VillageMattress = 7,
+  TwoSisters = 8,
+  ThreeBrothers = 9,
   Werwolf = -1,
 }
 

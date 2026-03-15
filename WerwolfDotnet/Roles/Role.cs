@@ -13,5 +13,7 @@ public enum Role
     Witch,
     Hunter,
     Amor,
-    VillageMattress
+    VillageMattress,
+    TwoSisters,
+    ThreeBrothers
 }
