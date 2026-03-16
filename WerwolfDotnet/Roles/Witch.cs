@@ -19,7 +19,7 @@ public sealed class Witch : RoleBase
                 Minimum = 0,
                 Maximum = 1,
                 Participants = [self],
-                VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.PendingDeath && !ctx.CurrentlyProtectedPlayers.ContainsKey(p))]
+                VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.PendingDeath && !ctx.WerwolfProtectedPlayers.ContainsKey(p))]
             }, (action, _) =>
             {
                 if (action.PlayerVotes[self].SingleOrDefault() is { } playerToHeal)

@@ -18,7 +18,8 @@ public sealed class VillageMattress : RoleBase
             VotablePlayers = [..ctx.Players.Where(p => p.IsAlive && !p.Equals(LastSleepover))]
         }, (action, _) =>
         {
-            LastSleepover = action.PlayerVotes[self].FirstOrDefault();     // Note: Protection done in GameContext.GameLoop.cs
+            LastSleepover = action.PlayerVotes[self].FirstOrDefault();
+            ctx.ProtectPlayer(self, self);
             ctx.Logger.LogTrace("Village mattress {mattress} stays overnight at {player}.", self, LastSleepover);
             
             return Task.FromResult<string[]?>(null);

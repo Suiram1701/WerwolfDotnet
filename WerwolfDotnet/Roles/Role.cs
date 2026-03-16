@@ -11,9 +11,11 @@ public enum Role
     Seer,
     SeerApprentice,
     Witch,
+    Healer,
     Hunter,
     Amor,
     VillageMattress,
     TwoSisters,
-    ThreeBrothers
+    ThreeBrothers,
+    BearGuide
 }

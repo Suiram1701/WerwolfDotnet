@@ -10,6 +10,7 @@ public enum ActionType
     SeerSelection,
     WitchHealSelection,
     WitchKillSelection,
+    HealerSelection,
     HunterSelection,
     AmorSelection,
     VillageMattressSelection

@@ -7,11 +7,13 @@ export const roleNames: Readonly<Record<Role, string>> = {
     [Role.SeerApprentice]: "Seher Lehrling",
     [Role.Werwolf]: "Werwolf",
     [Role.Witch]: "Hexe",
+    [Role.Healer]: "Heiler",
     [Role.Hunter]: "Jäger",
     [Role.Amor]: "Amor",
     [Role.VillageMattress]: "Dorfmatratze",
     [Role.TwoSisters]: "zwei Schwestern",
-    [Role.ThreeBrothers]: "drei Brüder"
+    [Role.ThreeBrothers]: "drei Brüder",
+    [Role.BearGuide]: "Bärenführer"
 }
 
 export const roleDescriptions: Readonly<Record<Role, string>> = {
@@ -21,9 +23,11 @@ export const roleDescriptions: Readonly<Record<Role, string>> = {
     [Role.SeerApprentice]: "Du bist der Schüler des Sehers und erlernst dessen Fähigkeit, jede Nacht die Rolle eines Mitspielers zu erfahren. Sobald der Seher verstirbt bist du bereit dessen Position zu übernehmen.",
     [Role.Werwolf]: "Du bist ein heimlicher Feind des Dorfes. Jede Nacht entscheidest du dich gemeinsam mit den anderen Werwölfen für ein Opfer – am Tag musst du unauffällig bleiben, um nicht enttarnt zu werden.",
     [Role.Witch]: "Du kannst nachts einmal heilen und einmal töten. Nutze deine Tränke klug und bleibe unentdeckt.",
+    [Role.Healer]: "Du hast die besondere Fähigkeit jede Nacht einen Spieler zu beschützen. Niemand wird in dieser Nacht in der Lage sein ihn zu töten. Wähle aber weise.",
     [Role.Hunter]: "Dorfbewohner mit einer Schusswaffe. Stirbt der Jäger, darf er einen Spieler seiner Wahl mit in den Tod nehmen.",
     [Role.Amor]: "In der ersten Nacht verbindest du zwei Spieler als Liebespaar. Stirbt einer, stirbt auch der andere.",
     [Role.VillageMattress]: "Du nächtigst jede Nacht bei einem anderen Spieler. Wird dieser von den Werwölfen angegriffen stirbst du auch, wird dein Haus angegriffen überlebst du.",
     [Role.TwoSisters]: "Du bist eine von zwei Schwestern. Ihr habt keine besondere Fähigkeit, allerdings eines wisst ihr: Ihr seid keine Werwölfe.",
-    [Role.ThreeBrothers]: "Du bist einer von drei Brüdern. Ihr habt keine besondere Fähigkeit, jedoch eines wisst ihr sicher: Ihr seid keine Werwölfe."
+    [Role.ThreeBrothers]: "Du bist einer von drei Brüdern. Ihr habt keine besondere Fähigkeit, jedoch eines wisst ihr sicher: Ihr seid keine Werwölfe.",
+    [Role.BearGuide]: "Du bist passiv Teil des dorfes. Dein Bär brummt jeden Morgen oder nicht. Brummt er heißt das, dass direkt neben dir ein Werwolf sitzt. Stirbst du brummt er ein letztes mal."
 }

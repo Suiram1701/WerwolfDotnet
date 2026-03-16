@@ -17,7 +17,7 @@ public interface IGameHub
     public Task PlayersUpdated(IEnumerable<PlayerDto> players);
     
     [HubMethodName("onGameStateUpdated")]
-    public Task GameStateUpdated(GameState state, IReadOnlyDictionary<int, DeathDetails> diedPlayers);
+    public Task GameStateUpdated(GameState state, IReadOnlyDictionary<int, DeathDetails> diedPlayers, bool? bearGrowls);
 
     /// <remarks>
     /// NOTE: Do not use directly! Use <see cref="GameManager.UpdatePlayerRoleAsync"/> instead.

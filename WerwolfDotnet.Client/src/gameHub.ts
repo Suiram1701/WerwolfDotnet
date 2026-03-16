@@ -74,7 +74,7 @@ export class GameHub {
         });
     }
 
-    private onGameStateUpdated(newState: GameState, diedPlayers: Record<number, DeathDetails>): void {
+    private onGameStateUpdated(newState: GameState, diedPlayers: Record<number, DeathDetails>, bearGrowls: boolean | null): void {
         if (this.gamePage.gameState === GameState.GameWon && newState <= 0) {
             window.location.reload();     // Reset the whole frontend. In my opinion is the risk to break something with a manuell reset.
             return;
@@ -101,12 +101,17 @@ export class GameHub {
             this.modal.show({ title: "Du bist gestorben", contentText: "Du bist gestorben. Ab sofort kannst du dem Spiel nur noch zuschauen.", canDismiss: false });
             return;
         }
-
+        
         const diedStr: string = this.buildDeathString(diedPlayers);
+        const bearStr = bearGrowls === true
+            ? "Der Bär brummt"
+            : bearGrowls === false
+                ? "Der Bär brummt nicht"
+                : "";
         if (newState === GameState.Day)
-            this.modal.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr}`, allowHtmlText: true, canDismiss: false });
+            this.modal.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr} ${bearStr}`, allowHtmlText: true, canDismiss: false });
         else if (newState === GameState.Night)
-            this.modal.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. ${diedStr}`, allowHtmlText: true, canDismiss: false });
+            this.modal.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. ${diedStr} ${bearStr}`, allowHtmlText: true, canDismiss: false });
     }
 
     private onPlayerRoleUpdated(newRoleName: Role, relations: Record<number, PlayerRelation[]>): void {

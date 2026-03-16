@@ -56,9 +56,10 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     public event Action<GameContext, int, int?>? OnGameMetadataChanged;
     
     /// <summary>
-    /// Invoked when the state of the game changed. (Player, CauseOfDeath) are the players who died during the previous state mapped to the cause of death.
+    /// Invoked when the state of the game changed. (Player, CauseOfDeath) are the players who died during the previous state mapped to the cause of death,
+    /// the last one indicates whether the bear growls or not (when <c>null</c> it shouldn't be displayed).
     /// </summary>
-    public event Action<GameContext, GameState, IReadOnlyDictionary<Player, (CauseOfDeath, Role)>>? OnGameStateChanged;
+    public event Action<GameContext, GameState, IReadOnlyDictionary<Player, (CauseOfDeath, Role)>, bool?>? OnGameStateChanged;
     
     /// <summary>
     /// Invoked when one or more players are requested to take action. 
@@ -119,7 +120,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         GameMaster = gameMaster;
         _players.Add(gameMaster);
         State = GameState.Preparation;
-        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0), null);
     }
 
     public bool VerifyPassword(string? password)
@@ -180,7 +181,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         State = @lock
             ? GameState.Locked
             : GameState.Preparation;
-        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0), null);
         
         Logger.LogTrace("Set game state to {state}.", State);
         return true;
@@ -241,7 +242,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
             player.Reset();
         
         State = GameState.Preparation;
-        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0), null);
         Logger.LogInformation("Game stopped");
         
         _gameLoopCts = null;

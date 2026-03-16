@@ -19,9 +19,10 @@ export enum ActionType {
   SeerSelection = 5,
   WitchHealSelection = 6,
   WitchKillSelection = 7,
-  HunterSelection = 8,
-  AmorSelection = 9,
-  VillageMattressSelection = 10,
+  HealerSelection = 8,
+  HunterSelection = 9,
+  AmorSelection = 10,
+  VillageMattressSelection = 11,
 }
 
 /** @format int32 */
@@ -122,11 +123,13 @@ export enum Role {
   Seer = 2,
   SeerApprentice = 3,
   Witch = 4,
-  Hunter = 5,
-  Amor = 6,
-  VillageMattress = 7,
-  TwoSisters = 8,
-  ThreeBrothers = 9,
+  Healer = 5,
+  Hunter = 6,
+  Amor = 7,
+  VillageMattress = 8,
+  TwoSisters = 9,
+  ThreeBrothers = 10,
+  BearGuide = 11,
   Werwolf = -1,
 }
 

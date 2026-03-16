@@ -63,9 +63,9 @@ public class Player : IEquatable<Player>
         Status = PlayerState.PendingDeath;
         _causeOfDeath = causeOfDeath;
         if (killer is null)
-            _game.Logger.LogTrace("Player {name} ({id}) was killed in {causeOfDeath}.", Name, Id, causeOfDeath.ToString());
+            _game.Logger.LogTrace("Player {self} was killed in {causeOfDeath}.", this, causeOfDeath.ToString());
         else
-            _game.Logger.LogTrace("Player {name} ({id}) was killed by {killerName} ({killerId}) in {causeOfDeath}.", Name, Id, killer.Name, killer.Id, causeOfDeath.ToString());
+            _game.Logger.LogTrace("Player {self} was killed by {killer} in {causeOfDeath}.", this, killer, causeOfDeath.ToString());
     }
 
     internal void Revive(Player doneBy)
@@ -73,7 +73,7 @@ public class Player : IEquatable<Player>
         if (Status != PlayerState.PendingDeath)
             return;
         Status = PlayerState.Alive;
-        _game.Logger.LogTrace("Player {name} ({id}) was saved by {name2} ({id2}).", Name, Id, doneBy.Name, doneBy.Id);
+        _game.Logger.LogTrace("Player {self} was saved by {doneBy}.", this, doneBy);
     }
 
     internal CauseOfDeath KillInternal()

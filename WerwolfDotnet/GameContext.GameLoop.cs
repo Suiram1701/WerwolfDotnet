@@ -20,13 +20,13 @@ partial class GameContext
     /// <summary>
     /// Contains all players that are at the time protected mapped to the player who protects them.
     /// </summary>
-    public IReadOnlyDictionary<Player, Player> CurrentlyProtectedPlayers => _currentlyProtectedPlayers.AsReadOnly();     // TODO: Protection logic not yet implemented
-    private readonly Dictionary<Player, Player> _currentlyProtectedPlayers = [];
+    public IReadOnlyDictionary<Player, Player> WerwolfProtectedPlayers => _werwolfProtectedPlayers.AsReadOnly();
+    private readonly Dictionary<Player, Player> _werwolfProtectedPlayers = [];
     
     private async Task RunAsync(CancellationToken ct)
     {
         State = GameState.Night;
-        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0));
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0), null);
 
         try
         {
@@ -64,9 +64,14 @@ partial class GameContext
                     {
                         if (action.GetMostVotedPlayer() is not { } playerToDie)
                             return Task.FromResult<string[]?>([]);     // Empty parameters will indicate that no one died.
+
+                        if (_werwolfProtectedPlayers.TryGetValue(playerToDie, out Player? savedBy))
+                        {
+                            Logger.LogTrace("{self} was successfully protected by {savedBy}", playerToDie, savedBy);
+                            return Task.FromResult<string[]?>([playerToDie.Name]);     // Still tell them.
+                        }
                         
-                        if (playerToDie.Role is not VillageMattress { LastSleepover: not null })     // Special: Only checked here because everywhere else it just wouldn't work
-                            playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
+                        playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
                         return Task.FromResult<string[]?>([playerToDie.Name]);
                     });
                 }
@@ -146,6 +151,17 @@ partial class GameContext
     
     private async Task EvaluatePreviousStateAsync(GameState nextState, CancellationToken ct)
     {
+        bool? bearGrowls = null;
+        if (nextState == GameState.Day)     // Execute before dying players are evaluated 
+        {
+            foreach ((int i, _) in _players.Index().Where(kvp => kvp.Item is { Role.Type: Role.BearGuide, IsAlive: true }))
+            {
+                bearGrowls ??= false;
+                bearGrowls |= _players[i <= 0 ? _players.Count - 1 : i - 1].Role!.Type < 0
+                              || _players[i >= _players.Count - 1 ? 0 : i + 1].Role!.Type < 0;
+            }
+        }
+        
         Dictionary<Player, (CauseOfDeath, Role)> diedPlayers = new();
         bool newDeathPlayer;
         do
@@ -183,12 +199,12 @@ partial class GameContext
                 diedPlayers[player] = (cause, displayedRole);
             }
         } while (newDeathPlayer);     // Loop multiple times over in case other players died during Death-Handler
-        _currentlyProtectedPlayers.Clear();
         
+        _werwolfProtectedPlayers.Clear();
         CheckPlayerWin();     // Throws when the game ends
         
         State = nextState;
-        OnGameStateChanged?.Invoke(this, State, diedPlayers);
+        OnGameStateChanged?.Invoke(this, State, diedPlayers, bearGrowls);
     }
 
     internal void PlayersFallInLove(Player player1, Player player2)
@@ -197,7 +213,13 @@ partial class GameContext
         _playersInLove[player2] = player1;
     }
 
-    internal bool ProtectPlayer(Player player, Player doneBy) => _currentlyProtectedPlayers.TryAdd(player, doneBy);
+    /// <summary>
+    /// Protects a player from being killed by the werewolf's.
+    /// </summary>
+    /// <param name="player">The player to protect.</param>
+    /// <param name="doneBy">The player who protected him.</param>
+    /// <returns>Indicates whether the player is already protected or not.</returns>
+    internal bool ProtectPlayer(Player player, Player doneBy) => _werwolfProtectedPlayers.TryAdd(player, doneBy);
     
     private void CheckPlayerWin()
     {
