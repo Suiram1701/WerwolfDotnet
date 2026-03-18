@@ -1,15 +1,15 @@
 <script lang="ts">
     import { getContext } from "svelte";
     import { type Readable } from "svelte/store";
-    import { type PlayerDto, PlayerRelation } from "../../Api";
+    import { Api, HttpClient, type PlayerDto, PlayerRelation } from "../../Api";
     import { gamePageState as state } from "../../stores/pageStateStore";
     import { roleNames } from "../../textes/roles";
     import { tooltip } from "$lib/actions/tooltip";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     import { GameHub } from "../../gameHub";
 
-    let { connection }: { connection: GameHub } = $props();
-
+    let { apiClient }: { apiClient: Api<unknown> } = $props();
+    
     let modalProvider: ModalProvider;
     const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");
     modalAccessor.subscribe(m => modalProvider = m);
@@ -92,7 +92,7 @@
                 contentText: "Möchten Sie diesen Spieler wirklich aus dem Spiel werden?",
                 confirmText: "Kicken",
                 confirmColor: "danger",
-                onConfirm: () => connection.leaveGame(player.id),
+                onConfirm: () => apiClient.api.gameSessionsPlayersDelete($state.gameId, player.id ?? -1, { secure: true }),
                 closeOnConfirm: true
             });
         }} disabled="{player.id === $state.selfId}">Kicken</button>

@@ -7,4 +7,4 @@ The backend has two main components:
 
 The credentials returned by the API will be used to authenticate against the hub and at this point the whole communication goes through the hub.
 
-This is my very first project I build with Svelte but I am looking forward to it that it will be good. Also the first time I build something directly with SignalR (if you exclude Blazor uses SignalR under the hood) but in general I have clear ideas how the implement the game in a good way. 
+This is my very first project I build with Svelte, but I am looking forward to it that it will be good. Also the first time I build something directly with SignalR (if you exclude Blazor uses SignalR under the hood) but in general I have clear ideas how the implement the game in a good way. 

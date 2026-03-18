@@ -90,8 +90,8 @@ export interface JoinedGameDto {
   /** A Dto for returning a game. */
   game: GameDto;
   self: PlayerDto;
-  /** A token used to authenticate as WerwolfDotnet.Server.Models.JoinedGameDto.Self against the API. */
-  playerToken: string | null;
+  /** The base64 encoded JSON object build out of the game id, player id and WerwolfDotnet.Server.Models.JoinedGameDto.PlayerToken */
+  bearerToken?: string | null;
   /** The URL of SignalR WebSocket to connect to. */
   signalrUrl?: string | null;
 }
@@ -418,17 +418,66 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags GameSession
-     * @name GameSessionsJoinCreate
+     * @name GameSessionsPlayersCreate
      * @summary Creates a new player in an existing game session.
-     * @request POST:/api/game_sessions/{sessionId}/join
+     * @request POST:/api/game_sessions/{sessionId}/players
      */
-    gameSessionsJoinCreate: (sessionId: number, data: JoinGameDto, params: RequestParams = {}) =>
+    gameSessionsPlayersCreate: (sessionId: number, data: JoinGameDto, params: RequestParams = {}) =>
       this.request<JoinedGameDto, void>({
-        path: `/api/game_sessions/${sessionId}/join`,
+        path: `/api/game_sessions/${sessionId}/players`,
         method: "POST",
         body: data,
         type: ContentType.Json,
         format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags GameSession
+     * @name GameSessionsPlayersDetail
+     * @summary Retrieves all players from a game.
+     * @request GET:/api/game_sessions/{sessionId}/players
+     */
+    gameSessionsPlayersDetail: (sessionId: number, params: RequestParams = {}) =>
+      this.request<PlayerDto[], void>({
+        path: `/api/game_sessions/${sessionId}/players`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags GameSession
+     * @name GameSessionsPlayersDetail2
+     * @summary Retrieves a single player from a game.
+     * @request GET:/api/game_sessions/{sessionId}/players/{playerId}
+     * @originalName gameSessionsPlayersDetail
+     * @duplicate
+     */
+    gameSessionsPlayersDetail2: (sessionId: number, playerId: number, params: RequestParams = {}) =>
+      this.request<PlayerDto, void>({
+        path: `/api/game_sessions/${sessionId}/players/${playerId}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags GameSession
+     * @name GameSessionsPlayersDelete
+     * @summary Removes a player from an existing game session. You can always remove yourself, but to remove other players you need to be the game master.
+     * @request DELETE:/api/game_sessions/{sessionId}/players/{playerId}
+     */
+    gameSessionsPlayersDelete: (sessionId: number, playerId: number, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/api/game_sessions/${sessionId}/players/${playerId}`,
+        method: "DELETE",
         ...params,
       }),
   };

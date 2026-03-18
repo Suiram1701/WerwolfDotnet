@@ -184,7 +184,7 @@ public class GameManager(
     {
         if (ctx.State > 0)      // Game is already running
             return;
-        if (ctx.Players.Count < 3)     // Not enough players
+        if (ctx.Players.Count < 4)     // Not enough players
             return;
         
         ctx.StartGame(new GameOptions());

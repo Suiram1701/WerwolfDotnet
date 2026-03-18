@@ -53,10 +53,6 @@ export class GameHub {
     public async stopGame(): Promise<void> {
         await this.connection.invoke("stopGame");
     }
-    
-    public async leaveGame(playerId: number | null = null): Promise<void> {
-        await this.connection.invoke("leaveGame", playerId);
-    }
 
     private onGameMetaUpdated(gameMasterId: number, mayorId: number | null): void {
         if (this.gamePage.gameMeta !== undefined && this.gamePage.gameMeta.gameMaster !== gameMasterId && gameMasterId === this.gamePage.selfId)

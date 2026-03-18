@@ -1,8 +1,10 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.OpenApi;
 using WerwolfDotnet;
 using WerwolfDotnet.Roles;
+using WerwolfDotnet.Server.Authentication;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.OpenApiFilters;
 using WerwolfDotnet.Server.Options;
@@ -38,6 +40,14 @@ builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.AddSecurityDefinition(TokenAuthenticationScheme.SchemeName, new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "A custom format bearer token which can be used to associate a request with a game and player.",
+        In = ParameterLocation.Header,
+        BearerFormat = TokenAuthenticationScheme.SchemeName
+    });
+    
     options.DocumentFilter<ExportAllModelsFilter>();
     options.DocumentFilter<ExportModelFilter>([new[] { typeof(GameState), typeof(Role), typeof(CauseOfDeath), typeof(Fraction) }]);
     options.SchemaFilter<EnumNamesSchemaFilter>();

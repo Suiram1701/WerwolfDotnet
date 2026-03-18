@@ -44,7 +44,7 @@
             playerName: playerName,
             gamePassword: (passwordRequired ? password : null)
         };
-        apiClient.api.gameSessionsJoinCreate(gameId ?? -1, request)
+        apiClient.api.gameSessionsPlayersCreate(gameId ?? -1, request)
             .then(response => joinGame(response.data))
             .catch((response: HttpResponse<JoinedGameDto>) => {
                 switch (response.status) {
@@ -65,7 +65,7 @@
     }
     
     function joinGame(data: JoinedGameDto) {
-        storePlayerToken(data.game.id ?? -1, data.self.id ?? 0, data.playerToken ?? "");
+        storePlayerToken(data.game.id ?? -1, data.self.id ?? 0, data.bearerToken ?? "");
         goto(`/game?sessionId=${data.game.id}&playerId=${data.self.id}`);
     }
     

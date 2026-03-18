@@ -3,7 +3,7 @@
     import { page } from "$app/state"
     import { goto } from "$app/navigation";
     import { type Readable } from "svelte/store";
-    import { GameState, type PlayerDto } from "../../Api";
+    import { Api, GameState, type PlayerDto } from "../../Api";
     import { getPlayerToken } from "../../stores/gameSessionStore";
     import { gamePageState as state } from "../../stores/pageStateStore";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
@@ -21,6 +21,11 @@
     let modalProvider: ModalProvider;
     const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");
     modalAccessor.subscribe(m => modalProvider = m);
+
+    const apiClient = new Api({ baseUrl: config.apiEndpoint, securityWorker: (data: unknown) => {
+        // @ts-ignore
+        return { headers: { "Authorization": `Bearer ${data.token}` } };
+    }});
     
     let connection: HubConnection;
     let gameHub: GameHub;
@@ -37,10 +42,9 @@
             return;
         }
         
+        apiClient.setSecurityData({ token: playerToken });
         connection = new HubConnectionBuilder()
-            .withUrl(`${config.apiEndpoint}/signalr/game?sessionId=${$state.gameId}&playerId=${$state.selfId}`, {
-                accessTokenFactory: () => playerToken
-            })
+            .withUrl(`${config.apiEndpoint}/signalr/game`, { accessTokenFactory: () => playerToken })
             .withAutomaticReconnect()
             .configureLogging(LogLevel.Information)
             .build();
@@ -97,7 +101,7 @@
 <div class="flex-grow-1 container-fluid d-flex flex-column align-items-center">
     <!-- Player display and selection -->
     <ul class="list-group main-content mb-4">
-        <PlayerList connection={gameHub} />
+        <PlayerList apiClient={apiClient} />
         
         {#if $state.currentAction !== null && $state.currentAction.minimum === 0}
             <li class="list-group-item d-flex align-items-center d-flex align-items-center">
@@ -142,7 +146,7 @@
     <!-- Admin buttons -->
     {#if $state.selfId === $state.gameMeta?.gameMaster && ($state.gameState ?? -2) <= 0}
         <div class="d-flex main-content mb-3">
-            <button class="btn btn-primary w-100" type="button" onclick={ async () => gameHub.startGame()} disabled="{$state.players.length < 3}">Spiel starten</button>
+            <button class="btn btn-primary w-100" type="button" onclick={ async () => gameHub.startGame()} disabled="{$state.players.length < config.minimumPlayers}">Spiel starten</button>
             <button class="btn btn-info w-100 mx-2" type="button" onclick={ async () => await gameHub.shufflePlayers()}>Spieler durchmischen</button>
 
             {#if $state.gameState !== GameState.Locked}
@@ -162,7 +166,7 @@
                 confirmText: "Verlassen",
                 confirmColor: "danger",
                 onConfirm: async () => {
-                    await gameHub.leaveGame();
+                    await apiClient.api.gameSessionsPlayersDelete($state.gameId, $state.selfId, { secure: true });
                     goto("/");
                 }
             });

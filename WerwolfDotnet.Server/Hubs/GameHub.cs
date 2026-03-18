@@ -109,28 +109,6 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         
         await _manager.StopGameAsync(ctx);
     }
-    
-    [HubMethodName("leaveGame")]
-    public async Task OnPlayerLeaving(int? playerId = null)
-    {
-        int selfId = Context.User!.GetPlayerId();
-        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
-        if (playerId is not null && ctx.GameMaster.Id != selfId)
-        {
-            _logger.LogWarning("Non-game-master {playerId} tried to kick player {playerToKick} (rejected)", selfId, playerId);
-            return;
-        }
-        playerId ??= selfId;
-        
-        Player playerToKick = ctx.Players.Single(p => p.Id == playerId);
-
-        string[] playerConnections = _connectionMapping.GetPlayerConnections(ctx.Id, playerToKick.Id);
-        foreach (string connectionId in playerConnections)
-            await Groups.RemoveFromGroupAsync(connectionId, GroupNames.Game(ctx.Id));
-        
-        await _manager.LeaveGameAsync(ctx, playerToKick);
-        await Clients.Player(ctx.Id, playerToKick.Id).ForceDisconnect(kicked: playerId != selfId);     // Not done by manager because it can't differentiate between leaving and kicking
-    }
 
     private bool CheckGameMaster(GameContext ctx, string action)
     {

@@ -14,7 +14,6 @@ public sealed class EnumNamesSchemaFilter : ISchemaFilter
         if (!context.Type.IsEnum || schema is not OpenApiSchema schemaEnum)     // Can't edit the interface directly
             return;
 
-
         JsonValue[] enumNames = context.Type.GetEnumNames().Select(name => JsonValue.Create(name)).ToArray();
         JsonNode array = JsonSerializer.SerializeToNode(enumNames)!;
         schemaEnum.Extensions ??= new Dictionary<string, IOpenApiExtension>();
