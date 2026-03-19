@@ -11,6 +11,12 @@ public class GameLobbyOptions
     /// Indicates whether everyone can see every session. Default is true
     /// </summary>
     public bool AllowViewAll { get; set; } = true;
+
+    /// <summary>
+    /// The minimum amount of players needed to start a round.
+    /// </summary>
+    [Range(4, 128)]
+    public int MinPlayers { get; set; } = 4;
     
     /// <summary>
     /// The maximum amount of players per session.
@@ -28,7 +34,7 @@ public class GameLobbyOptions
     /// <summary>
     /// The maximum length of a player's name
     /// </summary>
-    [Range(2, 256)]
+    [Range(1, 256)]
     public int PlayerNameMaxLength { get; set; } = 16;
 
     /// <summary>

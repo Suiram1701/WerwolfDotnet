@@ -41,12 +41,15 @@ builder.Services.AddSignalR();
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition(TokenAuthenticationScheme.SchemeName, new OpenApiSecurityScheme
-    {
+    { 
+        Type = SecuritySchemeType.Http,
         Name = "Authorization",
-        Description = "A custom format bearer token which can be used to associate a request with a game and player.",
+        Scheme = "bearer",
+        BearerFormat = "PlayerToken",
         In = ParameterLocation.Header,
-        BearerFormat = TokenAuthenticationScheme.SchemeName
+        Description = "A custom format bearer token which can be used to associate a request with a game and player."
     });
+    options.OperationFilter<SecurityFilter>();
     
     options.DocumentFilter<ExportAllModelsFilter>();
     options.DocumentFilter<ExportModelFilter>([new[] { typeof(GameState), typeof(Role), typeof(CauseOfDeath), typeof(Fraction) }]);

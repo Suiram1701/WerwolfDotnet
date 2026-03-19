@@ -15,8 +15,9 @@
     modalAccessor.subscribe(m => modalProvider = m);
     
     const apiClient = new Api({ baseUrl: config.apiEndpoint });
+    
     let games: GameDto[] | null = $state(null);
-
+    
     let gameId: number | undefined = $state(), gameIdLocked: boolean = $state(false);
     let playerName: string = $state("");
     let password: string = $state(""), passwordRequired: boolean = $state(true);
@@ -100,27 +101,29 @@
                     modalProvider.show({ title: "Fehler bei der Anfrage", contentText: `${response.status}: ${response.statusText}` });
                 });
         }
-        
-        if (config.sessionsVisible) {
-            games = [];
-            apiClient.api.gameSessionsList()
-                .then(response => {
-                    games = response.data;
 
-                    pollId = setInterval(async () => {
-                        const response : HttpResponse<GameDto[], void> = await apiClient.api.gameSessionsList();
-                        if (response.ok)
-                            games = response.data;
-                        else
-                            console.error("Failed to poll game sessions!")
-                    }, config.sessionsPollInterval * 1000);     // s to ms
-                })
-                .catch(_ => {
-                    games = null;
-                    console.warn("Can't poll game session because its disabled by the server (although its enabled for the client)"); 
-                });
-            return () => clearInterval(pollId);
-        }
+        config.retrieveConfigAsync(apiClient).then(cfg => {
+            if (cfg.sessionsVisible) {
+                games = [];
+                apiClient.api.gameSessionsList()
+                    .then(response => {
+                        games = response.data;
+
+                        pollId = setInterval(async () => {
+                            const response : HttpResponse<GameDto[], void> = await apiClient.api.gameSessionsList();
+                            if (response.ok)
+                                games = response.data;
+                            else
+                                console.error("Failed to poll game sessions!")
+                        }, config.sessionsPollInterval * 1000);     // s to ms
+                    })
+                    .catch(_ => {
+                        games = null;
+                        console.warn("Can't poll game session because its disabled by the server (although its enabled for the client)");
+                    });
+            } 
+        });
+        return () => clearInterval(pollId);
     });
     
     function formKeyDown(event: KeyboardEvent, submitCallback: () => void) {

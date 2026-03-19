@@ -36,6 +36,15 @@ export enum CauseOfDeath {
   None = -1,
 }
 
+export interface ClientConfigDto {
+  sessionsVisible?: boolean;
+  /** @format int32 */
+  minimumPlayers?: number;
+  /** @format int32 */
+  playerNameMinLength?: number;
+  gameMasterSkipAllowed?: boolean;
+}
+
 /** @format int32 */
 export enum Fraction {
   Village = 0,
@@ -473,11 +482,29 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name GameSessionsPlayersDelete
      * @summary Removes a player from an existing game session. You can always remove yourself, but to remove other players you need to be the game master.
      * @request DELETE:/api/game_sessions/{sessionId}/players/{playerId}
+     * @secure
      */
     gameSessionsPlayersDelete: (sessionId: number, playerId: number, params: RequestParams = {}) =>
-      this.request<void, any>({
+      this.request<void, void>({
         path: `/api/game_sessions/${sessionId}/players/${playerId}`,
         method: "DELETE",
+        secure: true,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Root
+     * @name ConfigList
+     * @summary Retrieves configuration used by the client which also depends on the server.
+     * @request GET:/api/config
+     */
+    configList: (params: RequestParams = {}) =>
+      this.request<ClientConfigDto, any>({
+        path: `/api/config`,
+        method: "GET",
+        format: "json",
         ...params,
       }),
   };

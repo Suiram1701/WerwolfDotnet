@@ -92,7 +92,7 @@
                 contentText: "Möchten Sie diesen Spieler wirklich aus dem Spiel werden?",
                 confirmText: "Kicken",
                 confirmColor: "danger",
-                onConfirm: () => apiClient.api.gameSessionsPlayersDelete($state.gameId, player.id ?? -1, { secure: true }),
+                onConfirm: () => apiClient.api.gameSessionsPlayersDelete($state.gameId, player.id ?? -1),
                 closeOnConfirm: true
             });
         }} disabled="{player.id === $state.selfId}">Kicken</button>

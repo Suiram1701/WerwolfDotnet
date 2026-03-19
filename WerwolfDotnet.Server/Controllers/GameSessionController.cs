@@ -8,6 +8,9 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace WerwolfDotnet.Server.Controllers;
 
+/// <summary>
+/// Contains game session related endpoints.
+/// </summary>
 [ApiController]
 [Route("api/game_sessions")]
 public class GameSessionController(
@@ -160,7 +163,6 @@ public class GameSessionController(
     /// </summary>
     /// <param name="sessionId">The game to remove the player from.</param>
     /// <param name="playerId">The player to remove.</param>
-    /// <returns></returns>
     [Authorize]
     [HttpDelete("{sessionId:int}/players/{playerId:int}")]
     public async Task<IActionResult> RemovePlayerAsync([FromRoute] int sessionId, [FromRoute] int playerId)

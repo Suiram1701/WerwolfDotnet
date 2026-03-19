@@ -3,7 +3,7 @@
     import { page } from "$app/state"
     import { goto } from "$app/navigation";
     import { type Readable } from "svelte/store";
-    import { Api, GameState, type PlayerDto } from "../../Api";
+    import { Api, GameState } from "../../Api";
     import { getPlayerToken } from "../../stores/gameSessionStore";
     import { gamePageState as state } from "../../stores/pageStateStore";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
@@ -26,6 +26,7 @@
         // @ts-ignore
         return { headers: { "Authorization": `Bearer ${data.token}` } };
     }});
+    config.retrieveConfigAsync(apiClient);
     
     let connection: HubConnection;
     let gameHub: GameHub;
@@ -146,7 +147,7 @@
     <!-- Admin buttons -->
     {#if $state.selfId === $state.gameMeta?.gameMaster && ($state.gameState ?? -2) <= 0}
         <div class="d-flex main-content mb-3">
-            <button class="btn btn-primary w-100" type="button" onclick={ async () => gameHub.startGame()} disabled="{$state.players.length < config.minimumPlayers}">Spiel starten</button>
+            <button class="btn btn-primary w-100" type="button" onclick={ async () => gameHub.startGame()} disabled="{$state.players.length < (config.getClientConfig()?.minimumPlayers ?? 0)}">Spiel starten</button>
             <button class="btn btn-info w-100 mx-2" type="button" onclick={ async () => await gameHub.shufflePlayers()}>Spieler durchmischen</button>
 
             {#if $state.gameState !== GameState.Locked}
@@ -166,7 +167,7 @@
                 confirmText: "Verlassen",
                 confirmColor: "danger",
                 onConfirm: async () => {
-                    await apiClient.api.gameSessionsPlayersDelete($state.gameId, $state.selfId, { secure: true });
+                    await apiClient.api.gameSessionsPlayersDelete($state.gameId, $state.selfId);
                     goto("/");
                 }
             });
@@ -184,7 +185,7 @@
                     }
                 })}>Spiel beenden (zurück zur Lobby)</button>
 
-            {#if config.gameMasterSkipAllowed}
+            {#if config.getClientConfig()?.gameMasterSkipAllowed ?? false}
                 <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({
                     title: "Spieler Aktion überspringen?",
                     contentText: "Diese Funktion sollte nur genutzt werden, wenn ein Nutzer AFK ist. Das Ergebnis der Aktion wird im voraus ausgewertet egal, ob Spieler noch nicht abgestimmt haben.",
