@@ -2,10 +2,9 @@ using Microsoft.Extensions.Logging;
 
 namespace WerwolfDotnet.Roles;
 
+[Role(Role.Amor, FixedAmount = 1)]
 public sealed class Amor : RoleBase
 {
-    public override Role Type => Role.Amor;
-    
     public bool Done { get; private set; }
 
     internal override async Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct)
@@ -30,7 +29,7 @@ public sealed class Amor : RoleBase
                 return Task.FromResult<string[]?>(null);
             
             ctx.PlayersFallInLove(votes[0], votes[1]);
-            ctx.Logger.LogTrace("Amor {amor} made {player1} to fall in Love with {player2})", self, votes[0], votes[1]);
+            ctx.Logger.LogTrace("Amor {amor} made {player1} to fall in love with {player2})", self, votes[0], votes[1]);
             
             Done = true;
             return Task.FromResult<string[]?>(null);

@@ -1,9 +1,8 @@
 namespace WerwolfDotnet.Roles;
 
+[Role(Role.Witch)]
 public sealed class Witch : RoleBase
 {
-    public override Role Type => Role.Witch;
-
     public bool CanHeal { get; private set; } = true;
 
     public bool CanKill { get; private set; } = true;

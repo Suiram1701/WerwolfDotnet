@@ -1,6 +1,7 @@
 using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using WerwolfDotnet.Attributes;
 using WerwolfDotnet.Server.Models;
 using WerwolfDotnet.Server.Options;
 
@@ -29,8 +30,11 @@ public class RootController(IOptionsSnapshot<GameLobbyOptions> lobbyOptions, IOp
         return Ok(new ClientConfigDto
         {
             SessionsVisible = LobbyOptions.AllowViewAll,
-            MinimumPlayers = LobbyOptions.MinPlayers,
             PlayerNameMinLength = LobbyOptions.PlayerNameMinLength,
+            MinimumPlayers = LobbyOptions.MinPlayers,
+            FixedRoleAmounts = RoleAttribute.GetRoles()
+                .Where(attr => attr.FixedAmount != -1)
+                .ToDictionary(attr => (int)attr.Role, attr => attr.FixedAmount),
             GameMasterSkipAllowed = GameOptions.GameMasterSkipAllowed
         });
     }

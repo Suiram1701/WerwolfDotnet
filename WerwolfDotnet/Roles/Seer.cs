@@ -2,10 +2,9 @@ using Microsoft.Extensions.Logging;
 
 namespace WerwolfDotnet.Roles;
 
+[Role(Role.Seer)]
 public class Seer : RoleBase
 {
-    public override Role Type => Role.Seer;
-
     public IReadOnlyDictionary<Player, Role> WatchedPlayers => _watchedPlayers.AsReadOnly();
     private readonly Dictionary<Player, Role> _watchedPlayers = new();
     

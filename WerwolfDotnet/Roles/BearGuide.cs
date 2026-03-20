@@ -1,8 +1,5 @@
 namespace WerwolfDotnet.Roles;
 
-public sealed class BearGuide : RoleBase
-{
-    public override Role Type => Role.BearGuide;
-    
-    // Logic handled in GameContext.GameLoop.cs
-}
+// Logic handled in GameContext.GameLoop.cs
+[Role(Role.BearGuide, FixedAmount = 1)]
+public sealed class BearGuide : RoleBase;

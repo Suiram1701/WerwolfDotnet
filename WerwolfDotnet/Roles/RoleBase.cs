@@ -5,8 +5,8 @@ namespace WerwolfDotnet.Roles;
 [DebuggerDisplay($"{{{nameof(Type)}}}")]
 public abstract class RoleBase
 {
-    public abstract Role Type { get; }
-
+    public Role Type => RoleAttribute.GetRole(GetType())!.Value;
+    
     public virtual bool AlliesVisible => false;
     
     internal virtual Task OnDayAsync(GameContext ctx, Player self, CancellationToken ct) => Task.CompletedTask;

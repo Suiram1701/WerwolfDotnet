@@ -2,10 +2,9 @@ using Microsoft.Extensions.Logging;
 
 namespace WerwolfDotnet.Roles;
 
+[Role(Role.Healer)]
 public sealed class Healer : RoleBase
 {
-    public override Role Type => Role.Healer;
-
     /// <summary>
     /// The recently protected players.
     /// </summary>

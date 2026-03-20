@@ -2,10 +2,9 @@ using Microsoft.Extensions.Logging;
 
 namespace WerwolfDotnet.Roles;
 
+[Role(Role.VillageMattress)]
 public sealed class VillageMattress : RoleBase
 {
-    public override Role Type => Role.VillageMattress;
-    
     public Player? LastSleepover { get; private set; }
 
     internal override async Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct)

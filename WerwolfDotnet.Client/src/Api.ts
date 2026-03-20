@@ -39,9 +39,10 @@ export enum CauseOfDeath {
 export interface ClientConfigDto {
   sessionsVisible?: boolean;
   /** @format int32 */
-  minimumPlayers?: number;
-  /** @format int32 */
   playerNameMinLength?: number;
+  /** @format int32 */
+  minimumPlayers?: number;
+  fixedRoleAmounts?: Record<string, number>;
   gameMasterSkipAllowed?: boolean;
 }
 
@@ -75,6 +76,14 @@ export interface GameDto {
    * @format int32
    */
   maxPlayerCount?: number;
+}
+
+export interface GameOptionsDto {
+  amountOfRoles?: Record<string, number>;
+  explodingWitchHome?: boolean;
+  hunterMustKill?: boolean;
+  mayorDecidesNextMayor?: boolean;
+  revealRoleForCauses?: CauseOfDeath[] | null;
 }
 
 /** @format int32 */

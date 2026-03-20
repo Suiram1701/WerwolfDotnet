@@ -1,9 +1,8 @@
 namespace WerwolfDotnet.Roles;
 
+[Role(Role.SeerApprentice)]
 public sealed class SeerApprentice : Seer
 {
-    public override Role Type => Role.SeerApprentice;
-
     /// <summary>
     /// Indicates whether this apprentice is currently active.
     /// </summary>

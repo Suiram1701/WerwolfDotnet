@@ -1,9 +1,8 @@
 namespace WerwolfDotnet.Roles;
 
+[Role(Role.Hunter)]
 public sealed class Hunter : RoleBase
 {
-    public override Role Type => Role.Hunter;
-    
     internal override async Task OnDeathAsync(GameContext ctx, Player self, CauseOfDeath cause, CancellationToken ct)
     {
         await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
