@@ -4,7 +4,8 @@ let cachedConfig: ClientConfigDto | undefined;
 
 export const config =
 {
-    apiEndpoint: "http://localhost:7216", // Has to be changed when publish (for example with Docker)
+    // Has to be changed when publish (for example with Docker) 
+    apiEndpoint: "http://localhost:7216", 
     sessionsPollInterval: 5,
     
     getClientConfig: () => cachedConfig,

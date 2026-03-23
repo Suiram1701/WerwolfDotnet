@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using WerwolfDotnet.Attributes;
+using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.Models;
 using WerwolfDotnet.Server.Services;
+using WerwolfDotnet.Server.Services.Interfaces;
 using static System.Net.Mime.MediaTypeNames;
 
 namespace WerwolfDotnet.Server.Controllers;
@@ -16,11 +19,13 @@ namespace WerwolfDotnet.Server.Controllers;
 public class GameSessionController(
     ILogger<GameSessionController> logger,
     GameManager manager,
+    IGameSettingsStore settingsStore,
     IHubContext<GameHub, IGameHub> hubContext,
     PlayerConnectionMapper connectionMapping) : ControllerBase
 {
     private readonly ILogger _logger = logger;
     private readonly GameManager _manager = manager;
+    private readonly IGameSettingsStore _settingsStore = settingsStore;
     private readonly IHubContext<GameHub, IGameHub> _hubContext = hubContext;
     private readonly PlayerConnectionMapper _connectionMapping = connectionMapping;
 
@@ -38,6 +43,7 @@ public class GameSessionController(
             return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "A valid 'playerName' was expected!");
         
         (GameContext ctx, Player self, string auth) = await _manager.CreateGameAsync(model.PlayerName.Trim(), model.GamePassword);
+        await _settingsStore.UpdateAsync(ctx.Id, (GameOptionsDto)_manager.GameOptions.DefaultOptions.Clone()).ConfigureAwait(false);     // Load the default game settings
         return CreatedAtAction(nameof(GetSessionById), new { sessionId = ctx.Id }, new JoinedGameDto
         {
             Game = new GameDto(ctx),
@@ -81,6 +87,61 @@ public class GameSessionController(
         return ctx is not null
             ? Ok(new GameDto(ctx))
             : Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
+    }
+
+    /// <summary>
+    /// Updates the settings of a game.
+    /// </summary>
+    /// <param name="sessionId">The game to update the settings.</param>
+    /// <param name="options">The new options to set.</param>
+    /// <response code="200">The dto.</response>
+    /// <response code="400">Something is wrong with the send body,</response>
+    /// <response code="403">You're not authorized to execute this endpoint.</response>
+    /// <response code="404">The session wasn't found.</response>
+    /// <returns>The updated settings.</returns>
+    [Authorize]
+    [HttpPut("{sessionId:int}/settings")]
+    [ProducesResponseType(typeof(GameOptionsDto),StatusCodes.Status200OK, Application.Json)]
+    public async Task<IActionResult> UpdateGameSettingsAsync([FromRoute] int sessionId, [FromBody] GameOptionsDto options)
+    {
+        if (await _manager.GetGameById(sessionId) is not { } ctx)
+            return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
+        if (HttpContext.User.GetPlayerId() != ctx.GameMaster.Id)
+            return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
+        foreach (KeyValuePair<int, int> role in options.AmountOfRoles.Where(role => role.Value <= 0))
+            options.AmountOfRoles.Remove(role.Key);
+
+        options.AmountOfRoles.TryGetValue((int)Role.Werwolf, out int wwAmount);
+        if (wwAmount <= 0)
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "At least one werwolf (0) is required!");
+        if (RoleAttribute.GetRoles()
+            .Where(attr => attr.FixedAmount != -1)
+            .Any(attr =>
+                options.AmountOfRoles.TryGetValue((int)attr.Role, out int amount) && amount != attr.FixedAmount ))
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "A role which has a fixed amount is set to something else than this amount. See /api/config for reference.");
+        }
+        
+        await _settingsStore.UpdateAsync(sessionId, options).ConfigureAwait(false);
+        return Ok(options);
+    }
+
+    /// <summary>
+    /// Retrieves the current settings of a game.
+    /// </summary>
+    /// <param name="sessionId">The id of the game to update.</param>
+    /// <response code="200">The dto.</response>
+    /// <response code="404">The session wasn't found.</response>
+    /// <returns>The dto.</returns>
+    [Authorize]
+    [HttpGet("{sessionId:int}/settings")]
+    [ProducesResponseType(typeof(GameOptionsDto),StatusCodes.Status200OK, Application.Json)]
+    public async Task<IActionResult> GetGameSettingsAsync([FromRoute] int sessionId)
+    {
+        if (HttpContext.User.GetGameId() != sessionId)
+            return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
+        GameOptionsDto? options = await _settingsStore.GetAsync(sessionId).ConfigureAwait(false);
+        return options is not null ? Ok(options) : Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
     }
     
     /// <summary>
@@ -129,10 +190,14 @@ public class GameSessionController(
     /// <returns>The retrieved players.</returns>
     /// <response code="200">The players of the game.</response>
     /// <response code="404">The specified game wasn't found.</response>
+    [Authorize]
     [HttpGet("{sessionId:int}/players")]
     [ProducesResponseType(typeof(PlayerDto[]), StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetAllPlayersAsync([FromRoute] int sessionId)
     {
+        if (HttpContext.User.GetGameId() != sessionId)
+            return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
+        
         GameContext? ctx = await _manager.GetGameById(sessionId);
         return ctx is not null
             ? Ok(ctx.Players.ToDtoCollection())
@@ -147,10 +212,14 @@ public class GameSessionController(
     /// <returns>The retrieved player.</returns>
     /// <response code="200">The retrieved player.</response>
     /// <response code="404">The specified game or player wasn't found.</response>
+    [Authorize]
     [HttpGet("{sessionId:int}/players/{playerId:int}")]
     [ProducesResponseType(typeof(PlayerDto), StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetPlayerByIdAsync([FromRoute] int sessionId, [FromRoute] int playerId)
     {
+        if (HttpContext.User.GetGameId() != sessionId)
+            return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
+        
         GameContext? ctx = await _manager.GetGameById(sessionId);
         Player? player = ctx?.Players.SingleOrDefault(p => p.Id == playerId);
         return ctx is null || player is null
@@ -185,6 +254,9 @@ public class GameSessionController(
         
         await _manager.LeaveGameAsync(ctx, playerToKick);
         await _hubContext.Clients.Player(ctx.Id, playerToKick.Id).ForceDisconnect(kicked: playerId != selfId);     // Not done by manager because it can't differentiate between leaving and kicking
+        
+        if (ctx.Players.Count == 0)
+            await _settingsStore.RemoveAsync(ctx.Id).ConfigureAwait(false);
         return Ok();
     }
 }

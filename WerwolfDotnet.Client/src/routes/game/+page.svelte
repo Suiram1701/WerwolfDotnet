@@ -14,6 +14,7 @@
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
     import PlayerList from "$lib/components/PlayerList.svelte";
+    import GameSettings from "$lib/components/GameSettings.svelte";
     import { config } from "../../config";
 
     const webUrl = page.url.protocol + "//" + page.url.host;     // Port is part of the host
@@ -27,6 +28,8 @@
         return { headers: { "Authorization": `Bearer ${data.token}` } };
     }});
     config.retrieveConfigAsync(apiClient);
+    
+    let canEditSettings = $derived($state.gameMeta?.gameMaster === $state.selfId && ($state.gameState ?? 0) <= 0);
     
     let connection: HubConnection;
     let gameHub: GameHub;
@@ -55,10 +58,13 @@
                 console.log("An error occurred while trying to connect to the game API!", err)
                 goto("/");
             });
-        
         return () => connection.stop();
     });
 </script>
+
+{#snippet gameOptionsModalContent()}
+    <GameSettings readonly={!canEditSettings} apiClient={apiClient} />
+{/snippet}
 
 <PageTitle title="Werwolf - Spiel {$state.gameId}" />
 
@@ -143,11 +149,26 @@
     {/if}
 
     <div class="flex-grow-1"></div>
+
+    <button class="btn btn-secondary main-content mb-3" type="button" onclick={() => {
+        modalProvider.show({
+            title: "Spieleinstellungen",
+            content: gameOptionsModalContent,
+            confirmText: canEditSettings ? "Speichern" : "Verstanden",
+            closeOnConfirm: true
+        });
+    }}>
+        Spieleinstellungen
+    </button>
     
     <!-- Admin buttons -->
     {#if $state.selfId === $state.gameMeta?.gameMaster && ($state.gameState ?? -2) <= 0}
         <div class="d-flex main-content mb-3">
-            <button class="btn btn-primary w-100" type="button" onclick={ async () => gameHub.startGame()} disabled="{$state.players.length < (config.getClientConfig()?.minimumPlayers ?? 0)}">Spiel starten</button>
+            <button class="btn btn-primary w-100" type="button" disabled={$state.players.length < (config.getClientConfig()?.minimumPlayers ?? 0)}
+                    onclick={async () => await gameHub.startGame()}>
+                Spiel starten
+            </button>
+            
             <button class="btn btn-info w-100 mx-2" type="button" onclick={ async () => await gameHub.shufflePlayers()}>Spieler durchmischen</button>
 
             {#if $state.gameState !== GameState.Locked}

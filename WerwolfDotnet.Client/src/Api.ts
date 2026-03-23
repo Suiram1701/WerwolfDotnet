@@ -436,6 +436,44 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags GameSession
+     * @name GameSessionsSettingsUpdate
+     * @summary Updates the settings of a game.
+     * @request PUT:/api/game_sessions/{sessionId}/settings
+     * @secure
+     */
+    gameSessionsSettingsUpdate: (sessionId: number, data: GameOptionsDto, params: RequestParams = {}) =>
+      this.request<GameOptionsDto, void>({
+        path: `/api/game_sessions/${sessionId}/settings`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags GameSession
+     * @name GameSessionsSettingsDetail
+     * @summary Retrieves the current settings of a game.
+     * @request GET:/api/game_sessions/{sessionId}/settings
+     * @secure
+     */
+    gameSessionsSettingsDetail: (sessionId: number, params: RequestParams = {}) =>
+      this.request<GameOptionsDto, void>({
+        path: `/api/game_sessions/${sessionId}/settings`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags GameSession
      * @name GameSessionsPlayersCreate
      * @summary Creates a new player in an existing game session.
      * @request POST:/api/game_sessions/{sessionId}/players
@@ -457,11 +495,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @name GameSessionsPlayersDetail
      * @summary Retrieves all players from a game.
      * @request GET:/api/game_sessions/{sessionId}/players
+     * @secure
      */
     gameSessionsPlayersDetail: (sessionId: number, params: RequestParams = {}) =>
       this.request<PlayerDto[], void>({
         path: `/api/game_sessions/${sessionId}/players`,
         method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),
@@ -475,11 +515,13 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request GET:/api/game_sessions/{sessionId}/players/{playerId}
      * @originalName gameSessionsPlayersDetail
      * @duplicate
+     * @secure
      */
     gameSessionsPlayersDetail2: (sessionId: number, playerId: number, params: RequestParams = {}) =>
       this.request<PlayerDto, void>({
         path: `/api/game_sessions/${sessionId}/players/${playerId}`,
         method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),

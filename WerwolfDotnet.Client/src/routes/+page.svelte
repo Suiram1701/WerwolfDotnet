@@ -16,7 +16,7 @@
     
     const apiClient = new Api({ baseUrl: config.apiEndpoint });
     
-    let games: GameDto[] | null = $state(null);
+    let games: GameDto[] | null = $state([]);
     
     let gameId: number | undefined = $state(), gameIdLocked: boolean = $state(false);
     let playerName: string = $state("");
@@ -102,25 +102,23 @@
                 });
         }
 
-        config.retrieveConfigAsync(apiClient).then(cfg => {
+        config.retrieveConfigAsync(apiClient).then(async cfg => {
             if (cfg.sessionsVisible) {
-                games = [];
-                apiClient.api.gameSessionsList()
-                    .then(response => {
-                        games = response.data;
+                const response = await apiClient.api.gameSessionsList();
+                if (!response.ok) {
+                    games = null;
+                    console.warn("Can't poll game session because its disabled by the server (although its enabled for the client)");
+                    return;
+                }
 
-                        pollId = setInterval(async () => {
-                            const response : HttpResponse<GameDto[], void> = await apiClient.api.gameSessionsList();
-                            if (response.ok)
-                                games = response.data;
-                            else
-                                console.error("Failed to poll game sessions!")
-                        }, config.sessionsPollInterval * 1000);     // s to ms
-                    })
-                    .catch(_ => {
-                        games = null;
-                        console.warn("Can't poll game session because its disabled by the server (although its enabled for the client)");
-                    });
+                games = response.data;
+                pollId = setInterval(async () => {
+                    const response : HttpResponse<GameDto[], void> = await apiClient.api.gameSessionsList();
+                    if (response.ok)
+                        games = response.data;
+                    else
+                        console.error("Failed to poll game sessions!")
+                }, config.sessionsPollInterval * 1000);     // s to ms
             } 
         });
         return () => clearInterval(pollId);
@@ -137,7 +135,8 @@
 {#snippet createModalContent()}
     <div class="mb-3">
         <label class="form-label" for="creatingPlayerName">Spielername</label>
-        <input class="form-control" id="creatingPlayerName" type="text" bind:value={playerName} onkeydown={e => formKeyDown(e, onCreateGame)}/>
+        <input class="form-control" id="creatingPlayerName" type="text" minlength="{config.getClientConfig()?.minimumPlayers}"
+               bind:value={playerName} onkeydown={e => formKeyDown(e, onCreateGame)}/>
         <div class="invalid-feedback">Der angegebene Name ist ungültig.</div>
     </div>
 

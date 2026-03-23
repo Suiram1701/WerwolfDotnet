@@ -26,6 +26,7 @@ builder.Services
 builder.Services
     .AddSingleton<GameManager>()
     .AddSingleton<IGameSessionStore, InMemoryGameSessionStore>()
+    .AddSingleton<IGameSettingsStore, InMemoryGameSettingsStore>()
     .AddSingleton<PlayerConnectionMapper>()
     .AddSingleton<IUserIdProvider, TokenAuthenticationUserIdProvider>();
 

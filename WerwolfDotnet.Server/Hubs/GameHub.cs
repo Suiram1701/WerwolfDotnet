@@ -2,15 +2,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using WerwolfDotnet.Server.Models;
 using WerwolfDotnet.Server.Services;
+using WerwolfDotnet.Server.Services.Interfaces;
 
 namespace WerwolfDotnet.Server.Hubs;
 
 [Authorize]
-public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper connectionMapping, GameManager manager) : Hub<IGameHub>
+public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper connectionMapping, GameManager manager, IGameSettingsStore settingsStore) : Hub<IGameHub>
 {
     private readonly ILogger _logger = logger;
     private readonly PlayerConnectionMapper _connectionMapping = connectionMapping;
     private readonly GameManager _manager = manager;
+    private readonly IGameSettingsStore _settingsStore = settingsStore;
     
     public override async Task OnConnectedAsync()
     {
@@ -76,8 +78,9 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
         if (!CheckGameMaster(ctx, "start game"))
             return;
-        
-        await _manager.StartGameAsync(ctx);
+
+        GameOptionsDto optionsDto = (await _settingsStore.GetAsync(ctx.Id))!;
+        await _manager.StartGameAsync(ctx, optionsDto.ToOptions());
     }
 
     [HubMethodName("playerAction")]

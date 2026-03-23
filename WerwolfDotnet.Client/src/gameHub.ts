@@ -5,7 +5,7 @@ import { removePlayerToken } from "./stores/gameSessionStore";
 import { HubConnection } from "@microsoft/signalr"
 import { actionCompletions, actionNames } from "./textes/actions";
 import { fractions, fractionWin } from "./textes/fractions";
-import { causeOfDeaths } from "./textes/causeOfDeaths";
+import { causeOfDeathTemplates } from "./textes/causeOfDeaths";
 import { roleNames } from "./textes/roles";
 import ModalProvider from "$lib/components/ModalProvider.svelte";
 
@@ -71,7 +71,7 @@ export class GameHub {
     }
 
     private onGameStateUpdated(newState: GameState, diedPlayers: Record<number, DeathDetails>, bearGrowls: boolean | null): void {
-        if (this.gamePage.gameState === GameState.GameWon && newState <= 0) {
+        if ((this.gamePage.gameState ?? 0) > 0 && newState <= 0) {
             window.location.reload();     // Reset the whole frontend. In my opinion is the risk to break something with a manuell reset.
             return;
         }
@@ -202,7 +202,7 @@ export class GameHub {
             {
                 const diedFromCause: number[] = mapped[cause] ?? [];
                 if (diedFromCause.length > 0)
-                    diedStr += `${causeOfDeaths[cause](mapped[cause]!.map(id => this.gamePage.players.find(p => p.id! === id)!.name!) ?? [])} `;
+                    diedStr += `${causeOfDeathTemplates[cause](mapped[cause]!.map(id => this.gamePage.players.find(p => p.id! === id)!.name!) ?? [])} `;
 
                 if (diedFromCause.length === 1 && diedPlayers[diedFromCause[0]]?.role !== Role.None)
                 {

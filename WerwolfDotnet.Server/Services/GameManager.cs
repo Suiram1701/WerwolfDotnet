@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
+using WerwolfDotnet.Attributes;
 using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.Models;
@@ -22,9 +23,9 @@ public class GameManager(
     private readonly IGameSessionStore _sessionStore = sessionStore;
     private readonly IHubContext<GameHub, IGameHub> _hubContext = hubContext;
     
-    private GameLobbyOptions LobbyOptions => lobbyOptions.CurrentValue;
+    public GameLobbyOptions LobbyOptions => lobbyOptions.CurrentValue;
     
-    private Options.GameOptions GameOptions => gameOptions.CurrentValue;
+    public Options.GameOptions GameOptions => gameOptions.CurrentValue;
 
     /// <summary>
     /// Checks whether the given player name is valid.
@@ -180,14 +181,16 @@ public class GameManager(
         return true;
     }
 
-    public async Task StartGameAsync(GameContext ctx)
+    public async Task StartGameAsync(GameContext ctx, GameOptions options)
     {
         if (ctx.State > 0)      // Game is already running
             return;
         if (ctx.Players.Count < LobbyOptions.MinPlayers)     // Not enough players
             return;
+        if (options.AmountOfRoles.Values.Sum() > ctx.Players.Count)     // Too many roles
+            return;
         
-        ctx.StartGame(new GameOptions());
+        ctx.StartGame(options);
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
 
         IEnumerable<Task> notifications = ctx.Players.Select(p => UpdatePlayerRoleAsync(ctx, p));
