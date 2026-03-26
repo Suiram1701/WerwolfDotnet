@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, setContext, type Snippet } from "svelte";
     import { writable } from "svelte/store";
+    import { config } from "../config";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     
     let { children }: { children: Snippet } = $props();
@@ -55,7 +56,7 @@
     </div>
     
     <div class="d-flex flex-column align-items-center">
-        <h6>WerwolfDotnet</h6>
+        <h6>WerwolfDotnet - v{config.version}</h6>
         
         <small class="text-muted">
             Erstellt mit

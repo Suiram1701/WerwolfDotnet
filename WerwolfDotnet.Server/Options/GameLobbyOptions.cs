@@ -10,7 +10,7 @@ public class GameLobbyOptions
     /// <summary>
     /// Indicates whether everyone can see every session. Default is true
     /// </summary>
-    public bool AllowViewAll { get; set; } = true;
+    public bool AllowViewAll { get; set; } = false;
 
     /// <summary>
     /// The minimum amount of players needed to start a round.

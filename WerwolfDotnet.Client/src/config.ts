@@ -1,12 +1,12 @@
-import {Api, type ClientConfigDto} from "./Api";
+import { Api, type ClientConfigDto } from "./Api";
 
 let cachedConfig: ClientConfigDto | undefined;
 
 export const config =
 {
-    // Has to be changed when publish (for example with Docker) 
-    apiEndpoint: "http://localhost:7216", 
+    apiEndpoint: ["127.0.0.1", "::1", "localhost"].includes(window.location.hostname) ? "http://localhost:7216" : "", 
     sessionsPollInterval: 5,
+    version: "0.1.0",
     
     getClientConfig: () => cachedConfig,
     retrieveConfigAsync: async (apiClient: Api<unknown>) => {
