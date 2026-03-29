@@ -240,9 +240,9 @@ public class GameManager(
             return Task.CompletedTask;
         
         Dictionary<int, PlayerRelation[]> relations = new();
-        if (player.Role?.AlliesVisible ?? false)
+        if (player.Role?.VisibleAllies.Length > 0)
         {
-            foreach (Player ally in ctx.Players.Where(p => p.Role?.Type == player.Role.Type && !player.Equals(p)))
+            foreach (Player ally in ctx.Players.Where(p => player.Role.VisibleAllies.Contains(p.Role!.Type) && !player.Equals(p)))
                 relations[ally.Id] = [PlayerRelation.Ally];
         }
 
@@ -324,10 +324,15 @@ public class GameManager(
             await _hubContext.Clients.Players(ctx.Id, action.Participants.Select(p => p.Id))
                 .PlayerActionCompleted(parameters);
 
+            if (!action.PlayerVotes.Values.Any(l => l.Length > 0))
+                return;
             switch (action.Type)     // Some actions have side effects on other players
             {
+                case ActionType.UrwolfSelection:
+                    await Task.WhenAll(ctx.Players.Where(p => p.Role!.Type < 0).Select(p => UpdatePlayerRoleAsync(ctx, p)));
+                    break;
                 case ActionType.SeerSelection:
-                    await UpdatePlayersAsync(ctx, action.Participants.Single());
+                    await UpdatePlayersAsync(ctx, action.Participants.Single());     // Refreshes shown roles
                     break;
                 case ActionType.AmorSelection:
                     await Task.WhenAll(action.PlayerVotes.Values

@@ -49,6 +49,9 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
 
     public PhaseAction? RunningAction { get; private set; }
 
+    public IEnumerable<PhaseAction> PreviousActions => _previousActions;
+    private readonly Stack<PhaseAction> _previousActions = [];
+
     /// <summary>
     /// First int is the game master id and seconds integer is the id of the village mayor.
     /// </summary>
@@ -284,6 +287,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
             {
                 // Frontend can (should) assume that every phase action is ended properly.
                 OnPhaseActionCompleted?.Invoke(this, action, result);
+                _previousActions.Push(action);
                 RunningAction = null;
             }
         }

@@ -7,7 +7,7 @@ public abstract class RoleBase
 {
     public Role Type => RoleAttribute.GetRole(GetType())!.Value;
     
-    public virtual bool AlliesVisible => false;
+    public virtual Role[] VisibleAllies => [];
     
     internal virtual Task OnDayAsync(GameContext ctx, Player self, CancellationToken ct) => Task.CompletedTask;
     

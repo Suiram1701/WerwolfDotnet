@@ -58,8 +58,8 @@ partial class GameContext
                     await RequestPlayerActionAsync(new PhaseAction(ct)
                     {
                         Type = ActionType.WerwolfSelection,
-                        Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type == Role.Werwolf)],
-                        VotablePlayers = [.._players.Where(p => p.IsAlive && p.Role!.Type != Role.Werwolf)]
+                        Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type < 0)],
+                        VotablePlayers = [.._players.Where(p => p.IsAlive && p.Role!.Type > 0)]
                     }, (action, _) =>
                     {
                         if (action.GetMostVotedPlayer() is not { } playerToDie)

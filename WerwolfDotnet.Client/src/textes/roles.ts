@@ -1,11 +1,12 @@
 import { Role } from "../Api";
 
 export const roleNames: Readonly<Record<Role, string>> = {
+    [Role.Urwolf]: "Urwolf",
+    [Role.Werwolf]: "Werwolf",
     [Role.None]: "",     // Only used internally. Not a real role.
     [Role.Villager]: "Dorfbewohner/-in",
     [Role.Seer]: "Seher/-in",
     [Role.SeerApprentice]: "Seher Lehrling",
-    [Role.Werwolf]: "Werwolf",
     [Role.Witch]: "Hexe",
     [Role.Healer]: "Heiler",
     [Role.Hunter]: "Jäger",
@@ -17,11 +18,12 @@ export const roleNames: Readonly<Record<Role, string>> = {
 }
 
 export const roleDescriptions: Readonly<Record<Role, string>> = {
+    [Role.Urwolf]: "Du bist ein besonderer Werwolf, der sich mit den anderen Werwölfen jede Nacht für ein Opfer entscheidet und zusätzlich einen Dorfbewohner in einen Werwolf verwandeln kann.",
+    [Role.Werwolf]: "Du bist ein Feind des Dorfes. Jede Nacht entscheidet ihr euch gemeinsam mit den anderen Werwölfen für ein Opfer.",
     [Role.None]: "",     // Only used internally. Not a real role.
     [Role.Villager]: "Du bist ein ganz normaler Bewohner des Dorfes. Deine Aufgabe ist es, gemeinsam mit den anderen Dorfbewohnern die Werwölfe zu entlarven und zu hinzurichten.",
     [Role.Seer]: "Du besitzt eine besondere Gabe. Jede Nacht darfst du die Rolle eines Mitspielers erfahren und hilfst so dem Dorf. Aber Achtung. Es kann vorkommen, dass sie die Rolle eines Spielers im Verlauf eines Spiels ändert.",
     [Role.SeerApprentice]: "Du bist der Schüler des Sehers und erlernst dessen Fähigkeit, jede Nacht die Rolle eines Mitspielers zu erfahren. Sobald der Seher verstirbt bist du bereit dessen Position zu übernehmen.",
-    [Role.Werwolf]: "Du bist ein heimlicher Feind des Dorfes. Jede Nacht entscheidest du dich gemeinsam mit den anderen Werwölfen für ein Opfer – am Tag musst du unauffällig bleiben, um nicht enttarnt zu werden.",
     [Role.Witch]: "Du kannst nachts einmal heilen und einmal töten. Nutze deine Tränke klug und bleibe unentdeckt.",
     [Role.Healer]: "Du hast die besondere Fähigkeit jede Nacht einen Spieler zu beschützen. Niemand wird in dieser Nacht in der Lage sein ihn zu töten. Wähle aber weise.",
     [Role.Hunter]: "Dorfbewohner mit einer Schusswaffe. Stirbt der Jäger, darf er einen Spieler seiner Wahl mit in den Tod nehmen.",

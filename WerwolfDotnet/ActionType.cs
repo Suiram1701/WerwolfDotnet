@@ -7,6 +7,7 @@ public enum ActionType
     WerwolfAccuses,
     WerwolfKilling,
     WerwolfSelection,
+    UrwolfSelection,
     SeerSelection,
     WitchHealSelection,
     WitchKillSelection,

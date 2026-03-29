@@ -28,7 +28,7 @@ public class GameOptions
     /// <summary>
     /// The order roles are executed. NOTE: Changing this might break the functionality of some roles!
     /// </summary>
-    public Role[] NightExecutionOrder { get; init; } = [Role.Amor, Role.VillageMattress, Role.Healer, Role.Werwolf, Role.Seer, Role.SeerApprentice, Role.Witch];
+    public Role[] NightExecutionOrder { get; init; } = [Role.Amor, Role.VillageMattress, Role.Healer, Role.Werwolf, Role.Urwolf, Role.Seer, Role.SeerApprentice, Role.Witch];
     
     public CauseOfDeath[] RevealRoleForCauses { get; init; } = [CauseOfDeath.WerwolfKilling, CauseOfDeath.WitchExplosion];
 }
