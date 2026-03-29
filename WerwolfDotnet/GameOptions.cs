@@ -8,17 +8,12 @@ public class GameOptions
     {
         { typeof(Werwolf), 1 },
         { typeof(Seer), 1 },
-        { typeof(SeerApprentice), 0 },
         { typeof(Witch), 1 },
-        { typeof(Healer), 0 },
-        { typeof(Hunter), 0 },
-        { typeof(Amor), 1 },
-        { typeof(VillageMattress), 0 },
-        { typeof(TwoSisters), 0 },     // Has to be tested
-        { typeof(ThreeBrothers), 0 },
-        { typeof(BearGuide), 0 }
+        { typeof(Amor), 1 }
     }.AsReadOnly();
 
+    public bool SeerSeesRole { get; init; } = true;
+    
     public bool ExplodingWitchHome { get; init; } = false;
     
     public bool HunterMustKill { get; init; } = false;

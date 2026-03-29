@@ -4,7 +4,7 @@ let cachedConfig: ClientConfigDto | undefined;
 
 export const config =
 {
-    apiEndpoint: ["127.0.0.1", "::1", "localhost"].includes(window.location.hostname) ? "http://localhost:7216" : "", 
+    apiEndpoint: ["127.0.0.1", "::1", "localhost"].includes(window.location.hostname) ? "http://localhost:7216" : "",
     sessionsPollInterval: 5,
     version: "0.1.0",
     

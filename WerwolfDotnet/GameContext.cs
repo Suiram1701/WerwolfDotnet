@@ -143,6 +143,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     public void AddPlayer(Player player)
     {
         ThrowWhenNotInit();
+        if (State > 0)
+            throw new InvalidOperationException("Game game has already been started!");
         _players.Add(player);
         Logger.LogInformation("Player {playerName} ({playerId}) joined the game", player.Name, player.Id);
     }

@@ -22,8 +22,10 @@ public class Seer : RoleBase
             
             ctx.Logger.LogTrace("Seer {seer} saw role of {player}: {roleName}",
                 self, selectedOne, selectedOne.Role!.Type);
-            _watchedPlayers[selectedOne] = selectedOne.Role!.Type;
-            return Task.FromResult<string[]?>([selectedOne.Name, selectedOne.Role!.Type.ToString()]);
+
+            Role playerRole = selectedOne.Role!.Type;
+            _watchedPlayers[selectedOne] = ctx.GameOptions!.SeerSeesRole ? playerRole : (playerRole > 0 ? Role.Villager : Role.Werwolf);
+            return Task.FromResult<string[]?>([selectedOne.Name, _watchedPlayers[selectedOne].ToString()]);
         });
         
         await base.OnNightAsync(ctx, self, ct);

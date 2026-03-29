@@ -1,11 +1,11 @@
 <script lang="ts">
-    import {onMount} from "svelte";
-    import {type Api, CauseOfDeath, type ClientConfigDto, type GameOptionsDto, Role} from "../../Api";
-    import {gamePageState as gameState} from "../../stores/pageStateStore"
-    import {roleNames} from "../../textes/roles";
-    import {causeOfDeaths} from "../../textes/causeOfDeaths";
-    import {tooltip} from "$lib/actions/tooltip";
-    import {config} from "../../config";
+    import { onMount } from "svelte";
+    import { type Api, CauseOfDeath, type ClientConfigDto, type GameOptionsDto, Role } from "../../Api";
+    import { gamePageState as gameState } from "../../stores/pageStateStore"
+    import { roleNames } from "../../textes/roles";
+    import { causeOfDeaths } from "../../textes/causeOfDeaths";
+    import { tooltip } from "$lib/actions/tooltip";
+    import { config } from "../../config";
 
     let { readonly, apiClient }: { readonly: boolean, apiClient: Api<unknown> } = $props();
     
@@ -40,6 +40,11 @@
 
 <h5>Sondereinstellungen:</h5>
 <div class="form-check mb-3">
+    <input class="form-check-input" id="seerSeesRole" type="checkbox" bind:checked={options.seerSeesRole}
+           onchange={updateSettings} readonly={readonly} disabled={readonly}>
+    <label class="form-check-label" for="seerSeesRole">Seher sieht genaue Rolle</label>
+</div>
+<div class="form-check mb-3">
     <input class="form-check-input" id="explodingWitchHome" type="checkbox" bind:checked={options.explodingWitchHome}
            onchange={updateSettings} readonly={readonly} disabled={readonly}>
     <label class="form-check-label" for="explodingWitchHome">Explodierendes Hexenhaus</label>
@@ -57,7 +62,7 @@
 
 <h5>Rollen:</h5>
 {#if options.amountOfRoles !== undefined && cfg.fixedRoleAmounts !== undefined}
-    {#each Object.values(Role).filter(r => typeof r === "number" && r !== Role.None).sort() as role}
+    {#each Object.values(Role).filter(r => typeof r === "number" && r !== Role.None).sort((a, b) => a - b) as role}
         <div class="row mb-1">
             <label class="form-label col-4" for="role{role.toString()}">{roleNames[role]}: </label>
 

@@ -81,6 +81,7 @@ export interface GameDto {
 
 export interface GameOptionsDto {
   amountOfRoles?: Record<string, number>;
+  seerSeesRole?: boolean;
   explodingWitchHome?: boolean;
   hunterMustKill?: boolean;
   mayorDecidesNextMayor?: boolean;

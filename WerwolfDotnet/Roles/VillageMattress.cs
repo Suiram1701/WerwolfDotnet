@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace WerwolfDotnet.Roles;
 
-[Role(Role.VillageMattress)]
+[Role(Role.VillageMattress, FixedAmount = 1)]     // Not limited by a rule, but more than one wouldn't make sense in terms of sleepover logic
 public sealed class VillageMattress : RoleBase
 {
     public Player? LastSleepover { get; private set; }

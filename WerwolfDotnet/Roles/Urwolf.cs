@@ -25,25 +25,25 @@ public sealed class Urwolf : Werwolf
             VotablePlayers = werwolfSelected is not null ? [werwolfSelected] : [],
         }, (action, _) =>
         {
-            if (action.PlayerVotes[self].FirstOrDefault() is not { } player)
+            if (action.PlayerVotes[self].FirstOrDefault() is not { } selectedOne)
                 return Task.FromResult<string[]?>(null);
             
-            if (player.Role is VillageMattress { LastSleepover: not null })
+            if (selectedOne.Role is VillageMattress { LastSleepover: not null })
             {
-                ctx.Logger.LogTrace("Urwolf {self} couldn't change role of {player} to Werwolf (player not home)", self, player);
+                ctx.Logger.LogTrace("Urwolf {self} couldn't change role of {player} to Werwolf (player not home)", self, selectedOne);
             }
             else
             {
-                player.Revive(self);     // When not killed (e.g. saved by healer, ...) ignored
-                player.Role = new Werwolf();
-                ctx.Logger.LogTrace("Urwolf {self} changed the role of {player} to Werwolf", self, player);
+                selectedOne.Revive(self);     // When not killed (e.g. saved by healer, ...) ignored
+                selectedOne.Role = new Werwolf();
+                ctx.Logger.LogTrace("Urwolf {self} changed the role of {player} to Werwolf", self, selectedOne);
 
-                Player? visit = ctx.Players.SingleOrDefault(p => p.Role is VillageMattress m && player.Equals(m.LastSleepover));
-                visit?.Kill(CauseOfDeath.WerwolfKill, self);     // Regularly handled in OnDeathAsync
+                Player? visit = ctx.Players.SingleOrDefault(p => p.Role is VillageMattress m && selectedOne.Equals(m.LastSleepover));
+                visit?.Kill(CauseOfDeath.WerwolfKill, self);     // Regularly handled in OnDeathAsync, would be a WerwolfKill.
             }
             
             Done = true;
-            return Task.FromResult<string[]?>([player.Name]);
+            return Task.FromResult<string[]?>([selectedOne.Name]);
         });
         await base.OnNightAsync(ctx, self, ct);
     }
