@@ -17,23 +17,25 @@ export enum ActionType {
   WerwolfKilling = 3,
   WerwolfSelection = 4,
   UrwolfSelection = 5,
-  SeerSelection = 6,
-  WitchHealSelection = 7,
-  WitchKillSelection = 8,
-  HealerSelection = 9,
-  HunterSelection = 10,
-  AmorSelection = 11,
-  VillageMattressSelection = 12,
+  WhiteWolfSelection = 6,
+  SeerSelection = 7,
+  WitchHealSelection = 8,
+  WitchKillSelection = 9,
+  HealerSelection = 10,
+  HunterSelection = 11,
+  AmorSelection = 12,
+  VillageMattressSelection = 13,
 }
 
 /** @format int32 */
 export enum CauseOfDeath {
   WerwolfKilling = 0,
   WerwolfKill = 1,
-  WitchPoisoning = 2,
-  WitchExplosion = 3,
-  ShootByHunter = 4,
-  DeathByHearthBreak = 5,
+  WhiteWolfKill = 2,
+  WitchPoisoning = 3,
+  WitchExplosion = 4,
+  ShootByHunter = 5,
+  DeathByHearthBreak = 6,
   None = -1,
 }
 
@@ -51,7 +53,8 @@ export interface ClientConfigDto {
 export enum Fraction {
   Village = 0,
   Werwolf = 1,
-  Lovers = 2,
+  WhiteWolf = 2,
+  Lovers = 3,
 }
 
 /** A Dto for returning a game. */
@@ -150,6 +153,7 @@ export enum Role {
   TwoSisters = 9,
   ThreeBrothers = 10,
   BearGuide = 11,
+  WhiteWolf = -3,
   Urwolf = -2,
   Werwolf = -1,
 }

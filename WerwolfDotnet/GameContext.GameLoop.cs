@@ -7,6 +7,11 @@ namespace WerwolfDotnet;
 partial class GameContext
 {
     /// <summary>
+    /// The current round aka. the number of nights (beginning with 0)
+    /// </summary>
+    public int Round { get; private set; } = 0;
+    
+    /// <summary>
     /// The current mayor of the village.
     /// </summary>
     public Player? Mayor { get; private set; }
@@ -37,6 +42,7 @@ partial class GameContext
 
                 await RunDayAsync(ct);
                 await EvaluatePreviousStateAsync(nextState: GameState.Night, ct);
+                Round++;
             }
         }
         catch (TaskCanceledException)
@@ -231,6 +237,9 @@ partial class GameContext
             GameWon(Fraction.Village);
         
         int amountVillagers = _players.Count(p => p.Status == PlayerState.Alive && p.Role!.Type > 0);
+        if (_players.Where(p => p.Status == PlayerState.Alive && p.Role!.Type < 0).All(p => p.Role!.Type == Role.WhiteWolf) && amountVillagers <= 1)
+            GameWon(Fraction.WhiteWolf);
+        
         if (amountWerwolfs >= amountVillagers)     // Werwolf win
             GameWon(Fraction.Werwolf);
     }

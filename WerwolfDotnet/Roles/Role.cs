@@ -5,6 +5,7 @@ namespace WerwolfDotnet.Roles;
 /// </summary>
 public enum Role
 {
+    WhiteWolf = -3,
     Urwolf = -2,
     Werwolf = -1,
     None = 0,

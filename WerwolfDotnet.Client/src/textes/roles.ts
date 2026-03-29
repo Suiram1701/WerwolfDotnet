@@ -1,6 +1,7 @@
 import { Role } from "../Api";
 
 export const roleNames: Readonly<Record<Role, string>> = {
+    [Role.WhiteWolf]: "Weißer Wolf",
     [Role.Urwolf]: "Urwolf",
     [Role.Werwolf]: "Werwolf",
     [Role.None]: "",     // Only used internally. Not a real role.
@@ -18,6 +19,7 @@ export const roleNames: Readonly<Record<Role, string>> = {
 }
 
 export const roleDescriptions: Readonly<Record<Role, string>> = {
+    [Role.WhiteWolf]: "Du stimmst mit den anderen Werwölfen ab, jedoch spielst du insgeheim gegen. Dein Ziel ist es als einziger übrig zu bleiben. Du kannst jede zweite Nacht ein selbstgewähltes Opfer zusätzlich töten.",
     [Role.Urwolf]: "Du bist ein besonderer Werwolf, der sich mit den anderen Werwölfen jede Nacht für ein Opfer entscheidet und zusätzlich einen Dorfbewohner in einen Werwolf verwandeln kann.",
     [Role.Werwolf]: "Du bist ein Feind des Dorfes. Jede Nacht entscheidet ihr euch gemeinsam mit den anderen Werwölfen für ein Opfer.",
     [Role.None]: "",     // Only used internally. Not a real role.

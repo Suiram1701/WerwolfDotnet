@@ -4,5 +4,6 @@ public enum Fraction
 {
     Village,
     Werwolf,
+    WhiteWolf,
     Lovers
 }
