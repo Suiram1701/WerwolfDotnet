@@ -119,7 +119,10 @@
                     else
                         console.error("Failed to poll game sessions!")
                 }, config.sessionsPollInterval * 1000);     // s to ms
-            } 
+            }
+            else {
+                games = null;
+            }
         });
         return () => clearInterval(pollId);
     });
@@ -145,7 +148,7 @@
         <input class="form-control" id="creatingPassword" type="password" bind:value={password}
                aria-describedby="creatingPasswordHelp" onkeydown={e => formKeyDown(e, onCreateGame)} />
         <div class="form-text" id="creatingPasswordHelp">
-            Beitretende Spieler müssen dieses Passwort zum beitreten eingeben. Leer lassen um keines zu verlangen.
+            Beitretende Spieler müssen dieses Passwort zum Beitreten eingeben. Passwort leer lassen um öffentliches Spiel zu erstellen.
         </div>
     </div>
 {/snippet}

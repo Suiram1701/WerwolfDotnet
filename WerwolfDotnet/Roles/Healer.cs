@@ -5,11 +5,7 @@ namespace WerwolfDotnet.Roles;
 [Role(Role.Healer)]
 public sealed class Healer : RoleBase
 {
-    /// <summary>
-    /// The recently protected players.
-    /// </summary>
-    public Player[] LastPlayers => _lastPlayers.ToArray();
-    private readonly Queue<Player> _lastPlayers = new(2);
+    public Player? LastPlayer { get; private set; }
         
     internal override Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct)
     {
@@ -17,18 +13,17 @@ public sealed class Healer : RoleBase
         {
             Type = ActionType.HealerSelection,
             Participants = [self],
-            VotablePlayers = [..ctx.Players.Except(_lastPlayers).Where(p => p.Status == PlayerState.Alive)],
+            VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.Alive && !p.Equals(LastPlayer))],
         }, (action, _) =>
         {
-            if (_lastPlayers.Count == 2)
-                _lastPlayers.Dequeue();
-            if (action.PlayerVotes[self].SingleOrDefault() is { } playerToHeal)
+            Player? playerToHeal = action.PlayerVotes[self].SingleOrDefault();
+            if (playerToHeal is not null)
             {
                 ctx.ProtectPlayer(playerToHeal, self);
                 ctx.Logger.LogTrace("Healer {self} choose {playerToHeal} to protect.", self, playerToHeal);
-                
-                _lastPlayers.Enqueue(playerToHeal);
             }
+            
+            LastPlayer = playerToHeal;
             return Task.FromResult<string[]?>(null);
         });
     }

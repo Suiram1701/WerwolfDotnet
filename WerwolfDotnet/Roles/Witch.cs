@@ -9,7 +9,7 @@ public sealed class Witch : RoleBase
 
     internal override async Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct)
     {
-        if (CanHeal && ctx.Players.Any(p => p.Status == PlayerState.PendingDeath))
+        if (CanHeal)
         {
             // Healing
             await ctx.RequestPlayerActionAsync(new PhaseAction(ct)

@@ -3,7 +3,7 @@
     import { page } from "$app/state"
     import { goto } from "$app/navigation";
     import { type Readable } from "svelte/store";
-    import { Api, GameState } from "../../Api";
+    import {ActionType, Api, GameState} from "../../Api";
     import { getPlayerToken } from "../../stores/gameSessionStore";
     import { gamePageState as state } from "../../stores/pageStateStore";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
@@ -29,6 +29,7 @@
     }});
     config.retrieveConfigAsync(apiClient);
     
+    let isWerwolfKilling = $derived($state.currentAction?.type === ActionType.WerwolfKilling);
     let canEditSettings = $derived($state.gameMeta?.gameMaster === $state.selfId && ($state.gameState ?? 0) <= 0);
     
     let connection: HubConnection;
@@ -72,11 +73,11 @@
     <div class="accordion w-100 mb-4" id="collapseRoleParent">
         <div class="accordion-item">
             <h2 class="accordion-header">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRole" aria-controls="collapseRole">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRole" aria-expanded="true" aria-controls="collapseRole">
                     Ihre Rolle
                 </button>
             </h2>
-            <div id="collapseRole" class="accordion-collapse collapse" data-bs-parent="#collapseRoleParent">
+            <div id="collapseRole" class="accordion-collapse show" data-bs-parent="#collapseRoleParent">
                 <div class="accordion-body">
                     <h5>{roleNames[$state.selfRole]}</h5>
                     {roleDescriptions[$state.selfRole]}
@@ -91,8 +92,8 @@
         <h5>{actionNames[$state.currentAction.type ?? 0] || "undefined"}</h5>
         <p>{actionDescriptions[$state.currentAction.type ?? 0] || "Dies solltest du eigentlich nicht sehen :)"}</p>
     {:else if $state.gameState === GameState.Preparation}
-        <p>Andere Spieler können beitreten indem Sie diese Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{$state.gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
-        <p>Direktes beitreten ist auch über <a href="{webUrl}?gameId={$state.gameId}">diesen Link</a> möglich.</p>
+        <p>Andere Spieler können beitreten, indem sie auf die Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{$state.gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
+        <p>Direktes Beitreten ist auch über <a href="{webUrl}?gameId={$state.gameId}">diesen Link</a> möglich.</p>
     {:else if $state.gameState === GameState.Day}
         <p>Der Tag ist angebrochen. Diskutiert und entscheidet euch für einen Spieler, der am Abend hingerichtet werden soll.</p>
     {:else if $state.gameState === GameState.Night}
@@ -126,11 +127,11 @@
                     <span class="badge text-bg-secondary" use:tooltip={{
                         title: $state.emptyVotedPlayers.map(id => {
                             const name = $state.players.find(p => p.id === id)?.name;
-                            return $state.gameMeta?.mayor === id ? `2x ${name}` : name;
+                            return $state.gameMeta?.mayor === id && isWerwolfKilling ? `2x ${name}` : name;
                         }).join(', '),
                         placement: "top"
                     }}>
-                        {#if $state.emptyVotedPlayers.includes($state.gameMeta?.mayor ?? -1)}     <!-- Include the mayor vote -->
+                        {#if $state.emptyVotedPlayers.includes($state.gameMeta?.mayor ?? -1) && isWerwolfKilling}     <!-- Include the mayor vote -->
                             {$state.emptyVotedPlayers.length + 1}
                         {:else}
                             {$state.emptyVotedPlayers.length}

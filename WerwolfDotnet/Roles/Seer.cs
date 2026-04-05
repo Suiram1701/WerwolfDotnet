@@ -14,7 +14,8 @@ public class Seer : RoleBase
         {
             Type = ActionType.SeerSelection,
             Participants = [self],
-            VotablePlayers = [..ctx.Players.Except([self])]
+            ExcludeSelf = true,
+            VotablePlayers = [..ctx.Players]
         }, (action, _) =>
         {
             if (action.GetMostVotedPlayer() is not { } selectedOne)

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { getContext } from "svelte";
     import { type Readable } from "svelte/store";
-    import { Api, HttpClient, type PlayerDto, PlayerRelation } from "../../Api";
+    import { ActionType, Api, type PlayerDto, PlayerRelation } from "../../Api";
     import { gamePageState as state } from "../../stores/pageStateStore";
     import { roleNames } from "../../textes/roles";
     import { tooltip } from "$lib/actions/tooltip";
@@ -9,6 +9,8 @@
     import { GameHub } from "../../gameHub";
 
     let { apiClient }: { apiClient: Api<unknown> } = $props();
+    
+    let isWerwolfKilling = $derived($state.currentAction?.type === ActionType.WerwolfKilling);
     
     let modalProvider: ModalProvider;
     const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");
@@ -71,11 +73,11 @@
         <span class="badge text-bg-secondary" use:tooltip={{
             title: $state.playerToVotes[player.id ?? 0].map(id => {
                 const name = $state.players.find(p => p.id === id)?.name;
-                return $state.gameMeta?.mayor === id ? `2x ${name}` : name;
+                return $state.gameMeta?.mayor === id && isWerwolfKilling ? `2x ${name}` : name;
             }).join(', '),
             placement: "top"
         }}>
-            {#if $state.playerToVotes[player.id ?? 0].includes($state.gameMeta?.mayor ?? -1)}     <!-- Include the mayor vote -->
+            {#if $state.playerToVotes[player.id ?? 0].includes($state.gameMeta?.mayor ?? -1) && isWerwolfKilling}     <!-- Include the mayor vote -->
                 {$state.playerToVotes[player.id ?? 0].length + 1}
             {:else}
                 {$state.playerToVotes[player.id ?? 0].length}

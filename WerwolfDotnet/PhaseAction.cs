@@ -76,6 +76,24 @@ public sealed class PhaseAction(CancellationToken ct)
         _cts.Cancel();
         OnCompleted?.Invoke(this, CancellationToken);
     }
+
+    public IReadOnlyDictionary<Player, int> GetPlayersByVoteCount(Player[]? doubleValuedVotes = null)
+    {
+        Dictionary<Player, int> votesForPlayer = new();
+        foreach ((Player player, Player[] votesFor) in _playerVotes)
+        {
+            int value = doubleValuedVotes?.Contains(player) ?? false ? 2 : 1;
+            foreach (Player votedOne in votesFor)
+            {
+                if (votesForPlayer.TryGetValue(votedOne, out int count))
+                    votesForPlayer[votedOne] = count + value;
+                else
+                    votesForPlayer[votedOne] = value;
+            }
+        }
+
+        return votesForPlayer.AsReadOnly();
+    }
     
     /// <summary>
     /// Calculates the player who was voted the most.

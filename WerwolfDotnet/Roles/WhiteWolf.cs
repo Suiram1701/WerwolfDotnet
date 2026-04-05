@@ -12,14 +12,16 @@ public sealed class WhiteWolf : Werwolf
             await base.OnNightAsync(ctx, self, ct);
             return;
         }
-
+        
+        Player? werwolfSelected = ctx.PreviousActions.First(action => action.Type == ActionType.WerwolfSelection).GetMostVotedPlayer();
         await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
         {
             Type = ActionType.WhiteWolfSelection,
             Minimum = 0,
             Maximum = 1,
             Participants = [self],
-            VotablePlayers = [..ctx.Players.Where(p => p.IsAlive && p.Role!.Type > 0)]
+            ExcludeSelf = true,
+            VotablePlayers = [..ctx.Players.Where(p => p.IsAlive && !p.Equals(werwolfSelected))]
         }, (action, _) =>
         {
             if (action.PlayerVotes[self].FirstOrDefault() is not { } selectedOne)

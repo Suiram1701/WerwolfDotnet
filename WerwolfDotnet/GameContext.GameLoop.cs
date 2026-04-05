@@ -52,44 +52,37 @@ partial class GameContext
     
     private async Task RunNightAsync(CancellationToken ct)
     {
-        foreach (Player player in _players
-                     .Where(p => p.IsAlive)
-                     .OrderBy(p => GameOptions!.NightExecutionOrder.IndexOf(p.Role!.Type)))
+        foreach (IGrouping<Role, Player> roleGroup in _players
+                     .GroupBy(p => p.Role!.Type, p => p)
+                     .OrderBy(group => GameOptions!.NightExecutionOrder.IndexOf(group.Key)))
         {
-            try
+            if (roleGroup.Key == Role.Werwolf)
             {
-                if (player.Role!.Type == Role.Werwolf)
+                await RequestPlayerActionAsync(new PhaseAction(ct)
                 {
-                    // Werwölfe
-                    await RequestPlayerActionAsync(new PhaseAction(ct)
-                    {
-                        Type = ActionType.WerwolfSelection,
-                        Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type < 0)],
-                        VotablePlayers = [.._players.Where(p => p.IsAlive && p.Role!.Type > 0)]
-                    }, (action, _) =>
-                    {
-                        if (action.GetMostVotedPlayer() is not { } playerToDie)
-                            return Task.FromResult<string[]?>([]);     // Empty parameters will indicate that no one died.
+                    Type = ActionType.WerwolfSelection,
+                    Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type < 0)],
+                    VotablePlayers = [.._players.Where(p => p.IsAlive && p.Role!.Type > 0)]
+                }, (action, _) =>
+                {
+                    if (action.GetMostVotedPlayer() is not { } playerToDie)
+                        return Task.FromResult<string[]?>([]);     // Empty parameters will indicate that no one died.
 
-                        if (_werwolfProtectedPlayers.TryGetValue(playerToDie, out Player? savedBy))
-                        {
-                            Logger.LogTrace("{self} was successfully protected by {savedBy}", playerToDie, savedBy);
-                            return Task.FromResult<string[]?>([playerToDie.Name]);     // Still tell them.
-                        }
+                    if (_werwolfProtectedPlayers.TryGetValue(playerToDie, out Player? savedBy))
+                    {
+                        Logger.LogTrace("{self} was successfully protected by {savedBy}", playerToDie, savedBy);
+                        return Task.FromResult<string[]?>([playerToDie.Name]);     // Still tell them.
+                    }
                         
-                        playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
-                        return Task.FromResult<string[]?>([playerToDie.Name]);
-                    });
-                }
-                else
-                {
-                    await player.Role!.OnNightAsync(this, player, ct);
-                }
+                    playerToDie.Kill(CauseOfDeath.WerwolfKill, null);
+                    return Task.FromResult<string[]?>([playerToDie.Name]);
+                });
             }
-            catch (TaskCanceledException)     // Throw again when the whole game was canceled. Otherwise, ignore it and continue
+            else
             {
+                foreach (Player player in roleGroup.Shuffle())
+                    await player.Role!.OnNightAsync(this, player, ct);
             }
-            ct.ThrowIfCancellationRequested();
         }
     }
 
@@ -121,23 +114,39 @@ partial class GameContext
         {
             Type = ActionType.WerwolfAccuses,
             Minimum = 0,
-            Maximum = _players.Count,
+            Maximum = 1,
             Participants = [.._players.Where(p => p.IsAlive)],
             VotablePlayers = [.._players.Where(p => p.IsAlive)]
         }, (action, _) =>
         {
-            accusedPlayers = [..action.PlayerVotes.Values.SelectMany(v => v)];
-            return Task.FromResult<string[]?>(null);
+            /*
+             * The players with the three highest amount of votes should be accused.
+             * Players are separated into 'levels' of votes and then the three highest levels are accused.
+             * For example in a game: A -> 1; B -> 2; C -> 2; D -> 3; E -> 4 = E, D, C, and B are accused because they have the three highest 'levels' and C and B share a level.
+             */
+            accusedPlayers = [..action.GetPlayersByVoteCount()
+                .GroupBy(kvp => kvp.Value, kvp => kvp.Key)
+                .OrderByDescending(group => group.Key)
+                .Take(3)
+                .SelectMany(group => group)];
+
+            if (accusedPlayers.Length == 0)
+                return Task.FromResult<string[]?>([]);
+            if (accusedPlayers.Length > 1)
+                return Task.FromResult<string[]?>(null);
+            
+            accusedPlayers[0].Kill(CauseOfDeath.WerwolfKilling, null);
+            return Task.FromResult<string[]?>([accusedPlayers[0].Name]);
         });
         
-        if (accusedPlayers.Length > 0)
+        if (accusedPlayers.Length > 1)
         {
             await RequestPlayerActionAsync(new PhaseAction(ct)
             {
                 Type = ActionType.WerwolfKilling,
                 Minimum = 1,
                 Maximum = 1,
-                Participants = [.._players.Where(p => p.IsAlive)],
+                Participants = [.._players.Where(p => p.IsAlive)],     // At most 3 people can be accused
                 VotablePlayers = accusedPlayers
             }, (action, _) =>
             {
@@ -146,12 +155,13 @@ partial class GameContext
                 return Task.FromResult<string[]?>(null);
             });
         }
-        
-        foreach (Player player in _players
-                     .Where(p => p.IsAlive && GameOptions!.NightExecutionOrder.Contains(p.Role!.Type))
-                     .OrderBy(p => GameOptions!.NightExecutionOrder.IndexOf(p.Role!.Type)))
+
+        foreach (IGrouping<Role, Player> roleGroup in _players
+                     .GroupBy(p => p.Role!.Type, p => p)
+                     .OrderBy(group => GameOptions!.NightExecutionOrder.IndexOf(group.Key)))
         {
-            await player.Role!.OnDayAsync(this, player, ct);
+            foreach (Player player in roleGroup.Shuffle())
+                await player.Role!.OnDayAsync(this, player, ct);
         }
     }
     
@@ -163,8 +173,12 @@ partial class GameContext
             foreach ((int i, _) in _players.Index().Where(kvp => kvp.Item is { Role.Type: Role.BearGuide, IsAlive: true }))
             {
                 bearGrowls ??= false;
-                bearGrowls |= _players[i <= 0 ? _players.Count - 1 : i - 1].Role!.Type < 0
-                              || _players[i >= _players.Count - 1 ? 0 : i + 1].Role!.Type < 0;
+                
+                Player previousOne = _players[i <= 0 ? _players.Count - 1 : i - 1];
+                bearGrowls |= previousOne.IsAlive && previousOne.Role!.Type < 0;
+                
+                Player nextOne = _players[i >= _players.Count - 1 ? 0 : i + 1];
+                bearGrowls |= nextOne.IsAlive && nextOne.Role!.Type < 0;
             }
         }
         
@@ -229,14 +243,18 @@ partial class GameContext
     
     private void CheckPlayerWin()
     {
-        if (_players.Count == _playersInLove.Count && _players.All(p => p.IsAlive && _playersInLove.ContainsKey(p)))
+        if (_players.Count == _playersInLove.Count && _players.All(p => p.Status == PlayerState.Alive && _playersInLove.ContainsKey(p)))
             GameWon(Fraction.Lovers);
         
         int amountWerwolfs = _players.Count(p => p.Status == PlayerState.Alive && p.Role!.Type < 0);
+        if (Mayor?.Role?.Type < 0)     // Apply the extra vote of the mayor
+            amountWerwolfs++;
         if (amountWerwolfs == 0)     // Village win
             GameWon(Fraction.Village);
         
         int amountVillagers = _players.Count(p => p.Status == PlayerState.Alive && p.Role!.Type > 0);
+        if (Mayor?.Role?.Type > 0)
+            amountVillagers++;
         if (_players.Where(p => p.Status == PlayerState.Alive && p.Role!.Type < 0).All(p => p.Role!.Type == Role.WhiteWolf) && amountVillagers <= 1)
             GameWon(Fraction.WhiteWolf);
         

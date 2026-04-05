@@ -242,8 +242,15 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         
         _gameLoopCts?.Cancel();
 
+        RunningAction = null;
+        _previousActions.Clear();
+
         foreach (Player player in _players)
             player.Reset();
+        Round = 0;
+        Mayor = null;
+        _playersInLove.Clear();
+        _werwolfProtectedPlayers.Clear();
         
         State = GameState.Preparation;
         OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0), null);
