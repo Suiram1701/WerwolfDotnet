@@ -118,7 +118,7 @@
                         games = response.data;
                     else
                         console.error("Failed to poll game sessions!")
-                }, config.sessionsPollInterval * 1000);     // s to ms
+                }, config.apiPollInterval);
             }
             else {
                 games = null;

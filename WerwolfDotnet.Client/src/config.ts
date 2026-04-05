@@ -5,7 +5,7 @@ let cachedConfig: ClientConfigDto | undefined;
 export const config =
 {
     apiEndpoint: ["127.0.0.1", "::1", "localhost"].includes(window.location.hostname) ? "http://localhost:7216" : "",
-    sessionsPollInterval: 5,
+    apiPollInterval: 5000,
     version: "0.2.0",
     
     getClientConfig: () => cachedConfig,

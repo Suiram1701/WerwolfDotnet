@@ -129,14 +129,10 @@ partial class GameContext
                 .OrderByDescending(group => group.Key)
                 .Take(3)
                 .SelectMany(group => group)];
-
-            if (accusedPlayers.Length == 0)
-                return Task.FromResult<string[]?>([]);
-            if (accusedPlayers.Length > 1)
-                return Task.FromResult<string[]?>(null);
             
-            accusedPlayers[0].Kill(CauseOfDeath.WerwolfKilling, null);
-            return Task.FromResult<string[]?>([accusedPlayers[0].Name]);
+            if (accusedPlayers.Length == 1)
+                accusedPlayers[0].Kill(CauseOfDeath.WerwolfKilling, null);
+            return Task.FromResult<string[]?>(null);
         });
         
         if (accusedPlayers.Length > 1)

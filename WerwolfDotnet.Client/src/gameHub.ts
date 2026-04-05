@@ -105,9 +105,9 @@ export class GameHub {
                 ? "Der Bär brummt nicht"
                 : "";
         if (newState === GameState.Day)
-            this.modal.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr} ${bearStr}`, allowHtmlText: true, canDismiss: false });
+            this.modal.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr}\n${bearStr}`, allowHtmlText: true, canDismiss: false });
         else if (newState === GameState.Night)
-            this.modal.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. ${diedStr} ${bearStr}`, allowHtmlText: true, canDismiss: false });
+            this.modal.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. ${diedStr}\n${bearStr}`, allowHtmlText: true, canDismiss: false });
     }
 
     private onPlayerRoleUpdated(newRoleName: Role, relations: Record<number, PlayerRelation[]>): void {
@@ -128,7 +128,8 @@ export class GameHub {
 
     private onVotesUpdated(votes: Record<number, number[]>): void {
         gamePageState.update(state => {
-            state.selectedPlayers = state.selfId! in votes ? votes[state.selfId!] : [];
+            if (state.selectedPlayers.length === 0)     // When writing to selectedPlayers while the user is selecting it resets the selection with each vote
+                state.selectedPlayers = state.selfId! in votes ? votes[state.selfId!] : [];
 
             const votesForPlayer: Record<number, number[]> = {};
             for (const by in votes) {
@@ -171,7 +172,8 @@ export class GameHub {
         });
         this.modal.show({
             title: `Die ${fractions[winFraction]}`,
-            contentText: `Die ${fractions[winFraction]} haben gewonnen. ${fractionWin[winFraction]}`
+            contentText: `Die ${fractions[winFraction]} haben gewonnen. ${fractionWin[winFraction]}`,
+            canDismiss: false
         });
     }
 
@@ -214,7 +216,7 @@ export class GameHub {
                         .filter(id => diedPlayers[id].role !== Role.None)
                         .map(playerId => `<b>${this.gamePage.players.find(p => p.id === playerId)!.name}</b> war <b>${roleNames[diedPlayers[playerId].role]}</b>`)
                         .join(", ");
-                    diedStr += ". ";
+                    diedStr += "\n";
                 }
             }
             return diedStr;

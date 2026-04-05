@@ -100,7 +100,7 @@
         <p>Die Nacht ist angebrochen! Alle gehen schlafen, außer den Werwölfen...</p>
     {:else if $state.gameState === GameState.GameWon}
         <p>
-            Die Spielrunde ist zu ende. Frage den Game-Master ob dieser die Runde beendet und eine neue beginnt. <br>
+            Die Spielrunde ist zu ende. Warte darauf, dass der Game-Master das aktuelle Spiel beendet und eine neue Runde startet. <br>
             <small>Fall Bugs, Glitches oder andere Fehler aufgetreten sind können diese gerne per <a href="https://github.com/Suiram1701/WerwolfDotnet/issues" target="_blank">GitHub</a> gemeldet werden :)</small>
         </p>
     {/if}
@@ -153,13 +153,14 @@
 
     <button class="btn btn-secondary main-content mb-3" type="button" onclick={() => {
         modalProvider.show({
-            title: "Spieleinstellungen",
+            title: canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen (nur ansehen)",
             content: gameOptionsModalContent,
-            confirmText: canEditSettings ? "Speichern" : "Verstanden",
+            confirmText: "Schließen",
+            canDismiss: false,
             closeOnConfirm: true
         });
     }}>
-        Spieleinstellungen
+        {canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}
     </button>
     
     <!-- Admin buttons -->

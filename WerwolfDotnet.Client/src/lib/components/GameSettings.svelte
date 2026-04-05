@@ -13,12 +13,33 @@
     let options: GameOptionsDto = $state({});
     let totalRoles = $derived(Object.values((options.amountOfRoles ?? {})).reduce((previous: number, value: number) => previous + value, 0));
 
+    let pollId: NodeJS.Timeout;
     onMount(() => {
         cfg = config.getClientConfig()!;     // Already loaded by page
+        
+        pollSettings();     // show.bs.modal isn't called when the modal is first rendered
+        document.addEventListener("show.bs.modal", _ => pollSettings());
+        document.addEventListener("hide.bs.modal", _ => clearInterval(pollId));
+        return () => clearInterval(pollId);
+    });
+    
+    function pollSettings(): void {
         apiClient.api.gameSessionsSettingsDetail($gameState.gameId)
             .then(response => options = response.data)
             .catch(error => console.error("Failed to load game settings", error));
-    });
+        
+        if (!readonly)     // No need to poll when you're the only one who can edit.
+            return;
+        pollId = setInterval(async () => {
+            const response = await apiClient.api.gameSessionsSettingsDetail($gameState.gameId);
+            if (response.ok) {
+                options = response.data;
+                return;
+            }
+
+            console.error("Failed to load game settings", response.error);
+        }, config.apiPollInterval);
+    }
     
     async function updateSettings(): Promise<void> {
         for (const key in options.amountOfRoles) {
@@ -57,7 +78,7 @@
 <div class="form-check mb-3">
     <input class="form-check-input" id="mayorDecidesNextMayor" type="checkbox" bind:checked={options.mayorDecidesNextMayor}
            onchange={updateSettings} readonly={readonly} disabled={readonly}>
-    <label class="form-check-label" for="mayorDecidesNextMayor">Bürgermeister entscheidet den nächsten Bürgermeister</label>
+    <label class="form-check-label" for="mayorDecidesNextMayor">Bürgermeister entscheidet bei Tod über den nächsten Bürgermeister</label>
 </div>
 
 <h5>Rollen:</h5>
@@ -80,7 +101,7 @@
     {/each}
 {/if}
 <p class="d-flex align-items-center {totalRoles > $gameState.players.length ? 'text-danger ' : ''}mt-2">
-    Rollen Insgesamt: <b class="mx-1">{totalRoles}</b> {"<="} {$gameState.players.length}
+    Rollen insgesamt: <b class="mx-1">{totalRoles}</b> {"<="} {$gameState.players.length}
     {#if totalRoles > $gameState.players.length}
         <span class="material-symbols-outlined ms-1" use:tooltip={{
             title: "Das Spiel kann nicht gestartet werden, da es mehr Rollen als Spieler gibt.",
@@ -90,22 +111,22 @@
 </p>
 <p>Verbleibende Spieler bekommen die Dorfbewohner Rolle.</p>
 
-<h5>Rolle bei Todesart anzeigen:</h5>
-<select class="form-select mb-2" bind:value={options.revealRoleForCauses} onchange={updateSettings} disabled={readonly} multiple>
-    <option value="{CauseOfDeath.None}">Keine</option>
+<h5>Rollen aufdecken bei Folgenden Todesarten:</h5>
+<div class="d-flex flex-column">
     {#each Object.values(CauseOfDeath).filter(r => typeof r === "number" && r !== CauseOfDeath.None).sort() as cause}
-        <option value="{cause}">{causeOfDeaths[cause]}</option>
+        <div class="form-check mb-2">
+            <input class="form-check-input" id="causeOfDeath{cause}" type="checkbox" readonly={readonly} disabled={readonly}
+                   checked={options.revealRoleForCauses?.includes(cause)} onchange={async e => {
+                       if (e.currentTarget.checked && !options.revealRoleForCauses?.includes(cause))
+                           options.revealRoleForCauses?.push(cause);
+                       else
+                           options.revealRoleForCauses = options.revealRoleForCauses?.filter(r => r !== cause);
+                       await updateSettings();
+                   }}>
+            <label class="form-check-label" for="causeOfDeath{cause}">{causeOfDeaths[cause]}</label>
+        </div>
     {/each}
-</select>
-
-{#if readonly}
-    <button class="btn btn-outline-info" type="button" onclick="{async () => {
-        const response = await apiClient.api.gameSessionsSettingsDetail($gameState.gameId);
-        options = response.data;
-    }}">
-        Neuladen
-    </button>
-{/if}
+</div>
 
 <style>
     .roleCheckbox {

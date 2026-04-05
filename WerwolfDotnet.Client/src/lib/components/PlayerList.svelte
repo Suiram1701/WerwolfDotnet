@@ -1,15 +1,15 @@
 <script lang="ts">
     import { getContext } from "svelte";
     import { type Readable } from "svelte/store";
-    import { ActionType, Api, type PlayerDto, PlayerRelation } from "../../Api";
+    import { ActionType, Api, GameState, type PlayerDto, PlayerRelation } from "../../Api";
     import { gamePageState as state } from "../../stores/pageStateStore";
     import { roleNames } from "../../textes/roles";
     import { tooltip } from "$lib/actions/tooltip";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
-    import { GameHub } from "../../gameHub";
 
     let { apiClient }: { apiClient: Api<unknown> } = $props();
     
+    let sortedPlayers = $derived($state.gameState === GameState.GameWon ? $state.players.sort(p => p.role ?? 0) : $state.players);
     let isWerwolfKilling = $derived($state.currentAction?.type === ActionType.WerwolfKilling);
     
     let modalProvider: ModalProvider;
@@ -29,7 +29,7 @@
     }
 </script>
 
-{#each $state.players as player}
+{#each sortedPlayers as player}
     <li class="list-group-item {getPlayerCSSClasses(player)} d-flex align-items-center">
         {#if $state.currentAction === null}
             {player.name}
@@ -45,6 +45,14 @@
             <label class="form-check-label" for="playerAction{player.id}">{player.name}</label>
         {/if}
 
+        {#if $state.gameMeta?.gameMaster === player.id}
+            <span class="material-symbols-outlined icon-filled ms-2" use:tooltip={{ title: "Game Master", placement: "right" }}>crown</span>
+        {/if}
+
+        {#if $state.gameMeta?.mayor === player.id}
+            <span class="material-symbols-outlined icon-filled ms-2" use:tooltip={{ title: "Bürgermeister", placement: "right" }}>star</span>
+        {/if}
+        
         {#if !player.alive}
             <span class="material-symbols-outlined icon-filled ms-2">skull</span>
         {/if}
@@ -57,10 +65,17 @@
         {/if}
 
         {#if $state.playerRelations[player.id ?? -1]?.includes(PlayerRelation.Ally) ?? false}
-            <span class="material-symbols-outlined icon-filled ms-2" use:tooltip={{
-                title: "Verbündeter: Ihr seid auf der selben seite. Diese Person kann kein Feind sein.",
-                placement: "right"
-            }}>diversity_3</span>
+            {#if ($state.selfRole ?? 0) > 0}
+                <span class="material-symbols-outlined icon-filled ms-2" use:tooltip={{
+                    title: "Verbündeter: Ihr seid auf der selben. Ihr spielt gemeinsam um die Werwölfe zu besiegen.",
+                    placement: "right"
+                }}>diversity_3</span>
+            {:else}
+                <span class="material-symbols-outlined icon-filled ms-2" use:tooltip={{
+                    title: "Verbündeter: Ihr beide seid Werwölfe und spielt gemeinsam gegen das Dorf.",
+                    placement: "right"
+                }}>nightlight</span>
+            {/if}
         {/if}
 
         {#if player.role !== undefined && player.role !== null }

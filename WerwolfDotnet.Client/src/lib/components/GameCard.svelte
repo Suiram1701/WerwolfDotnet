@@ -8,7 +8,7 @@
     <div class="card-body">
         <h5 class="card-title">{(game.id ?? 0).toString().padStart(6, '0')}</h5>
         <p class="card-text">
-            Game master: {game.gameMaster}<br>
+            Game Master: {game.gameMaster}<br>
             Spieler: {game.playerCount}/{game.maxPlayerCount}
         </p>
         <button class="btn {!game.canJoin ? 'btn-outline-danger' : 'btn-success'}" disabled={game.canJoin === false} type="button" onclick={onJoin}>
