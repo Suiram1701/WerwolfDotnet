@@ -23,7 +23,7 @@ public class RootController(IOptionsSnapshot<GameLobbyOptions> lobbyOptions, IOp
     /// </summary>
     /// <returns>The client configuration.</returns>
     [HttpGet("config")]
-    [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 43200)]     // Half a day
+    [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 7200)]     // Two hours
     [ProducesResponseType(typeof(ClientConfigDto), StatusCodes.Status200OK, MediaTypeNames.Application.Json)]
     public IActionResult GetConfiguration()
     {

@@ -2,10 +2,10 @@
     import { onMount } from "svelte";
     import { type Api, CauseOfDeath, type ClientConfigDto, type GameOptionsDto, Role } from "../../Api";
     import { gamePageState as gameState } from "../../stores/pageStateStore"
-    import { roleNames } from "../../textes/roles";
+    import { roleNames, roleDescriptions } from "../../textes/roles";
     import { causeOfDeaths } from "../../textes/causeOfDeaths";
-    import { tooltip } from "$lib/actions/tooltip";
     import { config } from "../../config";
+    import Tooltip from "$lib/components/Tooltip.svelte";
 
     let { readonly, apiClient }: { readonly: boolean, apiClient: Api<unknown> } = $props();
     
@@ -60,32 +60,38 @@
 </script>
 
 <h5>Sondereinstellungen:</h5>
-<div class="form-check mb-3">
+<div class="form-check d-flex mb-3">
     <input class="form-check-input" id="seerSeesRole" type="checkbox" bind:checked={options.seerSeesRole}
            onchange={updateSettings} readonly={readonly} disabled={readonly}>
-    <label class="form-check-label" for="seerSeesRole">Seher sieht genaue Rolle</label>
+    <label class="form-check-label mx-2" for="seerSeesRole">Seher sieht genaue Rolle</label>
+    <Tooltip title="Wenn die Option deaktiviert ist wird nur die Gesinnung der Person (Werwölfe oder Dorfbewohner) dem Seher angezeigt. Andernfalls wird die aktuelle Rolle des Spielers angezeigt." />
 </div>
-<div class="form-check mb-3">
+<div class="form-check d-flex mb-3">
     <input class="form-check-input" id="explodingWitchHome" type="checkbox" bind:checked={options.explodingWitchHome}
            onchange={updateSettings} readonly={readonly} disabled={readonly}>
-    <label class="form-check-label" for="explodingWitchHome">Explodierendes Hexenhaus</label>
+    <label class="form-check-label  mx-2" for="explodingWitchHome">Explodierendes Hexenhaus</label>
+    <Tooltip title="Eine Spielvariante, bei der sobald die Hexe stirbt ihr Haus explodiert und damit die Spieler links (oben) und rechts (unten) von ihr tötet." />
 </div>
-<div class="form-check mb-3">
+<div class="form-check d-flex mb-3">
     <input class="form-check-input" id="hunterMustKill" type="checkbox" bind:checked={options.hunterMustKill}
            onchange={updateSettings} readonly={readonly} disabled={readonly}>
-    <label class="form-check-label" for="hunterMustKill">Jäger muss töten</label>
+    <label class="form-check-label  mx-2" for="hunterMustKill">Jäger muss töten</label>
+    <Tooltip title="Entscheidet darüber, ob der Jäger, wenn er stirbt, einen anderen Spieler töten muss oder es ihm freigestellt ist, ob er jemanden mit in den tot reißt oder nicht." />
 </div>
-<div class="form-check mb-3">
+<div class="form-check d-flex mb-3">
     <input class="form-check-input" id="mayorDecidesNextMayor" type="checkbox" bind:checked={options.mayorDecidesNextMayor}
            onchange={updateSettings} readonly={readonly} disabled={readonly}>
-    <label class="form-check-label" for="mayorDecidesNextMayor">Bürgermeister entscheidet bei Tod über den nächsten Bürgermeister</label>
+    <label class="form-check-label  mx-2" for="mayorDecidesNextMayor">Bürgermeister entscheidet bei Tod über den nächsten Bürgermeister</label>
+    <Tooltip title="Wenn die Option aktiviert ist entscheidet der Bürgermeister sobald er stirbt den Nächten, andernfalls kommt es am darauf folgenden Tag zu einer Neuwahl." />
 </div>
 
 <h5>Rollen:</h5>
 {#if options.amountOfRoles !== undefined && cfg.fixedRoleAmounts !== undefined}
     {#each Object.values(Role).filter(r => typeof r === "number" && r !== Role.None).sort((a, b) => a - b) as role}
         <div class="row mb-1">
-            <label class="form-label col-4" for="role{role.toString()}">{roleNames[role]}: </label>
+            <label class="form-label d-flex col-6 col-sm-5" for="role{role.toString()}">
+                {roleNames[role]}<Tooltip classNames="ms-auto" title={roleDescriptions[role]} />:
+            </label>
 
             {#if role in (cfg.fixedRoleAmounts ?? {})}
                 <input class="form-check-input roleCheckbox" id="role{role.toString()}" type="checkbox" readonly={readonly}
@@ -102,12 +108,8 @@
 {/if}
 <p class="d-flex align-items-center {totalRoles > $gameState.players.length ? 'text-danger ' : ''}mt-2">
     Rollen insgesamt: <b class="mx-1">{totalRoles}</b> {"<="} {$gameState.players.length}
-    {#if totalRoles > $gameState.players.length}
-        <span class="material-symbols-outlined ms-1" use:tooltip={{
-            title: "Das Spiel kann nicht gestartet werden, da es mehr Rollen als Spieler gibt.",
-            placement: "right"
-        }}>info</span>
-    {/if}
+    <Tooltip classNames="ms-1" title="Die Anzahl der ausgewählten Rollen muss kleiner gleich die Anzahl der Spieler sein. 
+        Wenn mehr Rollen ausgewählt sind kann das Spiel nicht gestartet werden, wenn weniger wird mit Dorfbewohnern aufgefüllt." />
 </p>
 <p>Verbleibende Spieler bekommen die Dorfbewohner Rolle.</p>
 

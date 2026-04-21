@@ -3,7 +3,7 @@
     import { page } from "$app/state"
     import { goto } from "$app/navigation";
     import { type Readable } from "svelte/store";
-    import {ActionType, Api, GameState} from "../../Api";
+    import { ActionType, Api, GameState } from "../../Api";
     import { getPlayerToken } from "../../stores/gameSessionStore";
     import { gamePageState as state } from "../../stores/pageStateStore";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
@@ -100,8 +100,8 @@
         <p>Die Nacht ist angebrochen! Alle gehen schlafen, außer den Werwölfen...</p>
     {:else if $state.gameState === GameState.GameWon}
         <p>
-            Die Spielrunde ist zu ende. Warte darauf, dass der Game-Master das aktuelle Spiel beendet und eine neue Runde startet. <br>
-            <small>Fall Bugs, Glitches oder andere Fehler aufgetreten sind können diese gerne per <a href="https://github.com/Suiram1701/WerwolfDotnet/issues" target="_blank">GitHub</a> gemeldet werden :)</small>
+            Die Spielrunde ist zu ende. Warte darauf, dass der Game-Master die aktuelle Runde beendet und eine neue startet.<br>
+            <small>Falls Bugs, Glitches oder andere Fehler aufgetreten sind können diese gerne per <a href="https://github.com/Suiram1701/WerwolfDotnet/issues" target="_blank">GitHub</a> gemeldet werden :)</small>
         </p>
     {/if}
 </div>
@@ -159,9 +159,7 @@
             canDismiss: false,
             closeOnConfirm: true
         });
-    }}>
-        {canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}
-    </button>
+    }}>{canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}</button>
     
     <!-- Admin buttons -->
     {#if $state.selfId === $state.gameMeta?.gameMaster && ($state.gameState ?? -2) <= 0}
@@ -199,14 +197,14 @@
         {#if $state.selfId === $state.gameMeta?.gameMaster && ($state.gameState ?? -2) > 0}
             <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({
                     title: "Spiel beenden?",
-                    contentText: "Möchten Sie das Spiel wirklich beenden? (Spieler bleiben in der Sitzung)",
+                    contentText: "Möchten Sie die Runde wirklich beenden? (Spieler bleiben in der Sitzung)",
                     confirmText: "Beenden",
                     confirmColor: "danger",
                     onConfirm: async () => {
                         await gameHub.stopGame()
                         modalProvider.hide();
                     }
-                })}>Spiel beenden (zurück zur Lobby)</button>
+                })}>Runde beenden</button>
 
             {#if config.getClientConfig()?.gameMasterSkipAllowed ?? false}
                 <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({
