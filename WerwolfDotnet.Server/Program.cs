@@ -2,7 +2,7 @@ using System.Reflection;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.OpenApi;
-using OpenTelemetry;
+using OpenTelemetry.Logs;
 using WerwolfDotnet;
 using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Authentication;
@@ -15,16 +15,15 @@ using GameOptions = WerwolfDotnet.Server.Options.GameOptions;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-if (Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT") is not null)
+if (Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") is not null)
 {
     builder.Logging.AddOpenTelemetry(logging =>
     {
         logging.IncludeFormattedMessage = true;
         logging.IncludeScopes = true;
+
+        logging.AddOtlpExporter();
     });
-    builder.Services
-        .AddOpenTelemetry()
-        .UseOtlpExporter();
 }
 
 builder.Services

@@ -219,7 +219,7 @@
         <h6>Es gibt noch keine Spiele</h6>
     {/if}
 {:else}
-    <h6>Vorhandene Spiele werden aufgrund der Serverkonfiguration nicht angezeigt werden.</h6>
+    <h6>Vorhandene Spiele werden aufgrund der Serverkonfiguration nicht angezeigt.</h6>
 {/if}
 
 <style>
