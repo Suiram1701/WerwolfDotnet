@@ -4,7 +4,7 @@
     import { goto } from "$app/navigation";
     import { type Readable } from "svelte/store";
     import { ActionType, Api, GameState } from "../../Api";
-    import { getPlayerToken } from "../../stores/gameSessionStore";
+    import { storePlayerToken, getPlayerToken, removePlayerToken } from "../../stores/gameSessionStore";
     import { gamePageState as state } from "../../stores/pageStateStore";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
     import { GameHub } from "../../gameHub";
@@ -41,8 +41,13 @@
             return s;
         });
         
-        const playerToken = getPlayerToken($state.gameId, $state.selfId);
-        if (playerToken === undefined) {
+        let playerToken = getPlayerToken($state.gameId, $state.selfId);
+        if (page.url.hash.startsWith("#auth=")) {
+            playerToken = page.url.hash.substring(6);
+            storePlayerToken($state.gameId, $state.selfId, playerToken);
+            goto(`/game?sessionId=${$state.gameId}&playerId=${$state.selfId}`);     // Remove auth secret from URL
+        }
+        else if (playerToken === undefined) {
             goto("/");
             return;
         }
@@ -193,6 +198,16 @@
                 }
             });
         }}>Spiel verlassen</button>
+        
+        <button class="btn btn-warning w-100 ms-2" type="button" onclick={() => {
+            const sessionUrl = `${webUrl}/game?sessionId=${$state.gameId}&playerId=${$state.selfId}#auth=${getPlayerToken($state.gameId, $state.selfId)}`;
+            modalProvider.show({
+                title: "Spiel auf einem anderen Gerät fortsetzen",
+                contentText: `Öffnen Sie <a href="${sessionUrl}">diesen Link</a> auf dem Gerät wo die Sitzung fortgesetzt werden soll.<br>Nach dem wechsel können Sie diesen Tab schließen.`,
+                confirmText: "Gerät Gewechselt",
+                allowHtmlText: true
+            })
+        }}>Auf anderes Gerät wechseln</button>
 
         {#if $state.selfId === $state.gameMeta?.gameMaster && ($state.gameState ?? -2) > 0}
             <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({

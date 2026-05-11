@@ -1,6 +1,6 @@
 const storageKey = "gameSessions";
 
-interface GameSession {
+export interface GameSession {
     sessionId: number,
     playerId: number,
     playerToken: string
@@ -16,6 +16,10 @@ export function storePlayerToken(sessionId: number, playerId: number, authToken:
     let existingSessions: GameSession[] = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
     existingSessions.push(newSession);
     localStorage.setItem(storageKey, JSON.stringify(existingSessions));
+}
+
+export function getPlayerTokens(): GameSession[] {
+    return JSON.parse(localStorage.getItem(storageKey) ?? "[]");
 }
 
 export function getPlayerToken(sessionId: number, playerId: number): string | undefined {

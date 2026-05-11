@@ -5,7 +5,7 @@
     import { type Readable } from "svelte/store";
     import { config } from "../config";
     import { Api, type HttpResponse, type GameDto, type JoinGameDto, type JoinedGameDto} from "../Api";
-    import { storePlayerToken } from "../stores/gameSessionStore";
+    import { getPlayerTokens, removePlayerToken, storePlayerToken } from "../stores/gameSessionStore";
     import PageTitle from "$lib/components/PageTitle.svelte"
     import GameCard from "$lib/components/GameCard.svelte";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
@@ -123,6 +123,19 @@
             else {
                 games = null;
             }
+        });
+        
+        // Remove not non-existent sessions
+        getPlayerTokens().forEach(session => {
+            apiClient.api.gameSessionsDetail(session.sessionId)
+                .then(response => {
+                    if (!response.ok)
+                        removePlayerToken(session.sessionId, session.playerId); 
+                })
+                .catch(error => {
+                    if (error.status === 404)
+                        removePlayerToken(session.sessionId, session.playerId);
+                });
         });
         return () => clearInterval(pollId);
     });
