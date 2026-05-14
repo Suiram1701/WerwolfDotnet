@@ -28,7 +28,10 @@
         return { headers: { "Authorization": `Bearer ${data.token}` } };
     }});
     config.retrieveConfigAsync(apiClient);
-    
+
+    let enoughPlayers = $derived($state.players.length >= (config.getClientConfig()?.minimumPlayers ?? 0));
+    let everyOneReady = $derived(config.getClientConfig()?.canStartWhenNotReady || $state.playersReady.length === $state.players.length);
+
     let isWerwolfKilling = $derived($state.currentAction?.type === ActionType.WerwolfKilling);
     let canEditSettings = $derived($state.gameMeta?.gameMaster === $state.selfId && ($state.gameState ?? 0) <= 0);
     
@@ -154,6 +157,14 @@
         </button>
     {/if}
 
+    {#if ($state.gameState ?? 0) <= 0}
+        {#if $state.playersReady.includes($state.selfId)}
+            <button class="btn btn-secondary main-content" type="button" onclick={() => gameHub.setPlayerReady(false)}>Nicht mehr bereit</button>
+        {:else}
+            <button class="btn btn-primary main-content" type="button" onclick={() => gameHub.setPlayerReady(true)}>Bereit</button>
+        {/if}
+    {/if}
+
     <div class="flex-grow-1"></div>
 
     <button class="btn btn-secondary main-content mb-3" type="button" onclick={() => {
@@ -169,10 +180,15 @@
     <!-- Admin buttons -->
     {#if $state.selfId === $state.gameMeta?.gameMaster && ($state.gameState ?? -2) <= 0}
         <div class="d-flex main-content mb-3">
-            <button class="btn btn-primary w-100" type="button" disabled={$state.players.length < (config.getClientConfig()?.minimumPlayers ?? 0)}
-                    onclick={async () => await gameHub.startGame()}>
-                Spiel starten
-            </button>
+            {#if enoughPlayers && everyOneReady}
+                <button class="btn btn-primary w-100" type="button" onclick={async () => await gameHub.startGame()}>Spiel starten</button>
+            {:else}
+                <span class="d-inline-block w-100" use:tooltip={{ title: !enoughPlayers
+                    ? `Es müssen mindestens ${config.getClientConfig()?.minimumPlayers} in einer Runde sein.`
+                    : "Alle Spieler müssen bereit sein (Spieler, die AFK sind können auch gekicked werden)." }}>
+                    <button class="btn btn-primary w-100" type="button" disabled>Spiel starten</button>
+                </span>
+            {/if}
             
             <button class="btn btn-info w-100 mx-2" type="button" onclick={ async () => await gameHub.shufflePlayers()}>Spieler durchmischen</button>
 

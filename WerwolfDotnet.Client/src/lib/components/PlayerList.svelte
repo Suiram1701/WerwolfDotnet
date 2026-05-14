@@ -100,6 +100,14 @@
         </span>
         {/if}
 
+        {#if ($state.gameState ?? 0) <= 0}
+            {#if $state.playersReady.includes(player.id!)}
+                <span class="badge text-bg-success">Bereit</span>
+            {:else}
+                <span class="badge text-bg-danger">Nicht bereit</span>
+            {/if}
+        {/if}
+        
         {#if $state.selfId === $state.gameMeta?.gameMaster}
             <button type="button" class="btn btn-sm btn-{player.id === $state.selfId ? 'secondary' : 'danger'} w-auto ms-3" onclick={() => {
             if (player.id === $state.selfId)

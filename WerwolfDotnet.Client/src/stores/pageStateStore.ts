@@ -7,6 +7,7 @@ export interface GamePageState {
     selfRole: Role | undefined;
     
     players: PlayerDto[];
+    playersReady: number[],
     playerRelations: Record<number, PlayerRelation[]>;
     gameState: GameState | undefined;
     gameMeta: { gameMaster: number, mayor: number | null } | undefined;
@@ -23,6 +24,7 @@ export const gamePageState = writable<GamePageState>({
     selfRole: undefined,
     
     players: [],
+    playersReady: [],
     playerRelations: [],
     gameState: undefined,
     gameMeta: undefined,

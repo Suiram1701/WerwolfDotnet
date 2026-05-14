@@ -1,7 +1,8 @@
+using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
-using WerwolfDotnet.Attributes;
 using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.Models;
@@ -22,6 +23,7 @@ public class GameManager(
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly IGameSessionStore _sessionStore = sessionStore;
     private readonly IHubContext<GameHub, IGameHub> _hubContext = hubContext;
+    private readonly ConcurrentDictionary<string, bool> _readyStatus = new();
     
     public GameLobbyOptions LobbyOptions => lobbyOptions.CurrentValue;
     
@@ -161,6 +163,20 @@ public class GameManager(
         return true;
     }
 
+    public Task<ReadOnlyDictionary<int, bool>> GetGameReadyStatesAsync(GameContext ctx)
+    {
+        IDictionary<int, bool> states = _readyStatus
+            .Where(kvp => kvp.Key.StartsWith(ctx.Id.ToString()))
+            .ToDictionary(kvp => int.Parse(kvp.Key.Split(':', 2)[1]), kvp => kvp.Value);
+        return Task.FromResult(states.AsReadOnly());
+    }
+    
+    public async Task SetPlayerReadyStateAsync(GameContext ctx, Player player, bool isReady)
+    {
+        _readyStatus[$"{ctx.Id}:{player.Id}"] = isReady;
+        await _hubContext.Clients.Game(ctx.Id).PlayerReadyStateUpdated(await GetGameReadyStatesAsync(ctx));
+    }
+    
     public async Task<bool> SetGameLockedAsync(GameContext ctx, bool locked)
     {
         if (!ctx.SetJoinLock(locked))
@@ -181,29 +197,35 @@ public class GameManager(
         return true;
     }
 
-    public async Task StartGameAsync(GameContext ctx, GameOptions options)
+    public async Task<bool> StartGameAsync(GameContext ctx, GameOptions options)
     {
         if (ctx.State > 0)      // Game is already running
-            return;
+            return false;
         if (ctx.Players.Count < LobbyOptions.MinPlayers)     // Not enough players
-            return;
+            return false;
         if (options.AmountOfRoles.Values.Sum() > ctx.Players.Count)     // Too many roles
-            return;
+            return false;
+
+        if (!GameOptions.CanStartWhenNotReady && (await GetGameReadyStatesAsync(ctx)).All(kvp => kvp.Value))
+            return false;
         
         ctx.StartGame(options);
         await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
 
         IEnumerable<Task> notifications = ctx.Players.Select(p => UpdatePlayerRoleAsync(ctx, p));
         await Task.WhenAll(notifications).ConfigureAwait(false);
+        return true;
     }
 
-    public Task StopGameAsync(GameContext ctx)
+    public async Task StopGameAsync(GameContext ctx)
     {
         if (ctx.State <= 0)
-            return Task.CompletedTask;
-        
+            return;
+
+        foreach ((int key, _) in await GetGameReadyStatesAsync(ctx))
+            _readyStatus.Remove($"{ctx.Id}:{key}", out _);
         ctx.StopGame();
-        return _sessionStore.UpdateAsync(ctx);
+        await _sessionStore.UpdateAsync(ctx);
     }
 
     /// <summary>

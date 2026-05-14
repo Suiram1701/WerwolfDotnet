@@ -30,6 +30,10 @@ export class GameHub {
         }
     }
     
+    public async setPlayerReady(ready: boolean): Promise<void> {
+        await this.connection.invoke("setPlayerReadyState", ready);
+    }
+    
     public async setGameLocked(locked: boolean): Promise<void> {
         await this.connection.invoke("setGameLocked", locked);
     }
@@ -66,6 +70,16 @@ export class GameHub {
     private onPlayersUpdated(updatedPlayers: PlayerDto[]): void {
         gamePageState.update(state => {
             state.players = updatedPlayers
+            return state;
+        });
+    }
+    
+    private onPlayerReadyStateUpdated(updatedStates: Record<number, boolean>): void {
+        gamePageState.update(state => {
+            state.playersReady = Object
+                .keys(updatedStates)
+                .filter(id => updatedStates[id as unknown as number])
+                .map(Number);
             return state;
         });
     }

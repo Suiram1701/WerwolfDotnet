@@ -2,7 +2,7 @@ import type { Action } from "svelte/action";
 
 export interface TooltipOptions {
     title: string;
-    placement: "top" | "bottom" | "left" | "right";
+    placement?: "top" | "bottom" | "left" | "right";
 }
 
 export const tooltip: Action<HTMLElement, TooltipOptions> = (node: HTMLElement, options: TooltipOptions) => {

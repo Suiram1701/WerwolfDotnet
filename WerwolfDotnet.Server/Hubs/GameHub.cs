@@ -24,6 +24,8 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
 
         await Clients.Caller.GameMetaUpdated(ctx.GameMaster.Id, ctx.Mayor?.Id);
         await Clients.Caller.GameStateUpdated(ctx.State, new Dictionary<int, DeathDetails>(0), null);
+        if (ctx.State <= 0)     // Only relevant when game isn't running
+            await Clients.Game(ctx.Id).PlayerReadyStateUpdated(await _manager.GetGameReadyStatesAsync(ctx));
         await _manager.UpdatePlayersAsync(ctx, player);
         await _manager.UpdatePlayerRoleAsync(ctx, player);
 
@@ -52,6 +54,15 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         return base.OnDisconnectedAsync(exception);
     }
 
+    [HubMethodName("setPlayerReadyState")]
+    public async Task OnSetPlayerReadyState(bool isReady)
+    {
+        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        Player player = ctx.Players.Single(p => p.Id == Context.User!.GetPlayerId());
+
+        await _manager.SetPlayerReadyStateAsync(ctx, player, isReady);
+    }
+    
     [HubMethodName("setGameLocked")]
     public async Task OnSetGameLocked(bool locked)
     {

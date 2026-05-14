@@ -16,6 +16,9 @@ public interface IGameHub
     [HubMethodName("onPlayersUpdated")]
     public Task PlayersUpdated(IEnumerable<PlayerDto> players);
     
+    [HubMethodName("onPlayerReadyStateUpdated")]
+    public Task PlayerReadyStateUpdated(IReadOnlyDictionary<int, bool> updatedState);
+    
     [HubMethodName("onGameStateUpdated")]
     public Task GameStateUpdated(GameState state, IReadOnlyDictionary<int, DeathDetails> diedPlayers, bool? bearGrowls);
 

@@ -46,6 +46,7 @@ export interface ClientConfigDto {
   /** @format int32 */
   minimumPlayers?: number;
   fixedRoleAmounts?: Record<string, number>;
+  canStartWhenNotReady?: boolean;
   gameMasterSkipAllowed?: boolean;
 }
 

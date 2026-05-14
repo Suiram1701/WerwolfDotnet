@@ -35,6 +35,7 @@ public class RootController(IOptionsSnapshot<GameLobbyOptions> lobbyOptions, IOp
             FixedRoleAmounts = RoleAttribute.GetRoles()
                 .Where(attr => attr.FixedAmount != -1)
                 .ToDictionary(attr => (int)attr.Role, attr => attr.FixedAmount),
+            CanStartWhenNotReady = GameOptions.CanStartWhenNotReady,
             GameMasterSkipAllowed = GameOptions.GameMasterSkipAllowed
         });
     }

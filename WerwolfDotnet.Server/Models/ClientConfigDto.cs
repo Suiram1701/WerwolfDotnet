@@ -7,8 +7,10 @@ public class ClientConfigDto
     public int PlayerNameMinLength { get; init; }
     
     public int MinimumPlayers { get; init; }
+
+    public Dictionary<int, int> FixedRoleAmounts { get; init; } = [];
     
-    public Dictionary<int, int> FixedRoleAmounts { get; init; }
+    public bool CanStartWhenNotReady { get; init; }
     
     public bool GameMasterSkipAllowed { get; init; }
 }
