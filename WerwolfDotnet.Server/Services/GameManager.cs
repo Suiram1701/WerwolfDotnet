@@ -354,6 +354,7 @@ public class GameManager(
                     await Task.WhenAll(ctx.Players.Where(p => p.Role!.Type < 0).Select(p => UpdatePlayerRoleAsync(ctx, p)));
                     break;
                 case ActionType.SeerSelection:
+                case ActionType.SeerApprenticeSelection:
                     await UpdatePlayersAsync(ctx, action.Participants.Single());     // Refreshes shown roles
                     break;
                 case ActionType.AmorSelection:

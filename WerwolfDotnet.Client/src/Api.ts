@@ -19,12 +19,13 @@ export enum ActionType {
   UrwolfSelection = 5,
   WhiteWolfSelection = 6,
   SeerSelection = 7,
-  WitchHealSelection = 8,
-  WitchKillSelection = 9,
-  HealerSelection = 10,
-  HunterSelection = 11,
-  AmorSelection = 12,
-  VillageMattressSelection = 13,
+  SeerApprenticeSelection = 8,
+  WitchHealSelection = 9,
+  WitchKillSelection = 10,
+  HealerSelection = 11,
+  HunterSelection = 12,
+  AmorSelection = 13,
+  VillageMattressSelection = 14,
 }
 
 /** @format int32 */

@@ -7,9 +7,10 @@
     import { tooltip } from "$lib/actions/tooltip";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
 
-    let { apiClient }: { apiClient: Api<unknown> } = $props();
+    let { showAll, apiClient }: { showAll: boolean, apiClient: Api<unknown> } = $props();
     
-    let sortedPlayers = $derived($state.gameState === GameState.GameWon ? $state.players.sort(p => p.role ?? 0) : $state.players);
+    let shownPlayers = $derived($state.gameState === GameState.GameWon ? $state.players.sort(p => p.role ?? 0)
+        : $state.players.filter(p => ($state.currentAction?.votablePlayers?.includes(p.id!) ?? true) || showAll));
     let isWerwolfKilling = $derived($state.currentAction?.type === ActionType.WerwolfKilling);
     
     let modalProvider: ModalProvider;
@@ -29,7 +30,7 @@
     }
 </script>
 
-{#each sortedPlayers as player}
+{#each shownPlayers as player}
     <li class="list-group-item {getPlayerCSSClasses(player)} d-flex align-items-center">
         {#if $state.currentAction === null}
             {player.name}

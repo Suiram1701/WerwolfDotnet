@@ -5,7 +5,7 @@
     import { type Readable } from "svelte/store";
     import { ActionType, Api, GameState } from "../../Api";
     import { storePlayerToken, getPlayerToken, removePlayerToken } from "../../stores/gameSessionStore";
-    import { gamePageState as state } from "../../stores/pageStateStore";
+    import { gamePageState as game } from "../../stores/pageStateStore";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
     import { GameHub } from "../../gameHub";
     import { roleDescriptions, roleNames } from "../../textes/roles";
@@ -29,29 +29,34 @@
     }});
     config.retrieveConfigAsync(apiClient);
 
-    let enoughPlayers = $derived($state.players.length >= (config.getClientConfig()?.minimumPlayers ?? 0));
-    let everyOneReady = $derived(config.getClientConfig()?.canStartWhenNotReady || $state.playersReady.length === $state.players.length);
+    let showAllPlayers = $state(false);
+    
+    let enoughPlayers = $derived($game.players.length >= (config.getClientConfig()?.minimumPlayers ?? 0));
+    let everyOneReady = $derived(config.getClientConfig()?.canStartWhenNotReady || $game.playersReady.length === $game.players.length);
 
-    let isWerwolfKilling = $derived($state.currentAction?.type === ActionType.WerwolfKilling);
-    let canEditSettings = $derived($state.gameMeta?.gameMaster === $state.selfId && ($state.gameState ?? 0) <= 0);
+    let isWerwolfKilling = $derived($game.currentAction?.type === ActionType.WerwolfKilling);
+    let canEditSettings = $derived($game.gameMeta?.gameMaster === $game.selfId && ($game.gameState ?? 0) <= 0);
     
     let connection: HubConnection;
     let gameHub: GameHub;
     onMount(() => {
-        state.update(s => {
+        game.update(s => {
             s.gameId = Number.parseInt(page.url.searchParams.get("sessionId") ?? "");
             s.selfId = Number.parseInt(page.url.searchParams.get("playerId") ?? "");
             return s;
         });
         
-        let playerToken = getPlayerToken($state.gameId, $state.selfId);
+        let playerToken = getPlayerToken($game.gameId, $game.selfId);
         if (page.url.hash.startsWith("#auth=")) {
             playerToken = page.url.hash.substring(6);
-            storePlayerToken($state.gameId, $state.selfId, playerToken);
-            goto(`/game?sessionId=${$state.gameId}&playerId=${$state.selfId}`);     // Remove auth secret from URL
+            storePlayerToken($game.gameId, $game.selfId, playerToken);
+            goto(`/game?sessionId=${$game.gameId}&playerId=${$game.selfId}`);     // Remove auth secret from URL
         }
         else if (playerToken === undefined) {
-            goto("/");
+            if ($game.gameId > 0)
+                goto(`/?gameId=${$game.gameId}`);
+            else
+                goto("/");
             return;
         }
         
@@ -75,9 +80,9 @@
     <GameSettings readonly={!canEditSettings} apiClient={apiClient} />
 {/snippet}
 
-<PageTitle title="Werwolf - Spiel {$state.gameId}" />
+<PageTitle title="Werwolf - Spiel {$game.gameId}" />
 
-{#if $state.selfRole !== undefined}
+{#if $game.selfRole !== undefined}
     <div class="accordion w-100 mb-4" id="collapseRoleParent">
         <div class="accordion-item">
             <h2 class="accordion-header">
@@ -87,8 +92,8 @@
             </h2>
             <div id="collapseRole" class="accordion-collapse show" data-bs-parent="#collapseRoleParent">
                 <div class="accordion-body">
-                    <h5>{roleNames[$state.selfRole]}</h5>
-                    {roleDescriptions[$state.selfRole]}
+                    <h5>{roleNames[$game.selfRole]}</h5>
+                    {roleDescriptions[$game.selfRole]}
                 </div>
             </div>
         </div>
@@ -96,17 +101,17 @@
 {/if}
 
 <div class="text-center mb-4">
-    {#if $state.currentAction !== null}
-        <h5>{actionNames[$state.currentAction.type ?? 0] || "undefined"}</h5>
-        <p>{actionDescriptions[$state.currentAction.type ?? 0] || "Dies solltest du eigentlich nicht sehen :)"}</p>
-    {:else if $state.gameState === GameState.Preparation}
-        <p>Andere Spieler können beitreten, indem sie auf die Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{$state.gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
-        <p>Direktes Beitreten ist auch über <a href="{webUrl}?gameId={$state.gameId}">diesen Link</a> möglich.</p>
-    {:else if $state.gameState === GameState.Day}
+    {#if $game.currentAction !== null}
+        <h5>{actionNames[$game.currentAction.type ?? 0] || "undefined"}</h5>
+        <p>{actionDescriptions[$game.currentAction.type ?? 0] || "Dies solltest du eigentlich nicht sehen :)"}</p>
+    {:else if $game.gameState === GameState.Preparation}
+        <p>Andere Spieler können beitreten, indem sie auf die Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{$game.gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
+        <p>Direktes Beitreten ist auch über <a href="{webUrl}?gameId={$game.gameId}">diesen Link</a> möglich.</p>
+    {:else if $game.gameState === GameState.Day}
         <p>Der Tag ist angebrochen. Diskutiert und entscheidet euch für einen Spieler, der am Abend hingerichtet werden soll.</p>
-    {:else if $state.gameState === GameState.Night}
+    {:else if $game.gameState === GameState.Night}
         <p>Die Nacht ist angebrochen! Alle gehen schlafen, außer den Werwölfen...</p>
-    {:else if $state.gameState === GameState.GameWon}
+    {:else if $game.gameState === GameState.GameWon}
         <p>
             Die Spielrunde ist zu ende. Warte darauf, dass der Game-Master die aktuelle Runde beendet und eine neue startet.<br>
             <small>Falls Bugs, Glitches oder andere Fehler aufgetreten sind können diese gerne per <a href="https://github.com/Suiram1701/WerwolfDotnet/issues" target="_blank">GitHub</a> gemeldet werden :)</small>
@@ -117,13 +122,13 @@
 <div class="flex-grow-1 container-fluid d-flex flex-column align-items-center">
     <!-- Player display and selection -->
     <ul class="list-group main-content mb-4">
-        <PlayerList apiClient={apiClient} />
+        <PlayerList showAll={showAllPlayers} apiClient={apiClient} />
         
-        {#if $state.currentAction !== null && $state.currentAction.minimum === 0}
+        {#if $game.currentAction !== null && $game.currentAction.minimum === 0}
             <li class="list-group-item d-flex align-items-center d-flex align-items-center">
-                {#if $state.currentAction.maximum === 1}
+                {#if $game.currentAction.maximum === 1}
                     <input class="form-check-input me-2" id="playerAction-NoOne" name="playerAction" type="radio"
-                           checked="{$state.selectedPlayers.length === 0}" onclick={() => state.update(s => {
+                           checked="{$game.selectedPlayers.length === 0}" onclick={() => game.update(s => {
                                s.selectedPlayers = [];
                                return s;
                            })}>
@@ -131,18 +136,18 @@
                 <label class="form-check-label" for="playerAction-NoOne">Niemand auswählen</label>
 
                 <div class="flex-grow-1"></div>
-                {#if $state.emptyVotedPlayers.length > 0}
+                {#if $game.emptyVotedPlayers.length > 0}
                     <span class="badge text-bg-secondary" use:tooltip={{
-                        title: $state.emptyVotedPlayers.map(id => {
-                            const name = $state.players.find(p => p.id === id)?.name;
-                            return $state.gameMeta?.mayor === id && isWerwolfKilling ? `2x ${name}` : name;
+                        title: $game.emptyVotedPlayers.map(id => {
+                            const name = $game.players.find(p => p.id === id)?.name;
+                            return $game.gameMeta?.mayor === id && isWerwolfKilling ? `2x ${name}` : name;
                         }).join(', '),
                         placement: "top"
                     }}>
-                        {#if $state.emptyVotedPlayers.includes($state.gameMeta?.mayor ?? -1) && isWerwolfKilling}     <!-- Include the mayor vote -->
-                            {$state.emptyVotedPlayers.length + 1}
+                        {#if $game.emptyVotedPlayers.includes($game.gameMeta?.mayor ?? -1) && isWerwolfKilling}     <!-- Include the mayor vote -->
+                            {$game.emptyVotedPlayers.length + 1}
                         {:else}
-                            {$state.emptyVotedPlayers.length}
+                            {$game.emptyVotedPlayers.length}
                         {/if}
                     </span>
                 {/if}
@@ -150,15 +155,19 @@
         {/if}
     </ul>
 
-    {#if $state.currentAction !== null}
-        <button class="btn btn-primary main-content" type="button" onclick={() => gameHub.playerAction($state.selectedPlayers)}
-                disabled="{$state.selectedPlayers.length < ($state.currentAction.minimum ?? 0) || $state.selectedPlayers.length > ($state.currentAction.maximum ?? 0)}">
+    {#if $game.currentAction !== null}
+        <button class="btn btn-secondary main-content mb-2" type="button" onclick={() => showAllPlayers = !showAllPlayers}>
+            {showAllPlayers ? "Nur wählbare Spieler anzeigen" : "Alle anzeigen"}
+        </button>
+        
+        <button class="btn btn-primary main-content" type="button" onclick={() => gameHub.playerAction($game.selectedPlayers)}
+                disabled="{$game.selectedPlayers.length < ($game.currentAction.minimum ?? 0) || $game.selectedPlayers.length > ($game.currentAction.maximum ?? 0)}">
             Abschicken
         </button>
     {/if}
 
-    {#if ($state.gameState ?? 0) <= 0}
-        {#if $state.playersReady.includes($state.selfId)}
+    {#if ($game.gameState ?? 0) <= 0}
+        {#if $game.playersReady.includes($game.selfId)}
             <button class="btn btn-secondary main-content" type="button" onclick={() => gameHub.setPlayerReady(false)}>Nicht mehr bereit</button>
         {:else}
             <button class="btn btn-primary main-content" type="button" onclick={() => gameHub.setPlayerReady(true)}>Bereit</button>
@@ -178,7 +187,7 @@
     }}>{canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}</button>
     
     <!-- Admin buttons -->
-    {#if $state.selfId === $state.gameMeta?.gameMaster && ($state.gameState ?? -2) <= 0}
+    {#if $game.selfId === $game.gameMeta?.gameMaster && ($game.gameState ?? -2) <= 0}
         <div class="d-flex main-content mb-3">
             {#if enoughPlayers && everyOneReady}
                 <button class="btn btn-primary w-100" type="button" onclick={async () => await gameHub.startGame()}>Spiel starten</button>
@@ -192,7 +201,7 @@
             
             <button class="btn btn-info w-100 mx-2" type="button" onclick={ async () => await gameHub.shufflePlayers()}>Spieler durchmischen</button>
 
-            {#if $state.gameState !== GameState.Locked}
+            {#if $game.gameState !== GameState.Locked}
                 <button class="btn btn-warning w-100" type="button" onclick={ async () => await gameHub.setGameLocked(true)}>Beitreten blockieren</button>
             {:else}
                 <button class="btn btn-success w-100" type="button" onclick={ async () => await gameHub.setGameLocked(false)}>Beitreten erlauben</button>
@@ -209,14 +218,14 @@
                 confirmText: "Verlassen",
                 confirmColor: "danger",
                 onConfirm: async () => {
-                    await apiClient.api.gameSessionsPlayersDelete($state.gameId, $state.selfId);
+                    await apiClient.api.gameSessionsPlayersDelete($game.gameId, $game.selfId);
                     goto("/");
                 }
             });
         }}>Spiel verlassen</button>
         
         <button class="btn btn-warning w-100 ms-2" type="button" onclick={() => {
-            const sessionUrl = `${webUrl}/game?sessionId=${$state.gameId}&playerId=${$state.selfId}#auth=${getPlayerToken($state.gameId, $state.selfId)}`;
+            const sessionUrl = `${webUrl}/game?sessionId=${$game.gameId}&playerId=${$game.selfId}#auth=${getPlayerToken($game.gameId, $game.selfId)}`;
             modalProvider.show({
                 title: "Spiel auf einem anderen Gerät fortsetzen",
                 contentText: `Öffnen Sie <a href="${sessionUrl}">diesen Link</a> auf dem Gerät wo die Sitzung fortgesetzt werden soll.<br>Nach dem wechsel können Sie diesen Tab schließen.`,
@@ -225,7 +234,7 @@
             })
         }}>Auf anderes Gerät wechseln</button>
 
-        {#if $state.selfId === $state.gameMeta?.gameMaster && ($state.gameState ?? -2) > 0}
+        {#if $game.selfId === $game.gameMeta?.gameMaster && ($game.gameState ?? -2) > 0}
             <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({
                     title: "Spiel beenden?",
                     contentText: "Möchten Sie die Runde wirklich beenden? (Spieler bleiben in der Sitzung)",

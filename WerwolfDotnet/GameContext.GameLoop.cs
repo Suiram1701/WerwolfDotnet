@@ -80,7 +80,7 @@ partial class GameContext
             }
             else
             {
-                foreach (Player player in roleGroup.Shuffle())
+                foreach (Player player in roleGroup.Where(p => p.IsAlive).Shuffle())
                     await player.Role!.OnNightAsync(this, player, ct);
             }
         }

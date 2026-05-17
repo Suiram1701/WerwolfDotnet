@@ -7,7 +7,7 @@ export const roleNames: Readonly<Record<Role, string>> = {
     [Role.None]: "",     // Only used internally. Not a real role.
     [Role.Villager]: "Dorfbewohner/-in",
     [Role.Seer]: "Seher/-in",
-    [Role.SeerApprentice]: "Seher Lehrling",
+    [Role.SeerApprentice]: "Seherlehrling",
     [Role.Witch]: "Hexe",
     [Role.Healer]: "Heiler",
     [Role.Hunter]: "Jäger",

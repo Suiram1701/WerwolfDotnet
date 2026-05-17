@@ -7,12 +7,14 @@ public class Seer : RoleBase
 {
     public IReadOnlyDictionary<Player, Role> WatchedPlayers => _watchedPlayers.AsReadOnly();
     private readonly Dictionary<Player, Role> _watchedPlayers = new();
+
+    protected virtual ActionType ActionType => ActionType.SeerSelection;
     
     internal override async Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct)
     {
         await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
         {
-            Type = ActionType.SeerSelection,
+            Type = ActionType,
             Participants = [self],
             ExcludeSelf = true,
             VotablePlayers = [..ctx.Players]

@@ -10,6 +10,7 @@ public enum ActionType
     UrwolfSelection,
     WhiteWolfSelection,
     SeerSelection,
+    SeerApprenticeSelection,
     WitchHealSelection,
     WitchKillSelection,
     HealerSelection,

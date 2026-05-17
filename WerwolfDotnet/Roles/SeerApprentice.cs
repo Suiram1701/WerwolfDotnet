@@ -11,7 +11,9 @@ public sealed class SeerApprentice : Seer
     /// <see cref="SeerApprentice"/> in the player list before him are also dead.
     /// </remarks>
     public bool IsActive { get; private set; }
-    
+
+    protected override ActionType ActionType => ActionType.SeerApprenticeSelection;
+
     internal override Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct)
     {
         bool otherActive = !IsActive && ctx.Players.Where(p => p.Role is Seer).Any(p =>

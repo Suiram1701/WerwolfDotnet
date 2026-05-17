@@ -22,8 +22,10 @@ public class RootController(IOptionsSnapshot<GameLobbyOptions> lobbyOptions, IOp
     /// Retrieves configuration used by the client which also depends on the server.
     /// </summary>
     /// <returns>The client configuration.</returns>
-    [HttpGet("config")]
+    [HttpGet("config")] 
+#if !DEBUG
     [ResponseCache(Location = ResponseCacheLocation.Any, Duration = 7200)]     // Two hours
+#endif
     [ProducesResponseType(typeof(ClientConfigDto), StatusCodes.Status200OK, MediaTypeNames.Application.Json)]
     public IActionResult GetConfiguration()
     {
