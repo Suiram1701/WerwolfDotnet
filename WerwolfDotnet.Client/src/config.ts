@@ -6,7 +6,7 @@ export const config =
 {
     apiEndpoint: ["127.0.0.1", "::1", "localhost"].includes(window.location.hostname) ? "http://localhost:7216" : "",
     apiPollInterval: 5000,
-    version: "0.2.1",
+    version: "0.3.0",
     
     getClientConfig: () => cachedConfig,
     retrieveConfigAsync: async (apiClient: Api<unknown>) => {

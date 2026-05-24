@@ -110,11 +110,11 @@
     {:else if $game.gameState === GameState.Day}
         <p>Der Tag ist angebrochen. Diskutiert und entscheidet euch für einen Spieler, der am Abend hingerichtet werden soll.</p>
     {:else if $game.gameState === GameState.Night}
-        <p>Die Nacht ist angebrochen! Alle gehen schlafen, außer den Werwölfen...</p>
+        <p>Die Nacht ist angebrochen! Das Dorf geht schlafen.</p>
     {:else if $game.gameState === GameState.GameWon}
         <p>
             Die Spielrunde ist zu ende. Warte darauf, dass der Game-Master die aktuelle Runde beendet und eine neue startet.<br>
-            <small>Falls Bugs, Glitches oder andere Fehler aufgetreten sind können diese gerne per <a href="https://github.com/Suiram1701/WerwolfDotnet/issues" target="_blank">GitHub</a> gemeldet werden :)</small>
+            <small>Falls Bugs, Glitches oder andere Fehler aufgetreten sind können diese gerne per <a href="https://github.com/Suiram1701/WerwolfDotnet/issues" target="_blank">GitHub</a> gemeldet werden.</small>
         </p>
     {/if}
 </div>

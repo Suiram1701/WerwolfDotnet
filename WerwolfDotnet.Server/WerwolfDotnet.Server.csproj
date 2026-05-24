@@ -11,7 +11,7 @@
         <SpaRoot>..\WerwolfDotnet.Client</SpaRoot>
         <SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
         <SpaProxyServerUrl>http://localhost:5173</SpaProxyServerUrl>
-        <Version>0.2.1</Version>
+        <Version>0.3.0</Version>
     </PropertyGroup>
     
     <Choose>
