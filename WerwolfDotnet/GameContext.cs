@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Logging;
 using WerwolfDotnet.Roles;
 
 namespace WerwolfDotnet;
@@ -51,6 +51,16 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
 
     public IEnumerable<PhaseAction> PreviousActions => _previousActions;
     private readonly Stack<PhaseAction> _previousActions = [];
+    
+    /// <summary>
+    /// The logger used for the entire session.
+    /// </summary>
+    public GameLogger Logger { get; }
+    
+    /// <summary>
+    /// Shows when this round was started. When a game finishes and a new one starts this will be updated.
+    /// </summary>
+    public DateTimeOffset RoundStartedAt { get; private set; }
 
     /// <summary>
     /// First int is the game master id and seconds integer is the id of the village mayor.
@@ -79,8 +89,6 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// </summary>
     public event Action<GameContext, Fraction>? OnGameWon;
     
-    internal ILogger Logger { get; }
-    
     internal GameOptions? GameOptions { get; private set; }
     
     private CancellationTokenSource? _gameLoopCts;
@@ -95,7 +103,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// <param name="password">An optional password which protects this session.</param>
     /// <param name="maxPlayers">The maximum amount of players.</param>
     /// <param name="logger">A logger the game will use to log various things.</param>
-    public GameContext(int id, string? password, int maxPlayers, ILogger logger)     // Makes constructor private
+    public GameContext(int id, string? password, int maxPlayers, GameLogger logger)     // Makes constructor private
     {
         Id = id;
         if (!string.IsNullOrEmpty(password))
@@ -146,7 +154,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         if (State > 0)
             throw new InvalidOperationException("Game game has already been started!");
         _players.Add(player);
-        Logger.LogInformation("Player {playerName} ({playerId}) joined the game", player.Name, player.Id);
+        Logger.Log(Event.Joined, player);
     }
 
     public bool RemovePlayer(Player player)
@@ -155,24 +163,23 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         
         if (!_players.Remove(player))
             return false;
-        Logger.LogInformation("Player {playerName} ({playerId}) left the game", player.Name, player.Id);
+        Logger.Log(Event.Left, player);
 
-        if (player.Equals(GameMaster))
-        {
-            Player? newGm = _players.MinBy(p => p.Id);     // Elected by the id -> the one who joined after the GM
-            if (newGm is not null)
-            {
-                GameMaster = newGm;
-                OnGameMetadataChanged?.Invoke(this, newGm.Id, Mayor?.Id);
-                Logger.LogInformation("Game master left the game. New game master {newGm} ({newGmId}) selected.", newGm.Name, newGm.Id);
-            }
-            else
-            {
-                Dispose();     // No one else is part of the game. 
-                Logger.LogInformation("Game master left the game. No one else could be selected as new GM -> Disposing game...");
-            }
-        }
+        if (!player.Equals(GameMaster))
+            return true;
         
+        Player? newGm = _players.MinBy(p => p.Id);     // Elected by the id -> the one who joined after the GM
+        if (newGm is not null)
+        {
+            GameMaster = newGm;
+            OnGameMetadataChanged?.Invoke(this, newGm.Id, Mayor?.Id);
+        }
+        else
+        {
+            Dispose();     // No one else is part of the game. 
+        }
+            
+        Logger.Log(Event.BecameGameMaster, source: player, target: newGm);
         return true;
     }
 
@@ -186,8 +193,6 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
             ? GameState.Locked
             : GameState.Preparation;
         OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0), null);
-        
-        Logger.LogTrace("Set game state to {state}.", State);
         return true;
     }
     
@@ -231,7 +236,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
          GameOptions = options;
          _gameLoopCts = new CancellationTokenSource();
          _gameLoop = RunAsync(_gameLoopCts.Token);
-         Logger.LogInformation("Game startet");
+         RoundStartedAt = DateTimeOffset.UtcNow;
+         Logger.Log(Event.GameStarted);
     }
 
     public void StopGame()
@@ -254,7 +260,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         
         State = GameState.Preparation;
         OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0), null);
-        Logger.LogInformation("Game stopped");
+        Logger.Log(Event.GameStopped);
         
         _gameLoopCts = null;
         _gameLoop = null;
@@ -282,7 +288,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         }
         catch (TaskCanceledException ex)
         {
-            Logger.LogWarning(ex, "PhaseAction {type} was cancelled due to timeout/stop", action.Type);
+            // TODO: What to do here?
+            // Logger.LogWarning(ex, "PhaseAction {type} was cancelled due to timeout/stop", action.Type);
             action.OrgCancellationToken.ThrowIfCancellationRequested();
         }
         finally
@@ -290,6 +297,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
             string[]? result = null;
             try
             {
+                Logger.Log(Event.Voting, args: [action.Type, ..action.PlayerVotes.ToArray()]);
                 result = await completedCallback(action, action.CancellationToken);
             }
             finally

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
 
@@ -29,7 +29,7 @@ public sealed class WhiteWolf : Werwolf
             
             if (ctx.WerwolfProtectedPlayers.TryGetValue(selectedOne, out Player? savedBy))
             {
-                ctx.Logger.LogTrace("{self} was successfully protected by {savedBy}", selectedOne, savedBy);
+                ctx.Logger.Log(Event.SuccessfullyProtected, source: savedBy, target: selectedOne);
                 return Task.FromResult<string[]?>(null);
             }
                         

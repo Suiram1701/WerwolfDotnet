@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
-using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Logging;
 using WerwolfDotnet.Roles;
 
 namespace WerwolfDotnet;
@@ -57,23 +57,20 @@ public class Player : IEquatable<Player>
 
     internal void Kill(CauseOfDeath causeOfDeath, Player? killer)
     {
+        _game.Logger.Log(Event.Killed, killer, this);
         if (Status != PlayerState.Alive)
             return;
 
         Status = PlayerState.PendingDeath;
         _causeOfDeath = causeOfDeath;
-        if (killer is null)
-            _game.Logger.LogTrace("Player {self} was killed in {causeOfDeath}.", this, causeOfDeath.ToString());
-        else
-            _game.Logger.LogTrace("Player {self} was killed by {killer} in {causeOfDeath}.", this, killer, causeOfDeath.ToString());
     }
 
     internal void Revive(Player doneBy)
     {
+        _game.Logger.Log(Event.Healed, doneBy, this);
         if (Status != PlayerState.PendingDeath)
             return;
         Status = PlayerState.Alive;
-        _game.Logger.LogTrace("Player {self} was saved by {doneBy}.", this, doneBy);
     }
 
     internal CauseOfDeath KillInternal()

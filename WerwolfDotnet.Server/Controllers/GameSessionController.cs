@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using WerwolfDotnet.Attributes;
+using WerwolfDotnet.Logging;
 using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.Models;
@@ -89,6 +90,32 @@ public class GameSessionController(
             : Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
     }
 
+    /// <summary>
+    /// Gets logs visible to the requesting user.
+    /// </summary>
+    /// <param name="sessionId">The ID of the session to retrieve.</param>
+    /// <returns></returns>
+    /// <response code="200">The logs corresponding to the game.</response>
+    /// <response code="404">No game with the id could be found</response>
+    [Authorize]
+    [HttpGet("{sessionId:int}/logs")]
+    [ProducesResponseType(typeof(LogMessageDto[]), StatusCodes.Status200OK, Application.Json)]
+    public async Task<IActionResult> GetGameLogsAsync([FromRoute] int sessionId)
+    {
+        if (await _manager.GetGameById(sessionId) is not { } ctx)
+            return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
+        if (HttpContext.User.GetPlayerId() != ctx.GameMaster.Id)
+            return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
+        
+        IEnumerable<LogMessageDto> showsMessages = ctx.Logger.Messages     // Either the msg is from a previous game or the requesting user was part of the action
+            .Where(m => reveal(m) || (m.Event == Event.Voting && ((m.Args[1] as KeyValuePair<Player, Player[]>[])?     // Event.Voting is expected to have a collection key-value-pairs at its second position
+                .Any(p => p.Key.Id == HttpContext.User.GetPlayerId()) ?? false)))
+            .Select(m => new LogMessageDto(m, reveal(m)));     
+        return Ok(showsMessages);
+
+        bool reveal(LogMessage msg) => ctx.State == GameState.GameWon || msg.Time < ctx.RoundStartedAt;     // Show only when the game is finished or from a previous game
+    }
+    
     /// <summary>
     /// Updates the settings of a game.
     /// </summary>

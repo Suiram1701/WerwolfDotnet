@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
+using WerwolfDotnet.Logging;
 using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Hubs;
 using WerwolfDotnet.Server.Models;
@@ -63,11 +64,12 @@ public class GameManager(
     public async Task<(GameContext context, Player gameMaster, string gameMasterAuth)> CreateGameAsync(string gameMasterName, string? sessionPassword)
     {
         int gameId;
-        do
-        {
-            gameId = Random.Shared.Next(0, 999999);
-        } while (await _sessionStore.IdExistsAsync(gameId));
-        ILogger gameLogger = _loggerFactory.CreateLogger($"{typeof(GameContext)}[{gameId}]");
+        do { gameId = Random.Shared.Next(0, 999999); }
+        while (await _sessionStore.IdExistsAsync(gameId));
+        
+        ILogger logger = _loggerFactory.CreateLogger($"{typeof(GameContext)}[{gameId}]");
+        GameLogger gameLogger = new();
+        gameLogger.OnMessage += msg => LogHandler(msg, logger);
         
         GameContext context = new(gameId, sessionPassword, LobbyOptions.MaxPlayers, gameLogger);
         Player gameMaster = new(0, gameMasterName, context, out string gameMasterAuth);
@@ -304,6 +306,41 @@ public class GameManager(
         
         action.CancelAction();
         return _sessionStore.UpdateAsync(ctx);
+    }
+
+    private static void LogHandler(LogMessage message, ILogger logger)
+    {
+        LogLevel level = message.Event switch
+        {
+            Event.Voting => LogLevel.Trace,
+            <= 0 => LogLevel.Information,
+            _ => LogLevel.Debug
+        };
+        string text = message.Event switch
+        {
+            Event.Joined => "Player {player} joined the game",
+            Event.Left => "Player {player} left the game",
+            Event.BecameGameMaster => "{oldGm} left and {player} is the new game master",
+            Event.GameStarted => "Game started",
+            Event.GameStopped => "Game stopped",
+            Event.GameWon => "Game was won by " + spreadArgs(alreadyTook: 0, prefix: "winner"),
+            Event.Voting => "{actionType} finished: " + spreadArgs(),
+            Event.Killed => "{killer} killed " + spreadArgs(prefix: "victim"),
+            Event.Healed => "{doneBy} revived {healedOne}",
+            Event.SawRole => "{seer} saw current role of {player}: {role}",
+            Event.SeerApprenticeActive => "Seer apprentice {newSeer} is now the active seer",
+            Event.Protect => "{doneBy} protects {player} in current round",
+            Event.SuccessfullyProtected => "{doneBy} successfully protected {player}",
+            Event.FallInLove => "{player} made " + spreadArgs() + " to fall in love",
+            Event.SleepOver => "{doneBy} stayed overnight at {player}'s place",
+            Event.VictimMissed => "{killer} failed (missed) to kill {victim}",
+            Event.TurnedToWerwolf => "{doneBy} turned {victim} into a werwolf",
+            _ => "[Unknown event]"
+        };
+        logger.Log(level, text, message.Args);
+
+        string spreadArgs(int alreadyTook = 1, string prefix = "arg") => string.Join(", ",
+            Enumerable.Range(alreadyTook, message.Args.Length - alreadyTook).Select(i => $"{{arg{i - alreadyTook}}}"));
     }
     
     // try-catch is "required" everywhere because of async-void 

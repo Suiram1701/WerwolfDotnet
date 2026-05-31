@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
 
@@ -29,7 +29,7 @@ public sealed class Amor : RoleBase
                 return Task.FromResult<string[]?>(null);
             
             ctx.PlayersFallInLove(votes[0], votes[1]);
-            ctx.Logger.LogTrace("Amor {amor} made {player1} to fall in love with {player2})", self, votes[0], votes[1]);
+            ctx.Logger.Log(Event.FallInLove, source: self, targets: [votes[0], votes[1]]);
             
             Done = true;
             return Task.FromResult<string[]?>(null);

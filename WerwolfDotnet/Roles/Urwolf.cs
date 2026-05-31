@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
 
@@ -30,13 +30,13 @@ public sealed class Urwolf : Werwolf
             
             if (selectedOne.Role is VillageMattress { LastSleepover: not null })
             {
-                ctx.Logger.LogTrace("Urwolf {self} couldn't change role of {player} to Werwolf (player not home)", self, selectedOne);
+                ctx.Logger.Log(Event.VictimMissed, self, selectedOne);
             }
             else
             {
                 selectedOne.Revive(self);     // When not killed (e.g. saved by healer, ...) ignored
                 selectedOne.Role = new Werwolf();
-                ctx.Logger.LogTrace("Urwolf {self} changed the role of {player} to Werwolf", self, selectedOne);
+                ctx.Logger.Log(Event.TurnedToWerwolf, source: self, targets: [selectedOne]);
 
                 Player? visit = ctx.Players.SingleOrDefault(p => p.Role is VillageMattress m && selectedOne.Equals(m.LastSleepover));
                 visit?.Kill(CauseOfDeath.WerwolfKill, self);     // Regularly handled in OnDeathAsync, would be a WerwolfKill.

@@ -1,3 +1,5 @@
+using WerwolfDotnet.Logging;
+
 namespace WerwolfDotnet.Roles;
 
 [Role(Role.SeerApprentice)]
@@ -25,6 +27,8 @@ public sealed class SeerApprentice : Seer
         if (otherActive)
             return Task.CompletedTask;
 
+        if (!IsActive)
+            ctx.Logger.Log(Event.SeerApprenticeActive, self);
         IsActive = true;
         return base.OnNightAsync(ctx, self, ct);
     }

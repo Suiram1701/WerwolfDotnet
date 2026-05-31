@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
 
@@ -18,8 +18,11 @@ public sealed class VillageMattress : RoleBase
         }, (action, _) =>
         {
             LastSleepover = action.PlayerVotes[self].FirstOrDefault();
-            ctx.ProtectPlayer(self, self);
-            ctx.Logger.LogTrace("Village mattress {mattress} stays overnight at {player}.", self, LastSleepover);
+            if (LastSleepover is not null)
+            {
+                ctx.ProtectPlayer(self, self);
+                ctx.Logger.Log(Event.SleepOver, source: self, target: LastSleepover);
+            }
             
             return Task.FromResult<string[]?>(null);
         });

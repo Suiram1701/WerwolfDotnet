@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Logging;
 using WerwolfDotnet.Roles;
 
 namespace WerwolfDotnet;
@@ -70,7 +70,7 @@ partial class GameContext
 
                     if (_werwolfProtectedPlayers.TryGetValue(playerToDie, out Player? savedBy))
                     {
-                        Logger.LogTrace("{self} was successfully protected by {savedBy}", playerToDie, savedBy);
+                        Logger.Log(Event.SuccessfullyProtected, savedBy, playerToDie);
                         return Task.FromResult<string[]?>([playerToDie.Name]);     // Still tell them.
                     }
                         
@@ -261,7 +261,15 @@ partial class GameContext
     [DoesNotReturn]
     private void GameWon(Fraction wonBy)
     {
-        Logger.LogInformation("Game won by fraction {fraction}", wonBy);
+        IEnumerable<Player> winners = wonBy switch
+        {
+            Fraction.Village => _players.Where(p => p.Role?.Type > 0 && p.Status == PlayerState.Alive),
+            Fraction.Werwolf => _players.Where(p => p.Role?.Type < 0 && p.Status == PlayerState.Alive),
+            Fraction.WhiteWolf => _players.Where(p => p.Role?.Type == Role.WhiteWolf),     // Have to live 
+            Fraction.Lovers => _players.Where(p => _playersInLove.ContainsKey(p)),     // Have to live
+            _ => _players.Where(p => p.IsAlive)
+        };
+        Logger.Log(Event.GameWon, args: [..winners]);
         
         State = GameState.GameWon;
         OnGameWon?.Invoke(this, wonBy);

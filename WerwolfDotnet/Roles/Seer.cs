@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
 
@@ -23,11 +23,11 @@ public class Seer : RoleBase
             if (action.GetMostVotedPlayer() is not { } selectedOne)
                 return Task.FromResult<string[]?>(null);
             
-            ctx.Logger.LogTrace("Seer {seer} saw role of {player}: {roleName}",
-                self, selectedOne, selectedOne.Role!.Type);
 
             Role playerRole = selectedOne.Role!.Type;
+            ctx.Logger.Log(Event.SawRole, self, selectedOne, playerRole);
             _watchedPlayers[selectedOne] = ctx.GameOptions!.SeerSeesRole ? playerRole : (playerRole > 0 ? Role.Villager : Role.Werwolf);
+            
             return Task.FromResult<string[]?>([selectedOne.Name, _watchedPlayers[selectedOne].ToString()]);
         });
         

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
 
@@ -20,7 +20,7 @@ public sealed class Healer : RoleBase
             if (playerToHeal is not null)
             {
                 ctx.ProtectPlayer(playerToHeal, self);
-                ctx.Logger.LogTrace("Healer {self} choose {playerToHeal} to protect.", self, playerToHeal);
+                ctx.Logger.Log(Event.Protect, source: self, targets: [playerToHeal]);
             }
             
             LastPlayer = playerToHeal;
