@@ -10,9 +10,9 @@ public enum Event              // Comment is a list of parameters which should b
     BecameGameMaster = -3,     // old game master, new one
     GameStarted = -2,          // No parameters
     GameStopped = -1,          // No parameters
-    GameWon = 0,               // [won players]
+    GameWon = 0,               // won by fraction, ..[won players]
     Voting,                    // action type, ..[KeyValuePair<Player, Player[]>]
-    Killed,                    // Killer, ..[killed ones]
+    Killed,                    // Killer?, ..[killed ones]
     Healed,                    // healer, healed one
     SawRole,                   // seer, selected one, role
     SeerApprenticeActive,      // player

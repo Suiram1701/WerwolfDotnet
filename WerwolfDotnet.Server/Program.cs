@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.OpenApi;
 using OpenTelemetry.Logs;
 using WerwolfDotnet;
+using WerwolfDotnet.Logging;
 using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Authentication;
 using WerwolfDotnet.Server.Hubs;
@@ -64,7 +65,7 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<SecurityFilter>();
     
     options.DocumentFilter<ExportAllModelsFilter>();
-    options.DocumentFilter<ExportModelFilter>([new[] { typeof(GameState), typeof(Role), typeof(CauseOfDeath), typeof(Fraction) }]);
+    options.DocumentFilter<ExportModelFilter>([new[] { typeof(GameState), typeof(Role), typeof(CauseOfDeath), typeof(Fraction), typeof(LogPlayerSnapshot) }]);
     options.SchemaFilter<EnumNamesSchemaFilter>();
     
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";

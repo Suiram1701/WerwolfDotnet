@@ -14,7 +14,7 @@ public class LogPlayerSnapshot(int id, string name, Role? role)
 
     public string Name { get; } = name;
 
-    public Role? CurrentRole { get; } = role;
+    public Role? Role { get; } = role;
 
     public override string ToString() => $"{Name} ({Id})";
 }

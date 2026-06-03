@@ -104,12 +104,17 @@ public class GameSessionController(
     {
         if (await _manager.GetGameById(sessionId) is not { } ctx)
             return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
-        if (HttpContext.User.GetPlayerId() != ctx.GameMaster.Id)
+        if (HttpContext.User.GetGameId() != sessionId)
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
-        
-        IEnumerable<LogMessageDto> showsMessages = ctx.Logger.Messages     // Either the msg is from a previous game or the requesting user was part of the action
-            .Where(m => reveal(m) || (m.Event == Event.Voting && ((m.Args[1] as KeyValuePair<Player, Player[]>[])?     // Event.Voting is expected to have a collection key-value-pairs at its second position
-                .Any(p => p.Key.Id == HttpContext.User.GetPlayerId()) ?? false)))
+                
+        IEnumerable<LogMessageDto> showsMessages = ctx.Logger.Messages     // Either the msg is from a previous game, the requesting user was part of the action or global
+            .Where(m =>
+            {
+                if (reveal(m) || m.Event <= 0)
+                    return true;
+                return m.Event == Event.Voting&& m.Args.Skip(1)     // Event.Voting is expected to have a collection key-value-pairs at its second position
+                    .Any(arg => ((KeyValuePair<Player, Player[]>)arg!).Key.Id == HttpContext.User.GetPlayerId());
+            })
             .Select(m => new LogMessageDto(m, reveal(m)));     
         return Ok(showsMessages);
 

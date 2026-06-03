@@ -269,7 +269,7 @@ partial class GameContext
             Fraction.Lovers => _players.Where(p => _playersInLove.ContainsKey(p)),     // Have to live
             _ => _players.Where(p => p.IsAlive)
         };
-        Logger.Log(Event.GameWon, args: [..winners]);
+        Logger.Log(Event.GameWon, args: [wonBy, ..winners]);
         
         State = GameState.GameWon;
         OnGameWon?.Invoke(this, wonBy);

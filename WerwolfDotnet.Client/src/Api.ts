@@ -52,6 +52,27 @@ export interface ClientConfigDto {
 }
 
 /** @format int32 */
+export enum Event {
+  GameWon = 0,
+  Voting = 1,
+  Killed = 2,
+  Healed = 3,
+  SawRole = 4,
+  SeerApprenticeActive = 5,
+  Protect = 6,
+  SuccessfullyProtected = 7,
+  FallInLove = 8,
+  SleepOver = 9,
+  VictimMissed = 10,
+  TurnedToWerwolf = 11,
+  Joined = -5,
+  Left = -4,
+  BecameGameMaster = -3,
+  GameStarted = -2,
+  GameStopped = -1,
+}
+
+/** @format int32 */
 export enum Fraction {
   Village = 0,
   Werwolf = 1,
@@ -119,6 +140,20 @@ export interface JoinedGameDto {
   bearerToken?: string | null;
   /** The URL of SignalR WebSocket to connect to. */
   signalrUrl?: string | null;
+}
+
+export interface LogMessageDto {
+  /** @format date-time */
+  timeStamp?: string;
+  eventType?: Event;
+  args?: any[] | null;
+}
+
+export interface LogPlayerSnapshot {
+  /** @format int32 */
+  id?: number;
+  name?: string | null;
+  role?: Role;
 }
 
 export interface PlayerDto {
@@ -437,6 +472,24 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       this.request<GameDto, void>({
         path: `/api/game_sessions/${sessionId}`,
         method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags GameSession
+     * @name GameSessionsLogsDetail
+     * @summary Gets logs visible to the requesting user.
+     * @request GET:/api/game_sessions/{sessionId}/logs
+     * @secure
+     */
+    gameSessionsLogsDetail: (sessionId: number, params: RequestParams = {}) =>
+      this.request<LogMessageDto[], void>({
+        path: `/api/game_sessions/${sessionId}/logs`,
+        method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),

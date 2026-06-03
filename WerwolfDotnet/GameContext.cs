@@ -129,6 +129,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         
         GameMaster = gameMaster;
         _players.Add(gameMaster);
+        Logger.Log(Event.Joined, gameMaster);
         State = GameState.Preparation;
         OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0), null);
     }

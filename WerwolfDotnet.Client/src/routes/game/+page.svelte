@@ -3,13 +3,14 @@
     import { page } from "$app/state"
     import { goto } from "$app/navigation";
     import { type Readable } from "svelte/store";
-    import { ActionType, Api, GameState } from "../../Api";
+    import { ActionType, Api, GameState, type LogMessageDto } from "../../Api";
     import { storePlayerToken, getPlayerToken, removePlayerToken } from "../../stores/gameSessionStore";
     import { gamePageState as game } from "../../stores/pageStateStore";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
     import { GameHub } from "../../gameHub";
     import { roleDescriptions, roleNames } from "../../textes/roles";
     import { actionDescriptions, actionNames } from "../../textes/actions";
+    import { renderMessage } from "../../textes/logs";
     import { tooltip } from "$lib/actions/tooltip";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
@@ -30,6 +31,7 @@
     config.retrieveConfigAsync(apiClient);
 
     let showAllPlayers = $state(false);
+    let fetchedGameLogs: LogMessageDto[] = $state([]);
     
     let enoughPlayers = $derived($game.players.length >= (config.getClientConfig()?.minimumPlayers ?? 0));
     let everyOneReady = $derived(config.getClientConfig()?.canStartWhenNotReady || $game.playersReady.length === $game.players.length);
@@ -78,6 +80,14 @@
 
 {#snippet gameOptionsModalContent()}
     <GameSettings readonly={!canEditSettings} apiClient={apiClient} />
+{/snippet}
+
+{#snippet gameLogsModalContent()}
+    <div class="overflow-auto overflow-x-auto text-nowrap">
+        {#each fetchedGameLogs as message}
+            <p>{renderMessage(message)}</p>
+        {/each}
+    </div>
 {/snippet}
 
 <PageTitle title="Werwolf - Spiel {$game.gameId}" />
@@ -176,15 +186,30 @@
 
     <div class="flex-grow-1"></div>
 
-    <button class="btn btn-secondary main-content mb-3" type="button" onclick={() => {
-        modalProvider.show({
-            title: canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen (nur ansehen)",
-            content: gameOptionsModalContent,
-            confirmText: "Schließen",
-            canDismiss: false,
-            closeOnConfirm: true
-        });
-    }}>{canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}</button>
+    <div class="d-flex main-content mb-3">
+        <button class="btn btn-secondary w-100" type="button" onclick={() => {
+            modalProvider.show({
+                title: canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen (nur ansehen)",
+                content: gameOptionsModalContent,
+                confirmText: "Schließen",
+                canDismiss: false,
+                closeOnConfirm: true
+            });
+        }}>{canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}</button>
+
+        <button class="btn btn-secondary w-100 ms-2" type="button" onclick={() => {
+            apiClient.api.gameSessionsLogsDetail($game.gameId)
+                .then(response => fetchedGameLogs = response.data)
+                .catch(error => console.error(error));
+            modalProvider.show({
+                title: "Spiel-Log",
+                content: gameLogsModalContent,
+                confirmText: "Schließen",
+                canDismiss: false,
+                closeOnConfirm: true
+            });
+        }}>Spiel-Logs ansehen</button>
+    </div>
     
     <!-- Admin buttons -->
     {#if $game.selfId === $game.gameMeta?.gameMaster && ($game.gameState ?? -2) <= 0}

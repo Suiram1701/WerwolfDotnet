@@ -323,7 +323,7 @@ public class GameManager(
             Event.BecameGameMaster => "{oldGm} left and {player} is the new game master",
             Event.GameStarted => "Game started",
             Event.GameStopped => "Game stopped",
-            Event.GameWon => "Game was won by " + spreadArgs(alreadyTook: 0, prefix: "winner"),
+            Event.GameWon => "Game was won by {wonBy}:" + spreadArgs(prefix: "winner"),
             Event.Voting => "{actionType} finished: " + spreadArgs(),
             Event.Killed => "{killer} killed " + spreadArgs(prefix: "victim"),
             Event.Healed => "{doneBy} revived {healedOne}",
