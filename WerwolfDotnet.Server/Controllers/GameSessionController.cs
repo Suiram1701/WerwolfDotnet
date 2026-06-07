@@ -89,6 +89,32 @@ public class GameSessionController(
             ? Ok(new GameDto(ctx))
             : Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
     }
+    
+    /// <summary>
+    /// Removes a session by its id and kicks all of its players.
+    /// </summary>
+    /// <param name="sessionId">The ID of the session to remove.</param>
+    [Authorize]
+    [HttpDelete("{sessionId:int}")]
+    public async Task<IActionResult> DeleteSessionById([FromRoute] int sessionId)
+    {
+        if (await _manager.GetGameById(sessionId) is not { } ctx)
+            return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
+        if (HttpContext.User.GetPlayerId() != ctx.GameMaster.Id)
+            return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
+
+        foreach (Player player in ctx.Players.OrderBy(p => ctx.GameMaster.Equals(p)))     // Order to prevent the UI from showing GM switch messages
+        {
+            string[] playerConnections = _connectionMapping.GetPlayerConnections(ctx.Id, player.Id);
+            foreach (string connectionId in playerConnections)
+                await _hubContext.Groups.RemoveFromGroupAsync(connectionId, GroupNames.Game(ctx.Id));
+        
+            await _manager.LeaveGameAsync(ctx, player, kicked: !player.Equals(ctx.GameMaster));
+        }
+        
+        await _settingsStore.RemoveAsync(ctx.Id).ConfigureAwait(false);
+        return Ok();
+    }
 
     /// <summary>
     /// Gets logs visible to the requesting user.
@@ -284,8 +310,7 @@ public class GameSessionController(
         foreach (string connectionId in playerConnections)
             await _hubContext.Groups.RemoveFromGroupAsync(connectionId, GroupNames.Game(ctx.Id));
         
-        await _manager.LeaveGameAsync(ctx, playerToKick);
-        await _hubContext.Clients.Player(ctx.Id, playerToKick.Id).ForceDisconnect(kicked: playerId != selfId);     // Not done by manager because it can't differentiate between leaving and kicking
+        await _manager.LeaveGameAsync(ctx, playerToKick, kicked: true);
         
         if (ctx.Players.Count == 0)
             await _settingsStore.RemoveAsync(ctx.Id).ConfigureAwait(false);

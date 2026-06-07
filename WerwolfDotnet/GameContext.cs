@@ -173,14 +173,14 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         if (newGm is not null)
         {
             GameMaster = newGm;
+            Logger.Log(Event.BecameGameMaster, source: player, target: newGm); 
             OnGameMetadataChanged?.Invoke(this, newGm.Id, Mayor?.Id);
         }
         else
         {
             Dispose();     // No one else is part of the game. 
         }
-            
-        Logger.Log(Event.BecameGameMaster, source: player, target: newGm);
+        
         return true;
     }
 

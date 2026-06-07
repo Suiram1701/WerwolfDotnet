@@ -100,10 +100,11 @@ public class GameManager(
     /// <summary>
     /// Retrieves all game sessions.
     /// </summary>
+    /// <param name="skipAccessCheck">Sets whether configured access check should matter.</param>
     /// <returns>A list of all sessions. When not permitted by server setting <c>null</c> is returned.</returns>
-    public async Task<IEnumerable<GameContext>?> GetAllGames()
+    public async Task<IEnumerable<GameContext>?> GetAllGames(bool skipAccessCheck = false)
     {
-        if (!LobbyOptions.AllowViewAll)
+        if (!LobbyOptions.AllowViewAll && !skipAccessCheck)
             return null;
         return await _sessionStore.GetAllAsync().ConfigureAwait(false);
     }
@@ -134,14 +135,17 @@ public class GameManager(
     /// <summary>
     /// Removes a player from a game. Can be used when a player left on his own will or when he was kicked.
     /// </summary>
+    /// <remarks>This method is indirectly used to delete a session by removing all of its players.</remarks>
     /// <param name="ctx">The game the player is a part of.</param>
     /// <param name="player">The player to remove.</param>
+    /// <param name="kicked">Indicates whether this was done by the game master to kick someone.</param>
     /// <returns>Indicates whether it was successful.</returns>
-    public async Task<bool> LeaveGameAsync(GameContext ctx, Player player)
+    public async Task<bool> LeaveGameAsync(GameContext ctx, Player player, bool kicked = false)
     {
         if (!ctx.RemovePlayer(player))
             return false;
 
+        await _hubContext.Clients.Player(ctx.Id, player.Id).ForceDisconnect(kicked);
         if (ctx.Players.Count > 0)
         {
             await _sessionStore.UpdateAsync(ctx).ConfigureAwait(false);
@@ -229,7 +233,7 @@ public class GameManager(
         ctx.StopGame();
         await _sessionStore.UpdateAsync(ctx);
     }
-
+    
     /// <summary>
     /// Sends an update of the player list.
     /// </summary>

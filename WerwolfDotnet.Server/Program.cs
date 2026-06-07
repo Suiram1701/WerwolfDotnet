@@ -35,6 +35,10 @@ builder.Services
     .AddOptions<GameOptions>()
     .BindConfiguration("Game")
     .ValidateDataAnnotations();
+builder.Services
+    .AddOptions<CleanupOptions>()
+    .BindConfiguration("Cleanup")
+    .Services.AddHostedService<SessionCleanupService>();
 
 builder.Services
     .AddSingleton<GameManager>()
