@@ -27,9 +27,46 @@ if (Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT") is not nul
     });
 }
 
+HashSet<string> forbiddenWordCache = [];
+
+builder.Services.AddHttpClient();
 builder.Services
     .AddOptions<GameLobbyOptions>()
     .BindConfiguration("GameLobby")
+    .PostConfigure<ILogger<GameLobbyOptions>, IHttpClientFactory>((options, logger, httpClientFactory) =>
+    {
+        if (forbiddenWordCache.Count > 0)     // With huge lists, reloading it for each IOptionsSnapshot injection hash quite a huge impact
+        {
+            options.PlayerNameForbiddenWords = forbiddenWordCache;
+            return;
+        }
+
+        foreach (string path in options.PlayerNameForbiddenWordsLists)
+        {
+            string content;
+            if (File.Exists(path))
+            {
+                content = File.ReadAllText(path);
+            }
+            else if (Uri.TryCreate(path, UriKind.Absolute, out Uri? url) && url.Scheme is "http" or "https")
+            {
+                using HttpClient client = httpClientFactory.CreateClient();
+                content = client.GetStringAsync(url).ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            else
+            {
+                logger.LogWarning("Unable to load forbidden player name list '{listPath}'", path);
+                continue;
+            }
+
+            string[] words = content.Split(separator: [',', ';', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            options.PlayerNameForbiddenWords.UnionWith(words);
+            logger.LogInformation("Loaded forbidden player name list '{listPath}'. {count} entries", path, words.Length);
+        }
+        
+        logger.LogInformation("Totally loaded {count} forbidden player name entries", options.PlayerNameForbiddenWords.Count);
+        forbiddenWordCache = options.PlayerNameForbiddenWords;
+    })
     .ValidateDataAnnotations();
 builder.Services
     .AddOptions<GameOptions>()

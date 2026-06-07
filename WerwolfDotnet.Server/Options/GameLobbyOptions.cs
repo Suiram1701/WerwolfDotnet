@@ -45,5 +45,10 @@ public class GameLobbyOptions
     /// <summary>
     /// Words which can't be in a player name (case-insensitive)
     /// </summary>
-    public List<string> PlayerNameForbiddenWords { get; set; } = [];
+    public HashSet<string> PlayerNameForbiddenWords { get; set; } = new([], comparer: StringComparer.InvariantCultureIgnoreCase);
+
+    /// <summary>
+    /// A list of files or webpages to load <see cref="PlayerNameForbiddenWords"/> from.
+    /// </summary>
+    public string[] PlayerNameForbiddenWordsLists { get; set; } = [];
 }

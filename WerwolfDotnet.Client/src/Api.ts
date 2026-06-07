@@ -45,6 +45,9 @@ export interface ClientConfigDto {
   /** @format int32 */
   playerNameMinLength?: number;
   /** @format int32 */
+  playerNameMaxLength?: number;
+  playerNameAllowNumbers?: boolean;
+  /** @format int32 */
   minimumPlayers?: number;
   fixedRoleAmounts?: Record<string, number>;
   canStartWhenNotReady?: boolean;
@@ -473,6 +476,23 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         path: `/api/game_sessions/${sessionId}`,
         method: "GET",
         format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags GameSession
+     * @name GameSessionsDelete
+     * @summary Removes a session by its id and kicks all of its players.
+     * @request DELETE:/api/game_sessions/{sessionId}
+     * @secure
+     */
+    gameSessionsDelete: (sessionId: number, params: RequestParams = {}) =>
+      this.request<void, void>({
+        path: `/api/game_sessions/${sessionId}`,
+        method: "DELETE",
+        secure: true,
         ...params,
       }),
 

@@ -23,6 +23,13 @@
     let password: string = $state(""), passwordRequired: boolean = $state(true);
     
     function onCreateGame() {
+        const errorMessage = getPlayerNameError();
+        if (errorMessage !== null) {
+            document.querySelector("#creatingPlayerName ~ .invalid-feedback")!.innerHTML = errorMessage;
+            document.getElementById("creatingPlayerName")!.classList.add("is-invalid");
+            return;
+        }
+        
         const request: JoinGameDto = {
             playerName: playerName,
             gamePassword: password
@@ -41,6 +48,13 @@
         for (const element of document.getElementsByClassName("form-control"))
             element.classList.remove("is-invalid");
 
+        const errorMessage = getPlayerNameError();
+        if (errorMessage !== null) {
+            document.querySelector("#joinPlayerName ~ .invalid-feedback")!.innerHTML = errorMessage;
+            document.getElementById("joinPlayerName")!.classList.add("is-invalid");
+            return;
+        }
+        
         const request: JoinGameDto = {
             playerName: playerName,
             gamePassword: (passwordRequired ? password : null)
@@ -50,6 +64,7 @@
             .catch((response: HttpResponse<JoinedGameDto>) => {
                 switch (response.status) {
                     case 400:
+                        document.querySelector("#joinPlayerName ~ .invalid-feedback")!.innerHTML = "Der gewählte Name ist ungültig oder bereits vergeben."
                         document.getElementById("joinPlayerName")!.classList.add("is-invalid");
                         break;
                     case 401:
@@ -68,6 +83,21 @@
     function joinGame(data: JoinedGameDto) {
         storePlayerToken(data.game.id ?? -1, data.self.id ?? 0, data.bearerToken ?? "");
         goto(`/game?sessionId=${data.game.id}&playerId=${data.self.id}`);
+    }
+    
+    function getPlayerNameError(): string | null {
+        const clientConfig = config.getClientConfig()!
+        
+        if (playerName.trim().length === 0)
+            return "Der Name darf nicht leer sein";
+        if (playerName.includes(' '))
+            return "Der Name darf keine Leerzeichen enthalten";
+        if (playerName.length < clientConfig.playerNameMinLength! || playerName.length > clientConfig.playerNameMaxLength!)
+            return `Der Name muss zwischen ${clientConfig.playerNameMinLength} und ${clientConfig.playerNameMaxLength} Zeichen lang sein`;
+        if (!clientConfig.playerNameAllowNumbers && playerName.match("\d"))
+            return "Es sind keine Zahlen im Namen erlaubt"
+        
+        return null;
     }
     
     let pollId: NodeJS.Timeout;
@@ -151,9 +181,8 @@
 {#snippet createModalContent()}
     <div class="mb-3">
         <label class="form-label" for="creatingPlayerName">Spielername</label>
-        <input class="form-control" id="creatingPlayerName" type="text" minlength="{config.getClientConfig()?.minimumPlayers}"
-               bind:value={playerName} onkeydown={e => formKeyDown(e, onCreateGame)}/>
-        <div class="invalid-feedback">Der angegebene Name ist ungültig.</div>
+        <input class="form-control" id="creatingPlayerName" type="text" bind:value={playerName} onkeydown={e => formKeyDown(e, onCreateGame)}/>
+        <div class="invalid-feedback"></div>
     </div>
 
     <div class="mb-3">
@@ -182,7 +211,7 @@
     <div class="mb-3">
         <label class="form-label" for="joinPlayerName">Spielername</label>
         <input class="form-control" id="joinPlayerName" type="text" bind:value={playerName} onkeydown={e => formKeyDown(e, onJoinGame)} />
-        <div class="invalid-feedback">Der gewählte Name ist ungültig oder bereits vergeben.</div>
+        <div class="invalid-feedback"></div>
     </div>
 
     {#if passwordRequired}

@@ -33,6 +33,8 @@ public class RootController(IOptionsSnapshot<GameLobbyOptions> lobbyOptions, IOp
         {
             SessionsVisible = LobbyOptions.AllowViewAll,
             PlayerNameMinLength = LobbyOptions.PlayerNameMinLength,
+            PlayerNameMaxLength = LobbyOptions.PlayerNameMaxLength,
+            PlayerNameAllowNumbers = LobbyOptions.PlayerNameAllowNumbers,
             MinimumPlayers = LobbyOptions.MinPlayers,
             FixedRoleAmounts = RoleAttribute.GetRoles()
                 .Where(attr => attr.FixedAmount != -1)
