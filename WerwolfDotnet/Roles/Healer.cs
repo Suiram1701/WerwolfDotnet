@@ -1,3 +1,4 @@
+using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
@@ -9,22 +10,20 @@ public sealed class Healer : RoleBase
         
     internal override Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct)
     {
-        return ctx.RequestPlayerActionAsync(new PhaseAction(ct)
+        return ctx.RequestPlayerActionAsync(new PlayerAction(ct)
         {
             Type = ActionType.HealerSelection,
             Participants = [self],
             VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.Alive && !p.Equals(LastPlayer))],
         }, (action, _) =>
         {
-            Player? playerToHeal = action.PlayerVotes[self].SingleOrDefault();
-            if (playerToHeal is not null)
-            {
-                ctx.ProtectPlayer(playerToHeal, self);
-                ctx.Logger.Log(Event.Protect, source: self, targets: [playerToHeal]);
-            }
+            LastPlayer = action.PlayerVotes[self].SingleOrDefault();
+            if (LastPlayer is null)
+                return ActionResult.Failed();
             
-            LastPlayer = playerToHeal;
-            return Task.FromResult<string[]?>(null);
+            ctx.ProtectPlayer(LastPlayer, self);
+            ctx.Logger.Log(Event.Protect, source: self, targets: [LastPlayer]);
+            return ActionResult.Success(LastPlayer);
         });
     }
 }

@@ -1,4 +1,4 @@
-namespace WerwolfDotnet;
+namespace WerwolfDotnet.Actions;
 
 public enum ActionType
 {

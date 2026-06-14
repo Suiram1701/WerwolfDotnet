@@ -1,6 +1,8 @@
+using WerwolfDotnet.Actions;
+
 namespace WerwolfDotnet.Server.Models;
 
-public class SelectionOptionsDto(PhaseAction action, Player self)
+public class SelectionOptionsDto(PlayerAction action, Player self)
 {
     /// <summary>
     /// The name of this action (localizer key)

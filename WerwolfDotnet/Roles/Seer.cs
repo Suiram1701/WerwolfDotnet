@@ -1,3 +1,4 @@
+using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
@@ -12,7 +13,7 @@ public class Seer : RoleBase
     
     internal override async Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct)
     {
-        await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
+        await ctx.RequestPlayerActionAsync(new PlayerAction(ct)
         {
             Type = ActionType,
             Participants = [self],
@@ -21,14 +22,13 @@ public class Seer : RoleBase
         }, (action, _) =>
         {
             if (action.GetMostVotedPlayer() is not { } selectedOne)
-                return Task.FromResult<string[]?>(null);
+                return ActionResult.Failed();
             
-
             Role playerRole = selectedOne.Role!.Type;
             ctx.Logger.Log(Event.SawRole, self, selectedOne, playerRole);
             _watchedPlayers[selectedOne] = ctx.GameOptions!.SeerSeesRole ? playerRole : (playerRole > 0 ? Role.Villager : Role.Werwolf);
             
-            return Task.FromResult<string[]?>([selectedOne.Name, _watchedPlayers[selectedOne].ToString()]);
+            return ActionResult.Success(selectedOne, _watchedPlayers[selectedOne]);
         });
         
         await base.OnNightAsync(ctx, self, ct);

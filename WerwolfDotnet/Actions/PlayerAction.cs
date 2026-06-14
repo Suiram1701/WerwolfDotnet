@@ -1,12 +1,12 @@
 using System.Diagnostics;
 
-namespace WerwolfDotnet;
+namespace WerwolfDotnet.Actions;
 
 /// <summary>
 /// Represents a current 
 /// </summary>
 [DebuggerDisplay($"Type = {{{nameof(Type)}}}, Votes = {{{nameof(PlayerVotes)}.Count}} / {{{nameof(Participants)}.Count}}")]
-public sealed class PhaseAction(CancellationToken ct)
+public sealed class PlayerAction(CancellationToken ct)
 {
     /// <summary>
     /// The name of this action (localizer key)
@@ -49,7 +49,7 @@ public sealed class PhaseAction(CancellationToken ct)
     
     internal CancellationToken OrgCancellationToken => ct;
     
-    public event Action<PhaseAction, CancellationToken>? OnCompleted;
+    public event Action<PlayerAction, CancellationToken>? OnCompleted;
     
     public bool RegisterVote(Player self, Player[] selection)
     {

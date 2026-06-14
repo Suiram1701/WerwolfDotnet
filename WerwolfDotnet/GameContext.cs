@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 using WerwolfDotnet.Roles;
 
@@ -47,10 +48,10 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// </summary>
     public GameState State { get; private set; } = GameState.NotInitialized;
 
-    public PhaseAction? RunningAction { get; private set; }
+    public PlayerAction? RunningAction { get; private set; }
 
-    public IEnumerable<PhaseAction> PreviousActions => _previousActions;
-    private readonly Stack<PhaseAction> _previousActions = [];
+    public IEnumerable<PlayerAction> PreviousActions => _previousActions;
+    private readonly Stack<PlayerAction> _previousActions = [];
     
     /// <summary>
     /// The logger used for the entire session.
@@ -76,13 +77,13 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// <summary>
     /// Invoked when one or more players are requested to take action. 
     /// </summary> 
-    public event Action<GameContext, PhaseAction>? OnPhaseAction;
+    public event Action<GameContext, PlayerAction>? OnPhaseAction;
 
     /// <summary>
     /// Invoked when a startet phase action completed. The last param are parameters passed for displaying a result.
     /// When <c>null</c> nothing should be shown.
     /// </summary>
-    public event Action<GameContext, PhaseAction, string[]?>? OnPhaseActionCompleted;
+    public event Action<GameContext, PlayerAction, ActionResult>? OnPlayerActionCompleted;
 
     /// <summary>
     /// Invoked when one of the fractions has won the game. First bool is whether the village won the game.
@@ -274,7 +275,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// <param name="action"></param>
     /// <param name="completedCallback">Gets invoked when the action finished (or was canceled).</param>
     /// <returns>A tasks which waits until every player made a decision.</returns>
-    internal async Task RequestPlayerActionAsync(PhaseAction action, Func<PhaseAction, CancellationToken, Task<string[]?>> completedCallback)
+    internal async Task RequestPlayerActionAsync(PlayerAction action, Func<PlayerAction, CancellationToken, ActionResult> completedCallback)
     {
         TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         await using CancellationTokenRegistration ctr = action.CancellationToken.Register(_ => tcs.SetCanceled(action.CancellationToken), null);
@@ -295,16 +296,16 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         }
         finally
         {
-            string[]? result = null;
+            ActionResult result = ActionResult.Failed();
             try
             {
                 Logger.Log(Event.Voting, args: [action.Type, ..action.PlayerVotes.ToArray()]);
-                result = await completedCallback(action, action.CancellationToken);
+                result = completedCallback(action, action.CancellationToken);
             }
             finally
             {
                 // Frontend can (should) assume that every phase action is ended properly.
-                OnPhaseActionCompleted?.Invoke(this, action, result);
+                OnPlayerActionCompleted?.Invoke(this, action, result);
                 _previousActions.Push(action);
                 RunningAction = null;
             }

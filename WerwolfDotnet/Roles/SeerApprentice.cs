@@ -1,3 +1,4 @@
+using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;

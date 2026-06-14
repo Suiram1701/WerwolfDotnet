@@ -1,3 +1,4 @@
+using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
@@ -16,7 +17,7 @@ public sealed class Urwolf : Werwolf
         }
 
         Player? werwolfSelected = ctx.PreviousActions.First(action => action.Type == ActionType.WerwolfSelection).GetMostVotedPlayer();
-        await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
+        await ctx.RequestPlayerActionAsync(new PlayerAction(ct)
         {
             Type = ActionType.UrwolfSelection,
             Minimum = 0,
@@ -26,7 +27,7 @@ public sealed class Urwolf : Werwolf
         }, (action, _) =>
         {
             if (action.PlayerVotes[self].FirstOrDefault() is not { } selectedOne)
-                return Task.FromResult<string[]?>(null);
+                return ActionResult.Success();
             
             if (selectedOne.Role is VillageMattress { LastSleepover: not null })
             {
@@ -43,7 +44,7 @@ public sealed class Urwolf : Werwolf
             }
             
             Done = true;
-            return Task.FromResult<string[]?>([selectedOne.Name]);
+            return ActionResult.Success(selectedOne);
         });
         await base.OnNightAsync(ctx, self, ct);
     }

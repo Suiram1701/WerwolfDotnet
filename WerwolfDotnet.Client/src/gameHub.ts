@@ -162,7 +162,7 @@ export class GameHub {
     }
 
     private onActionCompleted(parameters: string[] | null): void {
-        if (parameters !== null) {
+        if (parameters !== null && actionCompletions[this.gamePage.currentAction!.type ?? 0] !== undefined) {
             this.modal.show({
                 title: actionNames[this.gamePage.currentAction!.type ?? 0] || "undefined",
                 contentText: actionCompletions[this.gamePage.currentAction!.type ?? 0]?.(parameters) || "Wenn du dies siehst ist etwas schiefgelaufen...",

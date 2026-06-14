@@ -186,7 +186,7 @@
 
     <div class="flex-grow-1"></div>
 
-    <div class="d-flex main-content mb-3">
+    <div class="d-flex main-content m-3">
         <button class="btn btn-secondary w-100" type="button" onclick={() => {
             modalProvider.show({
                 title: canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen (nur ansehen)",

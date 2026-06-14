@@ -1,3 +1,4 @@
+using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
@@ -15,7 +16,7 @@ public sealed class Amor : RoleBase
             return;
         }
 
-        await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
+        await ctx.RequestPlayerActionAsync(new PlayerAction(ct)
         {
             Type = ActionType.AmorSelection,
             Minimum = 2,
@@ -26,13 +27,13 @@ public sealed class Amor : RoleBase
         {
             Player[] votes = action.PlayerVotes[self];
             if (votes.Length != 2)
-                return Task.FromResult<string[]?>(null);
+                return ActionResult.Failed();
             
             ctx.PlayersFallInLove(votes[0], votes[1]);
             ctx.Logger.Log(Event.FallInLove, source: self, targets: [votes[0], votes[1]]);
             
             Done = true;
-            return Task.FromResult<string[]?>(null);
+            return ActionResult.Success();
         });
         await base.OnNightAsync(ctx, self, ct);
     }

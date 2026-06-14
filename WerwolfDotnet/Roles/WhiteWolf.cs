@@ -1,3 +1,4 @@
+using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
@@ -14,7 +15,7 @@ public sealed class WhiteWolf : Werwolf
         }
         
         Player? werwolfSelected = ctx.PreviousActions.First(action => action.Type == ActionType.WerwolfSelection).GetMostVotedPlayer();
-        await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
+        await ctx.RequestPlayerActionAsync(new PlayerAction(ct)
         {
             Type = ActionType.WhiteWolfSelection,
             Minimum = 0,
@@ -25,16 +26,16 @@ public sealed class WhiteWolf : Werwolf
         }, (action, _) =>
         {
             if (action.PlayerVotes[self].FirstOrDefault() is not { } selectedOne)
-                return Task.FromResult<string[]?>(null);
+                return ActionResult.Success();
             
             if (ctx.WerwolfProtectedPlayers.TryGetValue(selectedOne, out Player? savedBy))
             {
                 ctx.Logger.Log(Event.SuccessfullyProtected, source: savedBy, target: selectedOne);
-                return Task.FromResult<string[]?>(null);
+                return ActionResult.Success(selectedOne);
             }
                         
             selectedOne.Kill(CauseOfDeath.WhiteWolfKill, self);
-            return Task.FromResult<string[]?>(null);
+            return ActionResult.Success(selectedOne);
         });
         await base.OnNightAsync(ctx, self, ct);
     }

@@ -1,3 +1,5 @@
+using WerwolfDotnet.Actions;
+
 namespace WerwolfDotnet.Roles;
 
 [Role(Role.Witch)]
@@ -12,7 +14,7 @@ public sealed class Witch : RoleBase
         if (CanHeal)
         {
             // Healing
-            await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
+            await ctx.RequestPlayerActionAsync(new PlayerAction(ct)
             {
                 Type = ActionType.WitchHealSelection,
                 Minimum = 0,
@@ -21,19 +23,19 @@ public sealed class Witch : RoleBase
                 VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.PendingDeath && !ctx.WerwolfProtectedPlayers.ContainsKey(p))]
             }, (action, _) =>
             {
-                if (action.PlayerVotes[self].SingleOrDefault() is { } playerToHeal)
-                {
-                    playerToHeal.Revive(self);
-                    CanHeal = false;
-                }
-                return Task.FromResult<string[]?>(null);
+                if (action.PlayerVotes[self].SingleOrDefault() is not { } playerToHeal)
+                    return ActionResult.Success();
+                
+                playerToHeal.Revive(self);
+                CanHeal = false;
+                return ActionResult.Success(playerToHeal);
             });
         }
 
         if (CanKill)
         {
             // Killing
-            await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
+            await ctx.RequestPlayerActionAsync(new PlayerAction(ct)
             {
                 Type = ActionType.WitchKillSelection,
                 Minimum = 0,
@@ -43,12 +45,12 @@ public sealed class Witch : RoleBase
                 VotablePlayers = [..ctx.Players.Where(p => p.IsAlive)]
             }, (action, _) =>
             {
-                if (action.PlayerVotes[self].SingleOrDefault() is { } playerToKill)
-                {
-                    playerToKill.Kill(CauseOfDeath.WitchPoisoning, self);
-                    CanKill = false;
-                }
-                return Task.FromResult<string[]?>(null);
+                if (action.PlayerVotes[self].SingleOrDefault() is not { } playerToKill)
+                    return ActionResult.Success();
+                
+                playerToKill.Kill(CauseOfDeath.WitchPoisoning, self);
+                CanKill = false;
+                return ActionResult.Success(playerToKill);
             });
         }
         

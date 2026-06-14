@@ -1,3 +1,4 @@
+using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 
 namespace WerwolfDotnet.Roles;
@@ -9,7 +10,7 @@ public sealed class VillageMattress : RoleBase
 
     internal override async Task OnNightAsync(GameContext ctx, Player self, CancellationToken ct)
     {
-        await ctx.RequestPlayerActionAsync(new PhaseAction(ct)
+        await ctx.RequestPlayerActionAsync(new PlayerAction(ct)
         {
             Type = ActionType.VillageMattressSelection,
             Participants = [self],
@@ -18,13 +19,12 @@ public sealed class VillageMattress : RoleBase
         }, (action, _) =>
         {
             LastSleepover = action.PlayerVotes[self].FirstOrDefault();
-            if (LastSleepover is not null)
-            {
-                ctx.ProtectPlayer(self, self);
-                ctx.Logger.Log(Event.SleepOver, source: self, target: LastSleepover);
-            }
+            if (LastSleepover is null)
+                return ActionResult.Failed();
             
-            return Task.FromResult<string[]?>(null);
+            ctx.ProtectPlayer(self, self);
+            ctx.Logger.Log(Event.SleepOver, source: self, target: LastSleepover);
+            return ActionResult.Success(LastSleepover);
         });
         await base.OnNightAsync(ctx, self, ct);
     }

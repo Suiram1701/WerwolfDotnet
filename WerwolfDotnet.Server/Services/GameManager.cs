@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
+using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 using WerwolfDotnet.Roles;
 using WerwolfDotnet.Server.Hubs;
@@ -78,7 +79,7 @@ public class GameManager(
         context.OnGameMetadataChanged += OnGameMetadataChangedAsync;
         context.OnGameStateChanged += OnGameStateChangedAsync;
         context.OnPhaseAction += OnPhaseActionAsync;
-        context.OnPhaseActionCompleted += OnPhaseActionCompletedAsync;
+        context.OnPlayerActionCompleted += OnPlayerActionCompletedAsync;
         context.OnGameWon += OnGameWonAsync;
 
         await _sessionStore.AddAsync(context);
@@ -161,7 +162,7 @@ public class GameManager(
             ctx.OnGameMetadataChanged -= OnGameMetadataChangedAsync;
             ctx.OnGameStateChanged -= OnGameStateChangedAsync;
             ctx.OnPhaseAction -= OnPhaseActionAsync;
-            ctx.OnPhaseActionCompleted -= OnPhaseActionCompletedAsync;
+            ctx.OnPlayerActionCompleted -= OnPlayerActionCompletedAsync;
             ctx.OnGameWon -= OnGameWonAsync;
         
             await _sessionStore.RemoveAsync(ctx).ConfigureAwait(false);
@@ -369,7 +370,7 @@ public class GameManager(
         { _logger.LogError(ex, ex.Message); }
     }
 
-    private async void OnPhaseActionAsync(GameContext ctx, PhaseAction action)
+    private async void OnPhaseActionAsync(GameContext ctx, PlayerAction action)
     {
         try
         {
@@ -380,12 +381,17 @@ public class GameManager(
         { _logger.LogError(ex, ex.Message); }
     }
 
-    private async void OnPhaseActionCompletedAsync(GameContext ctx, PhaseAction action, string[]? parameters)
+    private async void OnPlayerActionCompletedAsync(GameContext ctx, PlayerAction action, ActionResult result)
     {
         try
         {
-            await _hubContext.Clients.Players(ctx.Id, action.Participants.Select(p => p.Id))
-                .PlayerActionCompleted(parameters);
+            string[] formatters = result.Results.Select(obj => obj switch
+            {
+                Player p => p.Name,
+                Enum => ((int)obj).ToString(),
+                _ => throw new ArgumentException($"Argument type {obj.GetType()} isn't supported!", nameof(obj))     // Make sure not return not reviewed objects
+            }).ToArray();
+            await _hubContext.Clients.Players(ctx.Id, action.Participants.Select(p => p.Id)).PlayerActionCompleted(formatters);
 
             if (!action.PlayerVotes.Values.Any(l => l.Length > 0))
                 return;
