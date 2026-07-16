@@ -41,7 +41,7 @@ public sealed class SessionCleanupService(
                 if (Options.AfterInactivity < DateTimeOffset.UtcNow - ctx.Logger.Messages[^1].Time)
                     await removeSession(ctx);
                 if (ctx.Players.Count == 1 && Options.AfterEmptySession < DateTimeOffset.UtcNow - (ctx.Logger.Messages
-                        .LastOrDefault(msg => msg.Event == Event.Left)?.Time ?? DateTimeOffset.MinValue))
+                        .LastOrDefault(msg => msg.Event == Event.Left)?.Time ?? ctx.Logger.Messages[^1].Time))
                     await removeSession(ctx);
             }
         }

@@ -186,8 +186,8 @@
 
     <div class="flex-grow-1"></div>
 
-    <div class="d-flex main-content m-3">
-        <button class="btn btn-secondary w-100" type="button" onclick={() => {
+    <div class="small-vp d-flex main-content mt-3">
+        <button class="btn btn-secondary d-flex align-items-center justify-content-center w-100" type="button" onclick={() => {
             modalProvider.show({
                 title: canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen (nur ansehen)",
                 content: gameOptionsModalContent,
@@ -195,9 +195,12 @@
                 canDismiss: false,
                 closeOnConfirm: true
             });
-        }}>{canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}</button>
+        }}>
+            <span class="material-symbols-outlined me-2">settings</span>
+            {canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}
+        </button>
 
-        <button class="btn btn-secondary w-100 ms-2" type="button" onclick={() => {
+        <button class="btn btn-secondary d-flex align-items-center justify-content-center w-100 ms-2" type="button" onclick={() => {
             apiClient.api.gameSessionsLogsDetail($game.gameId)
                 .then(response => fetchedGameLogs = response.data)
                 .catch(error => console.error(error));
@@ -208,12 +211,15 @@
                 canDismiss: false,
                 closeOnConfirm: true
             });
-        }}>Spiel-Logs ansehen</button>
+        }}>
+            <span class="material-symbols-outlined me-2">manage_search</span>
+            Spiel-Logs ansehen
+        </button>
     </div>
     
     <!-- Admin buttons -->
     {#if $game.selfId === $game.gameMeta?.gameMaster && ($game.gameState ?? -2) <= 0}
-        <div class="d-flex main-content mb-3">
+        <div class="d-flex main-content mt-3">
             {#if enoughPlayers && everyOneReady}
                 <button class="btn btn-primary w-100" type="button" onclick={async () => await gameHub.startGame()}>Spiel starten</button>
             {:else}
@@ -234,7 +240,7 @@
         </div>
     {/if}
     
-    <div class="d-flex main-content mb-3">
+    <div class="d-flex main-content m-3">
         <!-- Leave button -->
         <button class="btn btn-danger w-100" type="button" onclick={() => {
             modalProvider.show({
@@ -287,12 +293,35 @@
     </div>
 </div>
 
+<div class="header-fixed large-vp d-flex">
+    <button class="btn btn-secondary d-flex align-items-center me-2" type="button" use:tooltip={{title: canEditSettings
+            ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}} onclick={() => modalProvider.show({
+        title: canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen (nur ansehen)",
+        content: gameOptionsModalContent,
+        confirmText: "Schließen",
+        canDismiss: false,
+        closeOnConfirm: true
+    })}><span class="material-symbols-outlined">settings</span></button>
+    <button class="btn btn-secondary d-flex align-items-center" type="button" use:tooltip={{title: "Logs Ein-/Ausblenden"}}
+            onclick={() => document.getElementById('logSidePanel')!.classList.toggle('is-hidden')}>
+        <span class="material-symbols-outlined">manage_search</span>
+    </button>
+</div>
+<aside id="logSidePanel" class="log-panel-fixed large-vp bg-dark-subtle overflow-auto overflow-x-auto text-nowrap p-2 is-hidden">
+    {#each fetchedGameLogs as message}
+        <p>{renderMessage(message)}</p>
+    {/each}
+</aside>
+
 <style>
     @media (max-width: 576px) {
         .main-content {
             width: 100%;
             max-width: 100vw;
         }
+
+        .large-vp { visibility: hidden; }
+        .small-vp { visibility: visible; }
     }
 
     @media (min-width: 576px) and (max-width: 1200px) {
@@ -300,6 +329,9 @@
             width: 100%;
             max-width: 35rem;
         }
+
+        .large-vp { visibility: hidden; }
+        .small-vp { visibility: visible; }
     }
 
     @media (min-width: 1200px) {
@@ -307,5 +339,32 @@
             width: 100%;
             max-width: 45rem;
         }
+
+        .large-vp { visibility: visible; }
+        .small-vp { visibility: hidden; }
     }
+    
+    .header-fixed {
+        position: fixed;
+        top: 10px;
+        right: 20px;
+    }
+
+    .log-panel-fixed {
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        bottom: 20px;
+        width: 360px;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+
+        transition: transform 0.3s ease;
+        transform: translateX(0);
+    }
+
+    .log-panel-fixed.is-hidden {
+        transform: translateX(calc(100% + 40px)); /* 100% Breite + Abstand rechts + Abstand zum Rand */
+    }
+
 </style>
