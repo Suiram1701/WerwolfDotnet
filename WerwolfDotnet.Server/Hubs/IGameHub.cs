@@ -9,6 +9,9 @@ public interface IGameHub
 {
     [HubMethodName("onGameMetaUpdated")]
     public Task GameMetaUpdated(int gameMasterId, int? mayorId);
+
+    [HubMethodName("onGameLogUpdated")]
+    public Task GameLogUpdated(LogMessageDto[] dtos);
     
     /// <remarks>
     /// NOTE: Do not use directly as soon as the game started!

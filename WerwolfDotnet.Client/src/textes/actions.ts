@@ -1,4 +1,4 @@
-import {ActionType, Role} from "../Api";
+import { ActionType, Role } from "../Api";
 import { roleNames } from "./roles";
 
 export const actionNames: Readonly<Record<ActionType, string>> = {

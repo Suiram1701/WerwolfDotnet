@@ -10,7 +10,7 @@ const eventMessages: Readonly<Record<Event, (args: any[]) => string>> = {
     [Event.GameStarted]: args => "Spielt gestartet",
     [Event.GameStopped]: args => "Spiel gestoppt",
     [Event.GameWon]: args => `Spiel zu Ende, die ${fractions[args[0] as Fraction]}. Gewonnen haben ` + args.slice(1).join(', '),
-    [Event.Voting]: args => `Ergebnisse von "${actionNames[args[0] as ActionType]}": ${args.slice(1).join('; ')}`,
+    [Event.Voting]: args => `${actionNames[args[0] as ActionType]}(Auswahl): ${args.slice(1).join('; ')}`,
     [Event.Killed]: args => args[0] !== null ? `${args[0]} hat ${args[1]} getötet` : `${args[1]} ist gestorben`,
     [Event.Healed]: args => `${args[1]} wurde von ${args[0]} geheilt`,
     [Event.SawRole]: args => `${args[0]} hat die Rolle von ${args[1]} gesehen`,

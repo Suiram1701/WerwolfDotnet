@@ -25,7 +25,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
         await Clients.Caller.GameMetaUpdated(ctx.GameMaster.Id, ctx.Mayor?.Id);
         await Clients.Caller.GameStateUpdated(ctx.State, new Dictionary<int, DeathDetails>(0), null);
         if (ctx.State <= 0)     // Only relevant when game isn't running
-            await Clients.Game(ctx.Id).PlayerReadyStateUpdated(await _manager.GetGameReadyStatesAsync(ctx));
+            await Clients.Caller.PlayerReadyStateUpdated(await _manager.GetGameReadyStatesAsync(ctx));
         await _manager.UpdatePlayersAsync(ctx, player);
         await _manager.UpdatePlayerRoleAsync(ctx, player);
 
@@ -41,6 +41,8 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
                 await Clients.Caller.VotesUpdated(votedPlayers);
             }
         }
+
+        await _manager.UpdateFullGameLogAsync(ctx, player);
         
         await base.OnConnectedAsync();
     }
@@ -55,43 +57,43 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     }
 
     [HubMethodName("setPlayerReadyState")]
-    public async Task OnSetPlayerReadyState(bool isReady)
+    public async Task<bool> OnSetPlayerReadyState(bool isReady)
     {
         GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
         Player player = ctx.Players.Single(p => p.Id == Context.User!.GetPlayerId());
 
-        await _manager.SetPlayerReadyStateAsync(ctx, player, isReady);
+        return await _manager.SetPlayerReadyStateAsync(ctx, player, isReady);
     }
     
     [HubMethodName("setGameLocked")]
-    public async Task OnSetGameLocked(bool locked)
+    public async Task<bool> OnSetGameLocked(bool locked)
     {
         GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
         if (!CheckGameMaster(ctx, "toggle game lock"))
-            return;
+            return false;
 
-        await _manager.SetGameLockedAsync(ctx, locked);
+        return await _manager.SetGameLockedAsync(ctx, locked);
     }
 
     [HubMethodName("shufflePlayers")]
-    public async Task OnShufflePlayers()
+    public async Task<bool> OnShufflePlayers()
     {
         GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
         if (!CheckGameMaster(ctx, "shuffle players"))
-            return;
+            return false;
 
-        await _manager.ShuffelPlayersAsync(ctx);
+        return await _manager.ShuffelPlayersAsync(ctx);
     }
 
     [HubMethodName("startGame")]
-    public async Task OnStartGame()
+    public async Task<bool> OnStartGame()
     {
         GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
         if (!CheckGameMaster(ctx, "start game"))
-            return;
+            return false;
 
         GameOptionsDto optionsDto = (await _settingsStore.GetAsync(ctx.Id))!;
-        await _manager.StartGameAsync(ctx, optionsDto.ToOptions());
+        return await _manager.StartGameAsync(ctx, optionsDto.ToOptions());
     }
 
     [HubMethodName("playerAction")]

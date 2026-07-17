@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { GameState, type PlayerDto, PlayerRelation, type Role, type SelectionOptionsDto } from "../Api";
+import { GameState, type LogMessageDto, type PlayerDto, PlayerRelation, type Role, type SelectionOptionsDto } from "../Api";
 
 export interface GamePageState {
     gameId: number;
@@ -16,6 +16,8 @@ export interface GamePageState {
     selectedPlayers: number[];
     playerToVotes: Record<number, number[]>;
     emptyVotedPlayers: number[];
+
+    gameLogs: LogMessageDto[];
 }
 
 export const gamePageState = writable<GamePageState>({
@@ -33,4 +35,6 @@ export const gamePageState = writable<GamePageState>({
     selectedPlayers: [],
     playerToVotes: [],
     emptyVotedPlayers: [],
+
+    gameLogs: []
 });

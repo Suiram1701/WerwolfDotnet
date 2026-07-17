@@ -1,12 +1,12 @@
-import { goto } from "$app/navigation";
-import { type SelectionOptionsDto, GameState, Role, CauseOfDeath, PlayerRelation, Fraction, type PlayerDto } from "./Api";
-import { gamePageState, type GamePageState} from "./stores/pageStateStore";
-import { removePlayerToken } from "./stores/gameSessionStore";
-import { HubConnection } from "@microsoft/signalr"
-import { actionCompletions, actionNames } from "./textes/actions";
-import { fractions, fractionWin } from "./textes/fractions";
-import { causeOfDeathTemplates } from "./textes/causeOfDeaths";
-import { roleNames } from "./textes/roles";
+import {goto} from "$app/navigation";
+import { CauseOfDeath, Fraction, GameState, type LogMessageDto, type PlayerDto, PlayerRelation, Role, type SelectionOptionsDto } from "./Api";
+import {gamePageState, type GamePageState} from "./stores/pageStateStore";
+import {removePlayerToken} from "./stores/gameSessionStore";
+import {HubConnection} from "@microsoft/signalr"
+import {actionCompletions, actionNames} from "./textes/actions";
+import {fractions, fractionWin} from "./textes/fractions";
+import {causeOfDeathTemplates} from "./textes/causeOfDeaths";
+import {roleNames} from "./textes/roles";
 import ModalProvider from "$lib/components/ModalProvider.svelte";
 
 export class GameHub {
@@ -66,6 +66,16 @@ export class GameHub {
             return state;
         });
     }
+    
+    private onGameLogUpdated(messages: LogMessageDto[]): void {
+        gamePageState.update(state => {
+            state.gameLogs = state.gameLogs.concat(messages)
+                // @ts-ignore
+                .sort((a, b) => new Date(a.timeStamp!) - new Date(b.timeStamp!))
+                .filter((v, i, array) => array.indexOf(v) === i);     // Distinct
+            return state;
+        });
+    }
 
     private onPlayersUpdated(updatedPlayers: PlayerDto[]): void {
         gamePageState.update(state => {
@@ -84,7 +94,7 @@ export class GameHub {
         });
     }
 
-    private onGameStateUpdated(newState: GameState, diedPlayers: Record<number, DeathDetails>, bearGrowls: boolean | null): void {
+    private async onGameStateUpdated(newState: GameState, diedPlayers: Record<number, DeathDetails>, bearGrowls: boolean | null): Promise<void> {
         if ((this.gamePage.gameState ?? 0) > 0 && newState <= 0) {
             window.location.reload();     // Reset the whole frontend. In my opinion is the risk to break something with a manuell reset.
             return;
@@ -106,8 +116,7 @@ export class GameHub {
             return state;
         });
 
-        if (this.gamePage.selfId! in diedPlayers)
-        {
+        if (this.gamePage.selfId! in diedPlayers) {
             this.modal.show({ title: "Du bist gestorben", contentText: "Du bist gestorben. Ab sofort kannst du dem Spiel nur noch zuschauen.", canDismiss: false });
             return;
         }
@@ -202,8 +211,7 @@ export class GameHub {
     }
 
     private buildDeathString(diedPlayers: Record<number, DeathDetails>): string {
-        if (Object.keys(diedPlayers).length > 0)
-        {
+        if (Object.keys(diedPlayers).length > 0) {
             let diedStr: string = "";
             let mapped: Partial<Record<CauseOfDeath, number[]>> = {};
             for (const player in diedPlayers) {
@@ -214,18 +222,15 @@ export class GameHub {
                     mapped[cause] = [Number(player)];
             }
 
-            for (const cause of Object.keys(CauseOfDeath).map(k => Number(k) as CauseOfDeath))
-            {
+            for (const cause of Object.keys(CauseOfDeath).map(k => Number(k) as CauseOfDeath)) {
                 const diedFromCause: number[] = mapped[cause] ?? [];
                 if (diedFromCause.length > 0)
                     diedStr += `${causeOfDeathTemplates[cause](mapped[cause]!.map(id => this.gamePage.players.find(p => p.id! === id)!.name!) ?? [])} `;
 
-                if (diedFromCause.length === 1 && diedPlayers[diedFromCause[0]]?.role !== Role.None)
-                {
+                if (diedFromCause.length === 1 && diedPlayers[diedFromCause[0]]?.role !== Role.None) {
                     diedStr += `Er war <b>${roleNames[diedPlayers[diedFromCause[0]].role]}</b>. `;
                 }
-                else if (diedFromCause.filter(id => diedPlayers[id].role !== Role.None).length > 1)
-                {
+                else if (diedFromCause.filter(id => diedPlayers[id].role !== Role.None).length > 1) {
                     diedStr += diedFromCause
                         .filter(id => diedPlayers[id].role !== Role.None)
                         .map(playerId => `<b>${this.gamePage.players.find(p => p.id === playerId)!.name}</b> war <b>${roleNames[diedPlayers[playerId].role]}</b>`)

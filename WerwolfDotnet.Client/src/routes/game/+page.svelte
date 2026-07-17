@@ -31,7 +31,6 @@
     config.retrieveConfigAsync(apiClient);
 
     let showAllPlayers = $state(false);
-    let fetchedGameLogs: LogMessageDto[] = $state([]);
     
     let enoughPlayers = $derived($game.players.length >= (config.getClientConfig()?.minimumPlayers ?? 0));
     let everyOneReady = $derived(config.getClientConfig()?.canStartWhenNotReady || $game.playersReady.length === $game.players.length);
@@ -83,8 +82,8 @@
 {/snippet}
 
 {#snippet gameLogsModalContent()}
-    <div class="overflow-auto overflow-x-auto text-nowrap">
-        {#each fetchedGameLogs as message}
+    <div class="overflow-auto">
+        {#each $game.gameLogs as message}
             <p>{renderMessage(message)}</p>
         {/each}
     </div>
@@ -200,18 +199,13 @@
             {canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}
         </button>
 
-        <button class="btn btn-secondary d-flex align-items-center justify-content-center w-100 ms-2" type="button" onclick={() => {
-            apiClient.api.gameSessionsLogsDetail($game.gameId)
-                .then(response => fetchedGameLogs = response.data)
-                .catch(error => console.error(error));
-            modalProvider.show({
-                title: "Spiel-Log",
-                content: gameLogsModalContent,
-                confirmText: "Schließen",
-                canDismiss: false,
-                closeOnConfirm: true
-            });
-        }}>
+        <button class="btn btn-secondary d-flex align-items-center justify-content-center w-100 ms-2" type="button" onclick={() => modalProvider.show({
+            title: "Spiel-Log",
+            content: gameLogsModalContent,
+            confirmText: "Schließen",
+            canDismiss: false,
+            closeOnConfirm: true
+        })}>
             <span class="material-symbols-outlined me-2">manage_search</span>
             Spiel-Logs ansehen
         </button>
@@ -307,8 +301,8 @@
         <span class="material-symbols-outlined">manage_search</span>
     </button>
 </div>
-<aside id="logSidePanel" class="log-panel-fixed large-vp bg-dark-subtle overflow-auto overflow-x-auto text-nowrap p-2 is-hidden">
-    {#each fetchedGameLogs as message}
+<aside id="logSidePanel" class="log-panel-fixed large-vp bg-dark-subtle overflow-auto p-2 is-hidden">
+    {#each $game.gameLogs as message}
         <p>{renderMessage(message)}</p>
     {/each}
 </aside>
