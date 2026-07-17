@@ -22,19 +22,15 @@ export function getPlayerTokens(): GameSession[] {
     return JSON.parse(localStorage.getItem(storageKey) ?? "[]");
 }
 
-export function getPlayerToken(sessionId: number, playerId: number): string | undefined {
+export function getPlayerToken(sessionId: number, playerId?: number): GameSession | undefined {
     const sessions: GameSession[] = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-    const session: GameSession | undefined = sessions.find(game => game.sessionId === sessionId && game.playerId === playerId);
-    return session?.playerToken;
+    return sessions.find(game => game.sessionId === sessionId && (playerId !== undefined ? game.playerId === playerId : true));
 }
 
-export function removePlayerToken(sessionId: number, playerId: number): boolean {
+export function removePlayerToken(sessionId: number, playerId?: number): boolean {
     let sessions: GameSession[] = JSON.parse(localStorage.getItem(storageKey) ?? "[]");
-    const session: GameSession | undefined = sessions.find(game => game.sessionId === sessionId && game.playerId === playerId);
-    if (session === undefined)
-        return false;
+    sessions = sessions.filter(game => !(game.sessionId === sessionId && (playerId !== undefined ? game.playerId === playerId : true)));
     
-    sessions.splice(sessions.indexOf(session), 1);
     localStorage.setItem(storageKey, JSON.stringify(sessions));
     return true;
 }

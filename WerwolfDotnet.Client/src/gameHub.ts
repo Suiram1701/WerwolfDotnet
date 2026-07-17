@@ -1,12 +1,13 @@
-import {goto} from "$app/navigation";
+import { goto } from "$app/navigation";
 import { CauseOfDeath, Fraction, GameState, type LogMessageDto, type PlayerDto, PlayerRelation, Role, type SelectionOptionsDto } from "./Api";
-import {gamePageState, type GamePageState} from "./stores/pageStateStore";
-import {removePlayerToken} from "./stores/gameSessionStore";
-import {HubConnection} from "@microsoft/signalr"
-import {actionCompletions, actionNames} from "./textes/actions";
-import {fractions, fractionWin} from "./textes/fractions";
-import {causeOfDeathTemplates} from "./textes/causeOfDeaths";
-import {roleNames} from "./textes/roles";
+import { gamePageState, type GamePageState } from "./stores/pageStateStore";
+import { removePlayerToken } from "./stores/gameSessionStore";
+import { HubConnection } from "@microsoft/signalr"
+import { actionCompletions, actionNames } from "./textes/actions";
+import { fractions, fractionWin } from "./textes/fractions";
+import { causeOfDeathTemplates } from "./textes/causeOfDeaths";
+import { roleNames } from "./textes/roles";
+import { default as routes } from "./routes/routes";
 import ModalProvider from "$lib/components/ModalProvider.svelte";
 
 export class GameHub {
@@ -204,10 +205,7 @@ export class GameHub {
         await this.connection.stop();
         removePlayerToken(this.gamePage.gameId, this.gamePage.selfId);
         
-        if (kicked)
-            goto("/?kicked=true");
-        else
-            goto("/");
+        goto(routes.menu(kicked))
     }
 
     private buildDeathString(diedPlayers: Record<number, DeathDetails>): string {

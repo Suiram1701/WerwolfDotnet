@@ -5,7 +5,8 @@
     import { type Readable } from "svelte/store";
     import { config } from "../config";
     import { Api, type HttpResponse, type GameDto, type JoinGameDto, type JoinedGameDto} from "../Api";
-    import { getPlayerTokens, removePlayerToken, storePlayerToken } from "../stores/gameSessionStore";
+    import { getPlayerToken, getPlayerTokens, removePlayerToken, storePlayerToken } from "../stores/gameSessionStore";
+    import { default as routes } from "./routes";
     import PageTitle from "$lib/components/PageTitle.svelte"
     import GameCard from "$lib/components/GameCard.svelte";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
@@ -81,8 +82,8 @@
     }
     
     function joinGame(data: JoinedGameDto) {
-        storePlayerToken(data.game.id ?? -1, data.self.id ?? 0, data.bearerToken ?? "");
-        goto(`/game?sessionId=${data.game.id}&playerId=${data.self.id}`);
+        storePlayerToken(data.game.id!, data.self.id!, data.bearerToken!);
+        goto(routes.game(data.game.id!, data.self.id!));
     }
     
     function getPlayerNameError(): string | null {
@@ -110,6 +111,12 @@
             const urlGameId = Number.parseInt(page.url.searchParams.get("gameId")!);
             apiClient.api.gameSessionsDetail(urlGameId)
                 .then(response => {
+                    const session = getPlayerToken(response.data.id!);
+                    if (!config.allowMultipleSessions && session !== undefined) {     // When only one session is allowed, rejoin the existing one
+                        goto(routes.game(session.sessionId, session.playerId));
+                        return;
+                    }
+                    
                     if (!response.data.canJoin) {
                         if ((response.data.playerCount ?? 0) >= (response.data.maxPlayerCount ?? 0))
                             modalProvider.show({ title: "Spiel beitritt nicht möglich", contentText: "Das Spiel hat bereits die maximale Anzahl an Spielern erreicht!" });
@@ -160,11 +167,11 @@
             apiClient.api.gameSessionsDetail(session.sessionId)
                 .then(response => {
                     if (!response.ok)
-                        removePlayerToken(session.sessionId, session.playerId); 
+                        removePlayerToken(session.sessionId); 
                 })
                 .catch(error => {
                     if (error.status === 404)
-                        removePlayerToken(session.sessionId, session.playerId);
+                        removePlayerToken(session.sessionId);
                 });
         });
         return () => clearInterval(pollId);
@@ -248,12 +255,18 @@
         <div class="d-flex flex-wrap">
             {#each games as game}
                 <GameCard {game} onJoin={() => {
-                        gameId = game.id;
-                        gameIdLocked = true;
-                        password = "";
-                        passwordRequired = game.protected ?? true;
+                    const session = getPlayerToken(game.id!);
+                    if (!config.allowMultipleSessions && session !== undefined) {     // When only one session is allowed, rejoin the existing one
+                        goto(routes.game(session.sessionId, session.playerId));
+                        return;
+                    }
+                    
+                    gameId = game.id;
+                    gameIdLocked = true;
+                    password = "";
+                    passwordRequired = game.protected ?? true;
 
-                        modalProvider.show({ title: "Spiel beitreten", content: joinModalContent, confirmText: "Beitreten", onConfirm: onJoinGame });
+                    modalProvider.show({ title: "Spiel beitreten", content: joinModalContent, confirmText: "Beitreten", onConfirm: onJoinGame });
                     }} />
             {/each}
         </div>

@@ -4,9 +4,12 @@ let cachedConfig: ClientConfigDto | undefined;
 
 export const config =
 {
-    apiEndpoint: ["127.0.0.1", "::1", "localhost"].includes(window.location.hostname) ? "http://localhost:7216" : "",
+    apiEndpoint: import.meta.env.DEV ? "http://localhost:7216" : "",
     apiPollInterval: 5000,
     version: "0.4.0-dev",
+    
+    allowMultipleSessions: import.meta.env.DEV,
+    allowSessionSharing: true,
     
     getClientConfig: () => cachedConfig,
     retrieveConfigAsync: async (apiClient: Api<unknown>) => {

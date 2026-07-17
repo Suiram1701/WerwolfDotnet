@@ -16,6 +16,7 @@
     import PageTitle from "$lib/components/PageTitle.svelte";
     import PlayerList from "$lib/components/PlayerList.svelte";
     import GameSettings from "$lib/components/GameSettings.svelte";
+    import { default as routes } from "../routes";
     import { config } from "../../config";
 
     const webUrl = page.url.protocol + "//" + page.url.host;     // Port is part of the host
@@ -41,25 +42,37 @@
     let connection: HubConnection;
     let gameHub: GameHub;
     onMount(() => {
-        game.update(s => {
-            s.gameId = Number.parseInt(page.url.searchParams.get("sessionId") ?? "");
-            s.selfId = Number.parseInt(page.url.searchParams.get("playerId") ?? "");
-            return s;
-        });
+        const gameId = Number.parseInt(page.url.searchParams.get("sessionId") ?? "-1");
+        let selfId: number | undefined;
+        let playerToken: string | undefined = undefined;
         
-        let playerToken = getPlayerToken($game.gameId, $game.selfId);
-        if (page.url.hash.startsWith("#auth=")) {
+        if (config.allowSessionSharing && page.url.hash.startsWith("#auth=")) {
+            selfId = Number.parseInt(page.url.searchParams.get("playerId") ?? "-1");
             playerToken = page.url.hash.substring(6);
-            storePlayerToken($game.gameId, $game.selfId, playerToken);
-            goto(`/game?sessionId=${$game.gameId}&playerId=${$game.selfId}`);     // Remove auth secret from URL
+            
+            storePlayerToken(gameId, selfId, playerToken);
+            goto(routes.game(gameId, selfId));     // Remove auth secret from URL
         }
-        else if (playerToken === undefined) {
+        else {
+            selfId = config.allowMultipleSessions ? Number.parseInt(page.url.searchParams.get("playerId") ?? "-1") : undefined;
+            const gameSession = getPlayerToken(gameId, selfId);
+            playerToken = gameSession?.playerToken;
+            selfId = gameSession?.playerId;
+        }
+        
+        if (playerToken === undefined) {
             if ($game.gameId > 0)
-                goto(`/?gameId=${$game.gameId}`);
+                goto(routes.menuJoin(gameId));
             else
-                goto("/");
+                goto(routes.menu());
             return;
         }
+        
+        game.update(s => {
+            s.gameId = gameId;
+            s.selfId = selfId!;
+            return s;
+        });
         
         apiClient.setSecurityData({ token: playerToken });
         connection = new HubConnectionBuilder()
@@ -71,7 +84,7 @@
             .then(() => gameHub = new GameHub(connection, modalProvider))
             .catch(err => {
                 console.log("An error occurred while trying to connect to the game API!", err)
-                goto("/");
+                goto(routes.menu());
             });
         return () => connection.stop();
     });
@@ -115,7 +128,7 @@
         <p>{actionDescriptions[$game.currentAction.type ?? 0] || "Dies solltest du eigentlich nicht sehen :)"}</p>
     {:else if $game.gameState === GameState.Preparation}
         <p>Andere Spieler können beitreten, indem sie auf die Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{$game.gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
-        <p>Direktes Beitreten ist auch über <a href="{webUrl}?gameId={$game.gameId}">diesen Link</a> möglich.</p>
+        <p>Direktes Beitreten ist auch über <a href="{webUrl}{routes.menuJoin($game.gameId)}">diesen Link</a> möglich.</p>
     {:else if $game.gameState === GameState.Day}
         <p>Der Tag ist angebrochen. Diskutiert und entscheidet euch für einen Spieler, der am Abend hingerichtet werden soll.</p>
     {:else if $game.gameState === GameState.Night}
@@ -244,20 +257,22 @@
                 confirmColor: "danger",
                 onConfirm: async () => {
                     await apiClient.api.gameSessionsPlayersDelete($game.gameId, $game.selfId);
-                    goto("/");
+                    goto(routes.menu());
                 }
             });
         }}>Spiel verlassen</button>
-        
-        <button class="btn btn-warning w-100 ms-2" type="button" onclick={() => {
-            const sessionUrl = `${webUrl}/game?sessionId=${$game.gameId}&playerId=${$game.selfId}#auth=${getPlayerToken($game.gameId, $game.selfId)}`;
-            modalProvider.show({
-                title: "Spiel auf einem anderen Gerät fortsetzen",
-                contentText: `Öffnen Sie <a href="${sessionUrl}">diesen Link</a> auf dem Gerät wo die Sitzung fortgesetzt werden soll.<br>Nach dem wechsel können Sie diesen Tab schließen.`,
-                confirmText: "Gerät Gewechselt",
-                allowHtmlText: true
-            })
-        }}>Auf anderes Gerät wechseln</button>
+
+        {#if config.allowSessionSharing}
+            <button class="btn btn-warning w-100 ms-2" type="button" onclick={() => {
+                const sessionUrl = webUrl + routes.gameDirectJoin($game.gameId, $game.selfId, getPlayerToken($game.gameId, $game.selfId)!.playerToken);
+                modalProvider.show({
+                    title: "Spiel auf einem anderen Gerät fortsetzen",
+                    contentText: `Öffnen Sie <a href="${sessionUrl}">diesen Link</a> auf dem Gerät wo die Sitzung fortgesetzt werden soll.<br>Nach dem wechsel können Sie diesen Tab schließen.`,
+                    confirmText: "Gerät Gewechselt",
+                    allowHtmlText: true
+                })
+            }}>Auf anderes Gerät wechseln</button>
+        {/if}
 
         {#if $game.selfId === $game.gameMeta?.gameMaster && ($game.gameState ?? -2) > 0}
             <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({
