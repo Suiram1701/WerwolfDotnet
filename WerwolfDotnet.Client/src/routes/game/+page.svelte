@@ -3,8 +3,8 @@
     import { page } from "$app/state"
     import { goto } from "$app/navigation";
     import { type Readable } from "svelte/store";
-    import { ActionType, Api, GameState, type LogMessageDto } from "../../Api";
-    import { storePlayerToken, getPlayerToken, removePlayerToken } from "../../stores/gameSessionStore";
+    import { ActionType, Api, GameState } from "../../Api";
+    import { storePlayerToken, getPlayerToken } from "../../stores/gameSessionStore";
     import { gamePageState as game } from "../../stores/pageStateStore";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
     import { GameHub } from "../../gameHub";
@@ -17,8 +17,9 @@
     import PlayerList from "$lib/components/PlayerList.svelte";
     import GameSettings from "$lib/components/GameSettings.svelte";
     import { default as routes } from "../routes";
-    import { config } from "../../config";
+    import { config, getServerConfig } from "../../config";
 
+    const serverConfig = getServerConfig();
     const webUrl = page.url.protocol + "//" + page.url.host;     // Port is part of the host
     
     let modalProvider: ModalProvider;
@@ -29,12 +30,11 @@
         // @ts-ignore
         return { headers: { "Authorization": `Bearer ${data.token}` } };
     }});
-    config.retrieveConfigAsync(apiClient);
 
     let showAllPlayers = $state(false);
     
-    let enoughPlayers = $derived($game.players.length >= (config.getClientConfig()?.minimumPlayers ?? 0));
-    let everyOneReady = $derived(config.getClientConfig()?.canStartWhenNotReady || $game.playersReady.length === $game.players.length);
+    let enoughPlayers = $derived($game.players.length >= (serverConfig.minimumPlayers ?? 0));
+    let everyOneReady = $derived(serverConfig.canStartWhenNotReady || $game.playersReady.length === $game.players.length);
 
     let isWerwolfKilling = $derived($game.currentAction?.type === ActionType.WerwolfKilling);
     let canEditSettings = $derived($game.gameMeta?.gameMaster === $game.selfId && ($game.gameState ?? 0) <= 0);
@@ -77,15 +77,20 @@
         apiClient.setSecurityData({ token: playerToken });
         connection = new HubConnectionBuilder()
             .withUrl(`${config.apiEndpoint}/signalr/game`, { accessTokenFactory: () => playerToken })
+            .withStatefulReconnect()
             .withAutomaticReconnect()
             .configureLogging(LogLevel.Information)
             .build();
+        connection.onreconnecting(() => document.getElementById('client-disconnected')!.classList.remove('d-none'));
+        connection.onreconnected(() => document.getElementById('client-disconnected')!.classList.add('d-none'));
+        
         connection.start()
             .then(() => gameHub = new GameHub(connection, modalProvider))
             .catch(err => {
                 console.log("An error occurred while trying to connect to the game API!", err)
                 goto(routes.menu());
             });
+        
         return () => connection.stop();
     });
 </script>
@@ -231,7 +236,7 @@
                 <button class="btn btn-primary w-100" type="button" onclick={async () => await gameHub.startGame()}>Spiel starten</button>
             {:else}
                 <span class="d-inline-block w-100" use:tooltip={{ title: !enoughPlayers
-                    ? `Es müssen mindestens ${config.getClientConfig()?.minimumPlayers} in einer Runde sein.`
+                    ? `Es müssen mindestens ${serverConfig.minimumPlayers} in einer Runde sein.`
                     : "Alle Spieler müssen bereit sein (Spieler, die AFK sind können auch gekicked werden)." }}>
                     <button class="btn btn-primary w-100" type="button" disabled>Spiel starten</button>
                 </span>
@@ -286,7 +291,7 @@
                     }
                 })}>Runde beenden</button>
 
-            {#if config.getClientConfig()?.gameMasterSkipAllowed ?? false}
+            {#if serverConfig.gameMasterSkipAllowed ?? false}
                 <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({
                     title: "Spieler Aktion überspringen?",
                     contentText: "Diese Funktion sollte nur genutzt werden, wenn ein Nutzer AFK ist. Das Ergebnis der Aktion wird im voraus ausgewertet egal, ob Spieler noch nicht abgestimmt haben.",
@@ -321,6 +326,13 @@
         <p>{renderMessage(message)}</p>
     {/each}
 </aside>
+
+<div id="client-disconnected" class="reconnect-ui position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center d-none">
+    <div class="spinner-border m-4" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Verbinden...</span>
+    </div>
+    <strong>Verbindung zum Server verloren. Verbinden...</strong>
+</div>
 
 <style>
     @media (max-width: 576px) {
@@ -376,4 +388,10 @@
         transform: translateX(calc(100% + 40px)); /* 100% Breite + Abstand rechts + Abstand zum Rand */
     }
 
+    .reconnect-ui {
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        z-index: 1050;
+    }
 </style>

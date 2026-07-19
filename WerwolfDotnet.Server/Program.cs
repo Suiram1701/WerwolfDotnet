@@ -151,7 +151,7 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 app.MapControllers();
-app.MapHub<GameHub>(GameHubPath);
+app.MapHub<GameHub>(GameHubPath, options => options.AllowStatefulReconnects = true);
 app.MapFallbackToFile("app.html");
 
 app.Run();

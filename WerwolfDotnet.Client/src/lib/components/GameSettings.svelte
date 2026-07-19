@@ -4,19 +4,17 @@
     import { gamePageState as gameState } from "../../stores/pageStateStore"
     import { roleNames, roleDescriptions } from "../../textes/roles";
     import { causeOfDeaths } from "../../textes/causeOfDeaths";
-    import { config } from "../../config";
+    import { config, getServerConfig } from "../../config";
     import Tooltip from "$lib/components/Tooltip.svelte";
 
     let { readonly, apiClient }: { readonly: boolean, apiClient: Api<unknown> } = $props();
     
-    let cfg: ClientConfigDto = $state({});
+    let cfg: ClientConfigDto = getServerConfig();
     let options: GameOptionsDto = $state({});
     let totalRoles = $derived(Object.values((options.amountOfRoles ?? {})).reduce((previous: number, value: number) => previous + value, 0));
 
     let pollId: NodeJS.Timeout;
     onMount(() => {
-        cfg = config.getClientConfig()!;     // Already loaded by page
-        
         pollSettings();     // show.bs.modal isn't called when the modal is first rendered
         document.addEventListener("show.bs.modal", _ => pollSettings());
         document.addEventListener("hide.bs.modal", _ => clearInterval(pollId));

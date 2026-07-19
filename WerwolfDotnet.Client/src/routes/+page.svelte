@@ -3,7 +3,7 @@
     import { goto } from "$app/navigation";
     import { onMount, getContext } from "svelte";
     import { type Readable } from "svelte/store";
-    import { config } from "../config";
+    import { config, getServerConfig } from "../config";
     import { Api, type HttpResponse, type GameDto, type JoinGameDto, type JoinedGameDto} from "../Api";
     import { getPlayerToken, getPlayerTokens, removePlayerToken, storePlayerToken } from "../stores/gameSessionStore";
     import { default as routes } from "./routes";
@@ -87,15 +87,15 @@
     }
     
     function getPlayerNameError(): string | null {
-        const clientConfig = config.getClientConfig()!
+        const serverConfig = getServerConfig();
         
         if (playerName.trim().length === 0)
             return "Der Name darf nicht leer sein";
         if (playerName.includes(' '))
             return "Der Name darf keine Leerzeichen enthalten";
-        if (playerName.length < clientConfig.playerNameMinLength! || playerName.length > clientConfig.playerNameMaxLength!)
-            return `Der Name muss zwischen ${clientConfig.playerNameMinLength} und ${clientConfig.playerNameMaxLength} Zeichen lang sein`;
-        if (!clientConfig.playerNameAllowNumbers && playerName.match("\d"))
+        if (playerName.length < serverConfig.playerNameMinLength! || playerName.length > serverConfig.playerNameMaxLength!)
+            return `Der Name muss zwischen ${serverConfig.playerNameMinLength} und ${serverConfig.playerNameMaxLength} Zeichen lang sein`;
+        if (!serverConfig.playerNameAllowNumbers && playerName.match("\d"))
             return "Es sind keine Zahlen im Namen erlaubt"
         
         return null;
@@ -139,28 +139,26 @@
                 });
         }
 
-        config.retrieveConfigAsync(apiClient).then(async cfg => {
-            if (cfg.sessionsVisible) {
-                const response = await apiClient.api.gameSessionsList();
-                if (!response.ok) {
+        if (getServerConfig().sessionsVisible) {
+            apiClient.api.gameSessionsList()
+                .then(response => {
+                    games = response.data;
+                    pollId = setInterval(async () => {
+                        const response : HttpResponse<GameDto[], void> = await apiClient.api.gameSessionsList();
+                        if (response.ok)
+                            games = response.data;
+                        else
+                            console.error("Failed to poll game sessions!")
+                    }, config.apiPollInterval);
+                })
+                .catch(err => {
                     games = null;
-                    console.warn("Can't poll game session because its disabled by the server (although its enabled for the client)");
-                    return;
-                }
-
-                games = response.data;
-                pollId = setInterval(async () => {
-                    const response : HttpResponse<GameDto[], void> = await apiClient.api.gameSessionsList();
-                    if (response.ok)
-                        games = response.data;
-                    else
-                        console.error("Failed to poll game sessions!")
-                }, config.apiPollInterval);
-            }
-            else {
-                games = null;
-            }
-        });
+                    console.warn("Can't poll game session because its disabled by the server (although its enabled for the client)", err);
+                });
+        }
+        else {
+            games = null;
+        }
         
         // Remove not non-existent sessions
         getPlayerTokens().forEach(session => {

@@ -1,8 +1,8 @@
 <script lang="ts">
     import { onMount, setContext, type Snippet } from "svelte";
     import { writable } from "svelte/store";
-    import { config } from "../config";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
+    import { config } from "../config";
     
     let { children }: { children: Snippet } = $props();
     

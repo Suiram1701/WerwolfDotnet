@@ -10,4 +10,10 @@
     <BuildOutputFolder>$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
   </PropertyGroup>
   
+  <ItemGroup>
+    <None Update="src\routes\+layout.ts">
+      <DependentUpon>+layout.svelte</DependentUpon>
+    </None>
+  </ItemGroup>
+  
 </Project>
