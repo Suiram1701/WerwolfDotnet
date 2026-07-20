@@ -87,11 +87,9 @@
     <ul class="dropdown-menu dropdown-menu-end shadow">
         {#each colorModes as mode}
             <li>
-                <button type="button" class="dropdown-item d-flex justify-content-between align-items-center" onclick={() => currentColor = mode}>
-                    <div class="d-flex align-items-center">
-                        <span class="material-symbols-outlined me-1">{mode.icon}</span>
-                        {mode.name}
-                    </div>
+                <button type="button" class="dropdown-item d-flex justify-content-start align-items-center" onclick={() => currentColor = mode}>
+                    <span class="material-symbols-outlined me-1">{mode.icon}</span>
+                    {mode.name}
                     {#if currentColor.value === mode.value}
                         <span class="material-symbols-outlined">check</span>
                     {/if}

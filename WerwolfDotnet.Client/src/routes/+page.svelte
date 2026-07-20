@@ -8,6 +8,7 @@
     import { getPlayerToken, getPlayerTokens, removePlayerToken, storePlayerToken } from "../stores/gameSessionStore";
     import { default as routes } from "./routes";
     import PageTitle from "$lib/components/PageTitle.svelte"
+    import Button from "$lib/components/Button.svelte";
     import GameCard from "$lib/components/GameCard.svelte";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     
@@ -231,19 +232,19 @@
 <PageTitle title="Werwolf - Lobbies" />
 
 <div class="row d-flex flex-wrap">
-    <button class="col btn btn-primary m-1 start-button" type="button" onclick={() => {
+    <Button class="col start-button m-1" onclick={() => {
             password = "";
             modalProvider.show({ title: "Neues Spiel erstellen", content: createModalContent, confirmText: "Erstellen", onConfirm: onCreateGame });
-        }}>Neues Spiel erstellen</button>
-
-    <button class="col btn btn-secondary m-1 start-button" type="button" onclick={() => {
+    }}>Neues Spiel erstellen</Button>
+    
+    <Button variant="secondary" class="col start-button m-1" onclick={() => {
             gameId = undefined;
             gameIdLocked = false;
             password = "";
             passwordRequired = true;
             
             modalProvider.show({ title: "Spiel beitreten", content: joinModalContent, confirmText: "Beitreten", onConfirm: onJoinGame });
-        }}>Spiel beitreten</button>
+    }}>Spiel beitreten</Button>
 </div>
 <hr />
 
@@ -276,7 +277,7 @@
 {/if}
 
 <style>
-    .start-button {
+    :global(.start-button) {
         min-width: 16rem;
     }
 </style>

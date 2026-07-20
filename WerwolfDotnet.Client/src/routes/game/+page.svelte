@@ -14,6 +14,7 @@
     import { tooltip } from "$lib/actions/tooltip";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
+    import Button from "$lib/components/Button.svelte";
     import PlayerList from "$lib/components/PlayerList.svelte";
     import GameSettings from "$lib/components/GameSettings.svelte";
     import { default as routes } from "../routes";
@@ -127,26 +128,30 @@
     </div>
 {/if}
 
-<div class="text-center mb-4">
-    {#if $game.currentAction !== null}
-        <h5>{actionNames[$game.currentAction.type ?? 0] || "undefined"}</h5>
-        <p>{actionDescriptions[$game.currentAction.type ?? 0] || "Dies solltest du eigentlich nicht sehen :)"}</p>
-    {:else if $game.gameState === GameState.Preparation}
-        <p>Andere Spieler können beitreten, indem sie auf die Website (<a href="{webUrl}">{page.url.host}</a>) gehen und den Spielcode <b>{$game.gameId?.toString().padStart(6, '0')}</b> eingeben.</p>
-        <p>Direktes Beitreten ist auch über <a href="{webUrl}{routes.menuJoin($game.gameId)}">diesen Link</a> möglich.</p>
-    {:else if $game.gameState === GameState.Day}
-        <p>Der Tag ist angebrochen. Diskutiert und entscheidet euch für einen Spieler, der am Abend hingerichtet werden soll.</p>
-    {:else if $game.gameState === GameState.Night}
-        <p>Die Nacht ist angebrochen! Das Dorf geht schlafen.</p>
-    {:else if $game.gameState === GameState.GameWon}
-        <p>
-            Die Spielrunde ist zu ende. Warte darauf, dass der Game-Master die aktuelle Runde beendet und eine neue startet.<br>
-            <small>Falls Bugs, Glitches oder andere Fehler aufgetreten sind können diese gerne per <a href="https://github.com/Suiram1701/WerwolfDotnet/issues" target="_blank">GitHub</a> gemeldet werden.</small>
-        </p>
-    {/if}
-</div>
-
 <div class="flex-grow-1 container-fluid d-flex flex-column align-items-center">
+    <div class="border border-info rounded text-center py-2 px-4 mb-4">
+        {#if $game.currentAction !== null}
+            <h5>{actionNames[$game.currentAction.type ?? 0] || "undefined"}</h5>
+            {actionDescriptions[$game.currentAction.type ?? 0] || "Dies solltest du eigentlich nicht sehen :)"}
+        {:else if $game.gameState === GameState.Preparation}
+            <div class="d-inline-flex">
+                <h5 class="me-2">Spielcode: <b>{$game.gameId?.toString().padStart(6, '0')}</b></h5>
+                (<a href="{webUrl}{routes.menuJoin($game.gameId)}">Spiellink</a>)
+            </div>
+        {:else if $game.gameState === GameState.Locked}
+            Beitreten gesperrt
+        {:else if $game.gameState === GameState.Day}
+            Der Tag ist angebrochen. Diskutiert und entscheidet euch für einen Spieler, der am Abend hingerichtet werden soll.
+        {:else if $game.gameState === GameState.Night}
+            Die Nacht ist angebrochen! Das Dorf geht schlafen.
+        {:else if $game.gameState === GameState.GameWon}
+            <p>
+                Die Spielrunde ist zu ende. Warte darauf, dass der Game-Master die aktuelle Runde beendet und eine neue startet.<br>
+                <small>Falls Bugs, Glitches oder andere Fehler aufgetreten sind können diese gerne per <a href="https://github.com/Suiram1701/WerwolfDotnet/issues" target="_blank">GitHub</a> gemeldet werden.</small>
+            </p>
+        {/if}
+    </div>
+    
     <!-- Player display and selection -->
     <ul class="list-group main-content mb-4">
         <PlayerList showAll={showAllPlayers} apiClient={apiClient} />
@@ -183,92 +188,80 @@
     </ul>
 
     {#if $game.currentAction !== null}
-        <button class="btn btn-secondary main-content mb-2" type="button" onclick={() => showAllPlayers = !showAllPlayers}>
-            {showAllPlayers ? "Nur wählbare Spieler anzeigen" : "Alle anzeigen"}
-        </button>
-        
-        <button class="btn btn-primary main-content" type="button" onclick={() => gameHub.playerAction($game.selectedPlayers)}
-                disabled="{$game.selectedPlayers.length < ($game.currentAction.minimum ?? 0) || $game.selectedPlayers.length > ($game.currentAction.maximum ?? 0)}">
+        <Button variant="secondary" class="main-content mb-2" onclick={() => showAllPlayers = !showAllPlayers}>{showAllPlayers ? "Nur wählbare Spieler anzeigen" : "Alle anzeigen"}</Button>
+
+        <Button variant="primary" class="main-content" onclick={() => gameHub.playerAction($game.selectedPlayers)}
+                disabled={$game.selectedPlayers.length < ($game.currentAction.minimum ?? 0) || $game.selectedPlayers.length > ($game.currentAction.maximum ?? 0)}>
             Abschicken
-        </button>
+        </Button>
     {/if}
 
     {#if ($game.gameState ?? 0) <= 0}
         {#if $game.playersReady.includes($game.selfId)}
-            <button class="btn btn-secondary main-content" type="button" onclick={() => gameHub.setPlayerReady(false)}>Nicht mehr bereit</button>
+            <Button variant="secondary" class="main-content" onclick={() => gameHub.setPlayerReady(false)}>Nicht mehr bereit</Button>
         {:else}
-            <button class="btn btn-primary main-content" type="button" onclick={() => gameHub.setPlayerReady(true)}>Bereit</button>
+            <Button variant="primary" class="main-content" onclick={() => gameHub.setPlayerReady(true)}>Bereit</Button>
         {/if}
     {/if}
 
     <div class="flex-grow-1"></div>
 
     <div class="small-vp d-flex main-content mt-3">
-        <button class="btn btn-secondary d-flex align-items-center justify-content-center w-100" type="button" onclick={() => {
-            modalProvider.show({
-                title: canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen (nur ansehen)",
-                content: gameOptionsModalContent,
-                confirmText: "Schließen",
-                canDismiss: false,
-                closeOnConfirm: true
-            });
-        }}>
-            <span class="material-symbols-outlined me-2">settings</span>
-            {canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}
-        </button>
+        <Button variant="secondary" icon="settings" class="w-100" onclick={() => modalProvider.show({
+            title: canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen (nur ansehen)",
+            content: gameOptionsModalContent,
+            confirmText: "Schließen",
+            canDismiss: false,
+            closeOnConfirm: true
+        })}>{canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}</Button>
 
-        <button class="btn btn-secondary d-flex align-items-center justify-content-center w-100 ms-2" type="button" onclick={() => modalProvider.show({
+        <Button variant="secondary" icon="manage_search" class="w-100 ms-2" onclick={() => modalProvider.show({
             title: "Spiel-Log",
             content: gameLogsModalContent,
             confirmText: "Schließen",
             canDismiss: false,
             closeOnConfirm: true
-        })}>
-            <span class="material-symbols-outlined me-2">manage_search</span>
-            Spiel-Logs ansehen
-        </button>
+        })}>Spiel-Logs ansehen</Button>
     </div>
     
     <!-- Admin buttons -->
     {#if $game.selfId === $game.gameMeta?.gameMaster && ($game.gameState ?? -2) <= 0}
         <div class="d-flex main-content mt-3">
             {#if enoughPlayers && everyOneReady}
-                <button class="btn btn-primary w-100" type="button" onclick={async () => await gameHub.startGame()}>Spiel starten</button>
+                <Button icon="play_arrow" class="w-100" onclick={async () => await gameHub.startGame()}>Spiel starten</Button>
             {:else}
-                <span class="d-inline-block w-100" use:tooltip={{ title: !enoughPlayers
+                <span class="w-100" use:tooltip={{ title: !enoughPlayers
                     ? `Es müssen mindestens ${serverConfig.minimumPlayers} in einer Runde sein.`
                     : "Alle Spieler müssen bereit sein (Spieler, die AFK sind können auch gekicked werden)." }}>
-                    <button class="btn btn-primary w-100" type="button" disabled>Spiel starten</button>
+                    <Button icon="play_arrow" class="w-100 h-100" disabled>Spiel starten</Button>
                 </span>
             {/if}
             
-            <button class="btn btn-info w-100 mx-2" type="button" onclick={ async () => await gameHub.shufflePlayers()}>Spieler durchmischen</button>
+            <Button variant="info" icon="shuffle" class="w-100 mx-2" onclick={ async () => await gameHub.shufflePlayers()}>Spieler durchmischen</Button>
 
             {#if $game.gameState !== GameState.Locked}
-                <button class="btn btn-warning w-100" type="button" onclick={ async () => await gameHub.setGameLocked(true)}>Beitreten blockieren</button>
+                <Button variant="warning" icon="lock" class="w-100" onclick={async () => await gameHub.setGameLocked(true)}>Beitreten blockieren</Button>
             {:else}
-                <button class="btn btn-success w-100" type="button" onclick={ async () => await gameHub.setGameLocked(false)}>Beitreten erlauben</button>
+                <Button variant="success" icon="lock_open" class="w-100" onclick={async () => await gameHub.setGameLocked(false)}>Beitreten erlauben</Button>
             {/if}
         </div>
     {/if}
     
     <div class="d-flex main-content m-3">
         <!-- Leave button -->
-        <button class="btn btn-danger w-100" type="button" onclick={() => {
-            modalProvider.show({
-                title: "Spiel verlassen?",
-                contentText: "Möchten Sie das Spiel wirklich verlassen?",
-                confirmText: "Verlassen",
-                confirmColor: "danger",
-                onConfirm: async () => {
-                    await apiClient.api.gameSessionsPlayersDelete($game.gameId, $game.selfId);
-                    goto(routes.menu());
-                }
-            });
-        }}>Spiel verlassen</button>
+        <Button variant="danger" icon="logout" class="w-100" onclick={() => modalProvider.show({
+            title: "Spiel verlassen?",
+            contentText: "Möchten Sie das Spiel wirklich verlassen?",
+            confirmText: "Verlassen",
+            confirmColor: "danger",
+            onConfirm: async () => {
+                await apiClient.api.gameSessionsPlayersDelete($game.gameId, $game.selfId);
+                goto(routes.menu());
+            }
+        })}>Spiel verlassen</Button>
 
         {#if config.allowSessionSharing}
-            <button class="btn btn-warning w-100 ms-2" type="button" onclick={() => {
+            <Button variant="warning" icon="move_location" class="w-100 ms-2" onclick={() => {
                 const sessionUrl = webUrl + routes.gameDirectJoin($game.gameId, $game.selfId, getPlayerToken($game.gameId, $game.selfId)!.playerToken);
                 modalProvider.show({
                     title: "Spiel auf einem anderen Gerät fortsetzen",
@@ -276,23 +269,23 @@
                     confirmText: "Gerät Gewechselt",
                     allowHtmlText: true
                 })
-            }}>Auf anderes Gerät wechseln</button>
+            }}>Auf anderes Gerät wechseln</Button>
         {/if}
 
         {#if $game.selfId === $game.gameMeta?.gameMaster && ($game.gameState ?? -2) > 0}
-            <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({
-                    title: "Spiel beenden?",
-                    contentText: "Möchten Sie die Runde wirklich beenden? (Spieler bleiben in der Sitzung)",
-                    confirmText: "Beenden",
-                    confirmColor: "danger",
-                    onConfirm: async () => {
-                        await gameHub.stopGame()
-                        modalProvider.hide();
-                    }
-                })}>Runde beenden</button>
-
+            <Button variant="danger" class="w-100 ms-2" onclick={() => modalProvider.show({
+                title: "Spiel beenden?",
+                contentText: "Möchten Sie die Runde wirklich beenden? (Spieler bleiben in der Sitzung)",
+                confirmText: "Beenden",
+                confirmColor: "danger",
+                onConfirm: async () => {
+                    await gameHub.stopGame()
+                    modalProvider.hide();
+                }
+            })}>Runde beenden</Button>
+            
             {#if serverConfig.gameMasterSkipAllowed ?? false}
-                <button class="btn btn-danger w-100 ms-2" type="button" onclick={() => modalProvider.show({
+                <Button variant="danger" class="w-100 ms-2" onclick={() => modalProvider.show({
                     title: "Spieler Aktion überspringen?",
                     contentText: "Diese Funktion sollte nur genutzt werden, wenn ein Nutzer AFK ist. Das Ergebnis der Aktion wird im voraus ausgewertet egal, ob Spieler noch nicht abgestimmt haben.",
                     confirmText: "Überspringen",
@@ -301,7 +294,7 @@
                         await gameHub.cancelCurrentAction();
                         modalProvider.hide();
                     }
-                })}>Aktuelle Aktion beenden</button>
+                })}>Aktuelle Aktion beenden</Button>
             {/if}
         {/if}
     </div>
@@ -321,7 +314,7 @@
         <span class="material-symbols-outlined">manage_search</span>
     </button>
 </div>
-<aside id="logSidePanel" class="log-panel-fixed large-vp bg-dark-subtle overflow-auto p-2 is-hidden">
+<aside id="logSidePanel" class="log-panel-fixed large-vp bg-dark-subtle overflow-auto p-2">
     {#each $game.gameLogs as message}
         <p>{renderMessage(message)}</p>
     {/each}
@@ -336,7 +329,7 @@
 
 <style>
     @media (max-width: 576px) {
-        .main-content {
+        :global(.main-content) {
             width: 100%;
             max-width: 100vw;
         }
@@ -346,7 +339,7 @@
     }
 
     @media (min-width: 576px) and (max-width: 1200px) {
-        .main-content {
+        :global(.main-content) {
             width: 100%;
             max-width: 35rem;
         }
@@ -356,7 +349,7 @@
     }
 
     @media (min-width: 1200px) {
-        .main-content {
+        :global(.main-content) {
             width: 100%;
             max-width: 45rem;
         }
@@ -384,8 +377,8 @@
         transform: translateX(0);
     }
 
-    .log-panel-fixed.is-hidden {
-        transform: translateX(calc(100% + 40px)); /* 100% Breite + Abstand rechts + Abstand zum Rand */
+    .log-panel-fixed:global(.is-hidden) {
+        transform: translateX(calc(100% + 40px));
     }
 
     .reconnect-ui {
