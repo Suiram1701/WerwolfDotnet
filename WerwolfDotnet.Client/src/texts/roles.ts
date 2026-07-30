@@ -35,3 +35,28 @@ export const roleDescriptions: Readonly<Record<Role, string>> = {
     [Role.ThreeBrothers]: "Du bist einer von drei Brüdern. Ihr habt keine besondere Fähigkeit. Nur eines wisst ihr sicher: Ihr seid alle keine Werwölfe.",
     [Role.BearGuide]: "Du bist Teil des Dorfes und besitzt einen Bär. Dein Bär kann am Morgen brummen. Wenn er brummt, heißt das, dass direkt neben dir (oberhalb oder unterhalb in der Spielerliste) ein Werwolf sitzt. Stirbst du, brummt der Bär ein letztes Mal."
 }
+
+const roleIcon: Readonly<Record<Role, string>> = {
+    [Role.WhiteWolf]: "pets",
+    [Role.Urwolf]: "pets",
+    [Role.Werwolf]: "pets",
+    [Role.None]: "",     // Only used internally. Not a real role.
+    [Role.Villager]: "person",
+    [Role.Seer]: "visibility",
+    [Role.SeerApprentice]: "visibility",
+    [Role.Witch]: "science",
+    [Role.Healer]: "medical_services",
+    [Role.Hunter]: "gps_fixed",
+    [Role.Amor]: "favorite",
+    [Role.VillageMattress]: "bed",
+    [Role.TwoSisters]: "group",
+    [Role.ThreeBrothers]: "groups",
+    [Role.BearGuide]: "pets"
+}
+
+export function getRoleIcon(role: Role | undefined) {
+    if (role === undefined || role === null) 
+        return "<span class=\"material-symbols-outlined icon-role me-2\">person</span>";
+    else 
+        return `<span class=\"material-symbols-outlined icon-role icon-${Role[role]} me-2\">${roleIcon[role]}</span>`;
+} 

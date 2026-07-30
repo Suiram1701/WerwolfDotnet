@@ -2,8 +2,8 @@
     import { onMount } from "svelte";
     import { type Api, CauseOfDeath, type ClientConfigDto, type GameOptionsDto, Role } from "../../Api";
     import { gamePageState as gameState } from "../../stores/pageStateStore"
-    import { roleNames, roleDescriptions } from "../../textes/roles";
-    import { causeOfDeaths } from "../../textes/causeOfDeaths";
+    import { roleNames, roleDescriptions, getRoleIcon } from "../../texts/roles";
+    import { causeOfDeaths } from "../../texts/causeOfDeaths";
     import { config, getServerConfig } from "../../config";
     import Tooltip from "$lib/components/Tooltip.svelte";
 
@@ -87,7 +87,8 @@
 {#if options.amountOfRoles !== undefined && cfg.fixedRoleAmounts !== undefined}
     {#each Object.values(Role).filter(r => typeof r === "number" && r !== Role.None).sort((a, b) => a - b) as role}
         <div class="row mb-1">
-            <label class="form-label d-flex col-6 col-sm-5" for="role{role.toString()}">
+            <label class="form-label d-flex col-7 col-sm-6" for="role{role.toString()}">
+                {@html getRoleIcon(role)}
                 {roleNames[role]}<Tooltip classNames="ms-auto" title={roleDescriptions[role]} />:
             </label>
 

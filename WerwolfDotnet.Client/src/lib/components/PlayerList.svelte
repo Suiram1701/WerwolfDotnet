@@ -3,7 +3,7 @@
     import { type Readable } from "svelte/store";
     import { ActionType, Api, GameState, type PlayerDto, PlayerRelation } from "../../Api";
     import { gamePageState as state } from "../../stores/pageStateStore";
-    import { roleNames } from "../../textes/roles";
+    import { roleNames, getRoleIcon } from "../../texts/roles";
     import { tooltip } from "$lib/actions/tooltip";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
 
@@ -33,6 +33,7 @@
 {#each shownPlayers as player}
     <li class="list-group-item {getPlayerCSSClasses(player)} d-flex align-items-center">
         {#if $state.currentAction === null}
+            {@html getRoleIcon(player.role)}
             {player.name}
         {:else}
             <!-- Decide between radio (one selection) and checkbox (multiple selections) -->
@@ -43,6 +44,7 @@
                 <input class="form-check-input me-2" id="playerAction{player.id}" type="checkbox" value="{player.id}" bind:group={$state.selectedPlayers}
                        name="playerAction" disabled="{!$state.currentAction.votablePlayers?.includes(player.id ?? -1)}" />
             {/if}
+            {@html getRoleIcon(player.role)}
             <label class="form-check-label" for="playerAction{player.id}">{player.name}</label>
         {/if}
 

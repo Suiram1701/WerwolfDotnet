@@ -8,9 +8,9 @@
     import { gamePageState as game } from "../../stores/pageStateStore";
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
     import { GameHub } from "../../gameHub";
-    import { roleDescriptions, roleNames } from "../../textes/roles";
-    import { actionDescriptions, actionNames } from "../../textes/actions";
-    import { renderMessage } from "../../textes/logs";
+    import { roleNames, roleDescriptions, getRoleIcon } from "../../texts/roles";
+    import { actionDescriptions, actionNames } from "../../texts/actions";
+    import { renderMessage } from "../../texts/logs";
     import { tooltip } from "$lib/actions/tooltip";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
@@ -120,7 +120,7 @@
             </h2>
             <div id="collapseRole" class="accordion-collapse show" data-bs-parent="#collapseRoleParent">
                 <div class="accordion-body">
-                    <h5>{roleNames[$game.selfRole]}</h5>
+                    <h5 class="d-flex align-items-center">{@html getRoleIcon($game.selfRole)} {roleNames[$game.selfRole]}</h5>
                     {roleDescriptions[$game.selfRole]}
                 </div>
             </div>

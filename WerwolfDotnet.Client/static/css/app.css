@@ -37,3 +37,15 @@ a, .btn-link {
 .validation-message {
     color: red;
 }
+
+.icon-role { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+.icon-WhiteWolf      { color: #e5e7eb; }
+.icon-Urwolf         { color: #d4af37; }
+.icon-Werwolf        { color: #b91c1c; }
+.icon-Villager       { color: #4b5563; }
+.icon-Seer           { color: #7c3aed; }
+.icon-SeerApprentice { font-size: 20px !important; }
+.icon-Healer         { color: #16a34a; }
+.icon-Amor           { color: #db2777; }
+.icon-BearGuide      { color: #b91c1c; }

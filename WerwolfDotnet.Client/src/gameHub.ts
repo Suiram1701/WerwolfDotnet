@@ -3,10 +3,10 @@ import { CauseOfDeath, Fraction, GameState, type LogMessageDto, type PlayerDto, 
 import { gamePageState, type GamePageState } from "./stores/pageStateStore";
 import { removePlayerToken } from "./stores/gameSessionStore";
 import { HubConnection } from "@microsoft/signalr"
-import { actionCompletions, actionNames } from "./textes/actions";
-import { fractions, fractionWin } from "./textes/fractions";
-import { causeOfDeathTemplates } from "./textes/causeOfDeaths";
-import { roleNames } from "./textes/roles";
+import { actionCompletions, actionNames } from "./texts/actions";
+import { fractions, fractionWin } from "./texts/fractions";
+import { causeOfDeathTemplates } from "./texts/causeOfDeaths";
+import { roleNames } from "./texts/roles";
 import { default as routes } from "./routes/routes";
 import ModalProvider from "$lib/components/ModalProvider.svelte";
 
