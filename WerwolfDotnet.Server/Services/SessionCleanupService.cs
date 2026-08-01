@@ -35,7 +35,7 @@ public sealed class SessionCleanupService(
     {
         try
         {
-            IEnumerable<GameContext> contexts = (await _manager.GetAllGames(skipAccessCheck: true))!;
+            IEnumerable<GameContext> contexts = (await _manager.GetAllGamesAsync(skipAccessCheck: true))!;
             foreach (GameContext ctx in contexts.ToArray())
             {
                 if (Options.AfterInactivity < DateTimeOffset.UtcNow - ctx.Logger.Messages[^1].Time)

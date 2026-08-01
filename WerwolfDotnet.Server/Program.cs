@@ -76,6 +76,9 @@ builder.Services
     .AddOptions<CleanupOptions>()
     .BindConfiguration("Cleanup")
     .Services.AddHostedService<SessionCleanupService>();
+builder.Services
+    .AddOptions<AdminAuthenticationOptions>()
+    .BindConfiguration("AdminAccess");
 
 builder.Services
     .AddSingleton<GameManager>()
@@ -86,7 +89,9 @@ builder.Services
 
 builder.Services
     .AddAuthentication(TokenAuthenticationScheme.SchemeName)
-    .AddScheme<AuthenticationSchemeOptions, TokenAuthenticationScheme>(TokenAuthenticationScheme.SchemeName, null);
+    .AddScheme<AuthenticationSchemeOptions, TokenAuthenticationScheme>(TokenAuthenticationScheme.SchemeName, null)
+    .AddScheme<AdminAuthenticationOptions, AdminAuthenticationScheme>(AdminAuthenticationScheme.SchemeName, 
+        options => builder.Configuration.GetSection("AdminAccess").Bind(options));
 builder.Services.AddAuthentication();
 
 // Add services to the container.
@@ -98,10 +103,18 @@ builder.Services.AddSwaggerGen(options =>
     { 
         Type = SecuritySchemeType.Http,
         Name = "Authorization",
-        Scheme = "bearer",
+        Scheme = "Bearer",
         BearerFormat = "PlayerToken",
         In = ParameterLocation.Header,
         Description = "A custom format bearer token which can be used to associate a request with a game and player."
+    });
+    options.AddSecurityDefinition(AdminAuthenticationScheme.SchemeName, new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Name = "Authorization",
+        Scheme = "Basic",
+        In =  ParameterLocation.Cookie,
+        Description = "A username and password with authenticates as an admin."
     });
     options.OperationFilter<SecurityFilter>();
     

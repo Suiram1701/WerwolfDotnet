@@ -17,6 +17,8 @@ public static class Extensions
         public int GetPlayerId() => int.Parse(user.FindFirstValue(Claims.PlayerId)!);
         
         public string GetPlayerName() => user.FindFirstValue(Claims.PlayerName)!;
+
+        public bool IsAdmin() => user.FindFirst(Claims.IsAdmin) != null;
     }
 
     extension<T>(IHubClients<T> clients)

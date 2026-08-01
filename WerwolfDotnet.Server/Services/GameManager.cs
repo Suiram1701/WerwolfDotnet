@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
@@ -90,7 +91,7 @@ public partial class GameManager(
     /// </summary>
     /// <param name="id">The game ID</param>
     /// <returns>The game. When not found <c>null</c></returns>
-    public Task<GameContext?> GetGameById(int id)
+    public Task<GameContext?> GetGameByIdAsync(int id)
     {
         return _sessionStore.GetAsync(id);
     }
@@ -100,13 +101,24 @@ public partial class GameManager(
     /// </summary>
     /// <param name="skipAccessCheck">Sets whether configured access check should matter.</param>
     /// <returns>A list of all sessions. When not permitted by server setting <c>null</c> is returned.</returns>
-    public async Task<IEnumerable<GameContext>?> GetAllGames(bool skipAccessCheck = false)
+    public async Task<IEnumerable<GameContext>?> GetAllGamesAsync(bool skipAccessCheck = false)
     {
         if (!LobbyOptions.AllowViewAll && !skipAccessCheck)
             return null;
         return await _sessionStore.GetAllAsync().ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Returns the player by the authorized http user.
+    /// </summary>
+    /// <param name="user"></param>
+    /// <returns></returns>
+    public async Task<Player?> GetPlayerAsync(ClaimsPrincipal user)
+    {
+        GameContext? ctx = await GetGameByIdAsync(user.GetGameId());
+        return ctx?.Players.FirstOrDefault(p => p.Id == user.GetPlayerId());
+    }
+    
     /// <summary>
     /// Adds a player to an existing game.
     /// </summary>

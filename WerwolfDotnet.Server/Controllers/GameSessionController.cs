@@ -63,7 +63,7 @@ public class GameSessionController(
     [ProducesResponseType(typeof(GameDto[]), StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetAllSessionsAsync()
      {
-        IEnumerable<GameContext>? contexts = await _manager.GetAllGames().ConfigureAwait(false);
+        IEnumerable<GameContext>? contexts = await _manager.GetAllGamesAsync(skipAccessCheck: User.IsAdmin()).ConfigureAwait(false);
         if (contexts is null)
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "Configuration disables viewing all sessions!");
         return Ok(contexts
@@ -82,7 +82,7 @@ public class GameSessionController(
     [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetSessionById([FromRoute] int sessionId)
     {
-        GameContext? ctx = await _manager.GetGameById(sessionId).ConfigureAwait(false);
+        GameContext? ctx = await _manager.GetGameByIdAsync(sessionId).ConfigureAwait(false);
         if (ctx?.State == GameState.NotInitialized)
             ctx = null;
         return ctx is not null
@@ -98,9 +98,9 @@ public class GameSessionController(
     [HttpDelete("{sessionId:int}")]
     public async Task<IActionResult> DeleteSessionById([FromRoute] int sessionId)
     {
-        if (await _manager.GetGameById(sessionId) is not { } ctx)
+        if (await _manager.GetGameByIdAsync(sessionId) is not { } ctx)
             return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
-        if (HttpContext.User.GetPlayerId() != ctx.GameMaster.Id)
+        if ((User.GetGameId() != ctx.Id || User.GetPlayerId() != ctx.GameMaster.Id) && !User.IsAdmin())
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
 
         foreach (Player player in ctx.Players.OrderBy(p => ctx.GameMaster.Equals(p)))     // Order to prevent the UI from showing GM switch messages
@@ -128,9 +128,9 @@ public class GameSessionController(
     [ProducesResponseType(typeof(LogMessageDto[]), StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetGameLogsAsync([FromRoute] int sessionId)
     {
-        if (await _manager.GetGameById(sessionId) is not { } ctx)
+        if (await _manager.GetGameByIdAsync(sessionId) is not { } ctx)
             return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
-        if (HttpContext.User.GetGameId() != sessionId)
+        if (User.GetGameId() != sessionId && !User.IsAdmin())
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
                 
         // Fron GameManager.Handlers.cs
@@ -140,7 +140,7 @@ public class GameSessionController(
                 if (reveal(m) || m.Event <= 0)
                     return true;
                 return m.Event == Event.Voting && m.Args.Skip(1)     // Event.Voting is expected to have a collection key-value-pairs at its second position
-                    .Any(arg => ((KeyValuePair<Player, Player[]>)arg!).Key.Id == HttpContext.User.GetPlayerId());
+                    .Any(arg => ((KeyValuePair<Player, Player[]>)arg!).Key.Id == User.GetPlayerId());
             })
             .Select(m => new LogMessageDto(m, reveal(m)));     
         return Ok(showsMessages);
@@ -163,9 +163,9 @@ public class GameSessionController(
     [ProducesResponseType(typeof(GameOptionsDto),StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> UpdateGameSettingsAsync([FromRoute] int sessionId, [FromBody] GameOptionsDto options)
     {
-        if (await _manager.GetGameById(sessionId) is not { } ctx)
+        if (await _manager.GetGameByIdAsync(sessionId) is not { } ctx)
             return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
-        if (HttpContext.User.GetPlayerId() != ctx.GameMaster.Id)
+        if ((User.GetGameId() != ctx.Id || User.GetPlayerId() != ctx.GameMaster.Id) && !User.IsAdmin())
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
         foreach (KeyValuePair<int, int> role in options.AmountOfRoles.Where(role => role.Value <= 0))
             options.AmountOfRoles.Remove(role.Key);
@@ -192,12 +192,12 @@ public class GameSessionController(
     /// <response code="200">The dto.</response>
     /// <response code="404">The session wasn't found.</response>
     /// <returns>The dto.</returns>
-    [Authorize]
+    [Authorize()]
     [HttpGet("{sessionId:int}/settings")]
     [ProducesResponseType(typeof(GameOptionsDto),StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetGameSettingsAsync([FromRoute] int sessionId)
     {
-        if (HttpContext.User.GetGameId() != sessionId)
+        if (User.GetGameId() != sessionId && User.IsAdmin())
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
         GameOptionsDto? options = await _settingsStore.GetAsync(sessionId).ConfigureAwait(false);
         return options is not null ? Ok(options) : Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
@@ -218,7 +218,7 @@ public class GameSessionController(
     [ProducesResponseType(typeof(JoinedGameDto), StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> AddPlayerAsync([FromRoute] int sessionId, [FromBody] JoinGameDto model)
     {
-        GameContext? ctx = await _manager.GetGameById(sessionId).ConfigureAwait(false);
+        GameContext? ctx = await _manager.GetGameByIdAsync(sessionId).ConfigureAwait(false);
         if (ctx is null)
             return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Specified session not found.");
 
@@ -254,10 +254,10 @@ public class GameSessionController(
     [ProducesResponseType(typeof(PlayerDto[]), StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetAllPlayersAsync([FromRoute] int sessionId)
     {
-        if (HttpContext.User.GetGameId() != sessionId)
+        if (User.GetGameId() != sessionId)
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
         
-        GameContext? ctx = await _manager.GetGameById(sessionId);
+        GameContext? ctx = await _manager.GetGameByIdAsync(sessionId);
         return ctx is not null
             ? Ok(ctx.Players.ToDtoCollection())
             : Problem(statusCode: StatusCodes.Status404NotFound, detail: "Game wasn't not found.");
@@ -276,10 +276,10 @@ public class GameSessionController(
     [ProducesResponseType(typeof(PlayerDto), StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetPlayerByIdAsync([FromRoute] int sessionId, [FromRoute] int playerId)
     {
-        if (HttpContext.User.GetGameId() != sessionId)
+        if (User.GetGameId() != sessionId && !User.IsAdmin())
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
         
-        GameContext? ctx = await _manager.GetGameById(sessionId);
+        GameContext? ctx = await _manager.GetGameByIdAsync(sessionId);
         Player? player = ctx?.Players.SingleOrDefault(p => p.Id == playerId);
         return ctx is null || player is null
             ? Problem(statusCode: StatusCodes.Status404NotFound, detail: "Game or player not found.")
@@ -295,13 +295,13 @@ public class GameSessionController(
     [HttpDelete("{sessionId:int}/players/{playerId:int}")]
     public async Task<IActionResult> RemovePlayerAsync([FromRoute] int sessionId, [FromRoute] int playerId)
     {
-        int selfId = HttpContext.User.GetPlayerId();
-        GameContext? ctx = await _manager.GetGameById(sessionId);
+        int selfId = User.GetPlayerId();
+        GameContext? ctx = await _manager.GetGameByIdAsync(sessionId);
         Player? playerToKick = ctx?.Players.SingleOrDefault(p => p.Id == playerId);
         if (ctx is null || playerToKick is null)
             return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Game or player not found.");
         
-        if (playerId != selfId && ctx.GameMaster.Id != selfId)
+        if (playerId != selfId && ctx.GameMaster.Id != selfId && !User.IsAdmin())
         {
             _logger.LogWarning("Non-game-master {playerId} tried to kick player {playerToKick} (rejected)", selfId, playerId);
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "Only the game master is allowed to kick other players!");

@@ -24,27 +24,31 @@ public class TokenAuthenticationScheme(
     {
         AuthenticationHeaderValue.TryParse(Context.Request.Headers.Authorization, out AuthenticationHeaderValue? headerValue);
         if (!(headerValue?.Scheme is "Bearer" || Context.Request.Query.ContainsKey("access_token")))     // access_token is used by signalR
-            return AuthenticateResult.NoResult();
+            return await Context.AuthenticateAsync(AdminAuthenticationScheme.SchemeName);     // Fallback to admin auth
         
         string? encodedToken = headerValue?.Parameter ?? Context.Request.Query["access_token"];
         if (!Base64.IsValid(encodedToken) || JsonSerializer.Deserialize<Token>(Convert.FromBase64String(encodedToken!)) is not { } token)
-            return AuthenticateResult.Fail("Invalid token.");
+            return AuthenticateResult.Fail("Invalid token");
 
-        GameContext? context = await _manager.GetGameById(token.SessionId).ConfigureAwait(false);
+        GameContext? context = await _manager.GetGameByIdAsync(token.SessionId).ConfigureAwait(false);
         Player? player = context?.Players.SingleOrDefault(p => p!.Id == token.PlayerId, null);
         if (context is null || player is null)
-            return AuthenticateResult.Fail("Game or player not found.");
+            return AuthenticateResult.Fail("Game or player not found");
 
-        if (player.VerifyAuthToken(token.Auth))
-        {
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims: [
-                new Claim(Claims.SessionId, context.Id.ToString()),
-                new Claim(Claims.PlayerId, player.Id.ToString()),
-                new Claim(Claims.PlayerName, player.Name),
-            ], authenticationType: SchemeName, nameType: Claims.PlayerName));
-            return AuthenticateResult.Success(new AuthenticationTicket(principal, null, SchemeName));
-        }
-        return AuthenticateResult.Fail("incorrect token.");
+        if (!player.VerifyAuthToken(token.Auth))
+            return AuthenticateResult.Fail("incorrect token");
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims: [
+            new Claim(Claims.SessionId, context.Id.ToString()),
+            new Claim(Claims.PlayerId, player.Id.ToString()),
+            new Claim(Claims.PlayerName, player.Name),
+        ], authenticationType: SchemeName, nameType: Claims.PlayerName));
+        return AuthenticateResult.Success(new AuthenticationTicket(principal, null, SchemeName));
+    }
+
+    protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+    {
+        Response.Headers.WWWAuthenticate = "Bearer realm=\"PlayerToken\"";
+        return base.HandleChallengeAsync(properties);
     }
 
     public record Token(int SessionId, int PlayerId, string Auth);

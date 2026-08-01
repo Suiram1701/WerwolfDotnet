@@ -7,6 +7,7 @@ public static class Constants
         public const string SessionId = "sessionId";
         public const string PlayerId = "playerId";
         public const string PlayerName = "playerName";
+        public const string IsAdmin = "is_admin";
     }
     
     public const string GameHubPath = "/signalr/game";

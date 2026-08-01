@@ -16,7 +16,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     
     public override async Task OnConnectedAsync()
     {
-        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        GameContext ctx = (await _manager.GetGameByIdAsync(Context.User!.GetGameId()))!;
         Player player = ctx.Players.Single(p => p.Id == Context.User!.GetPlayerId());
         
         _connectionMapping.AddConnectionToPlayer(ctx.Id, player.Id, Context.ConnectionId);
@@ -59,7 +59,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     [HubMethodName("setPlayerReadyState")]
     public async Task<bool> OnSetPlayerReadyState(bool isReady)
     {
-        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        GameContext ctx = (await _manager.GetGameByIdAsync(Context.User!.GetGameId()))!;
         Player player = ctx.Players.Single(p => p.Id == Context.User!.GetPlayerId());
 
         return await _manager.SetPlayerReadyStateAsync(ctx, player, isReady);
@@ -68,7 +68,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     [HubMethodName("setGameLocked")]
     public async Task<bool> OnSetGameLocked(bool locked)
     {
-        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        GameContext ctx = (await _manager.GetGameByIdAsync(Context.User!.GetGameId()))!;
         if (!CheckGameMaster(ctx, "toggle game lock"))
             return false;
 
@@ -78,7 +78,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     [HubMethodName("shufflePlayers")]
     public async Task<bool> OnShufflePlayers()
     {
-        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        GameContext ctx = (await _manager.GetGameByIdAsync(Context.User!.GetGameId()))!;
         if (!CheckGameMaster(ctx, "shuffle players"))
             return false;
 
@@ -88,7 +88,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     [HubMethodName("startGame")]
     public async Task<bool> OnStartGame()
     {
-        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        GameContext ctx = (await _manager.GetGameByIdAsync(Context.User!.GetGameId()))!;
         if (!CheckGameMaster(ctx, "start game"))
             return false;
 
@@ -99,7 +99,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     [HubMethodName("playerAction")]
     public async Task OnPlayerAction(int[] selectedPlayers)
     {
-        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        GameContext ctx = (await _manager.GetGameByIdAsync(Context.User!.GetGameId()))!;
         Player self = ctx.Players.Single(p => p.Id == Context.User!.GetPlayerId());
 
         Player[] votes = [..ctx.Players.Where(p => selectedPlayers.Contains(p.Id))];
@@ -109,7 +109,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     [HubMethodName("cancelCurrentPlayerAction")]
     public async Task OnCancelCurrentPlayerAction()
     {
-        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        GameContext ctx = (await _manager.GetGameByIdAsync(Context.User!.GetGameId()))!;
         if (!CheckGameMaster(ctx, "pre-end player action"))
             return;
 
@@ -119,7 +119,7 @@ public sealed class GameHub(ILogger<GameHub> logger, PlayerConnectionMapper conn
     [HubMethodName("stopGame")]
     public async Task OnBackToLobby()
     {
-        GameContext ctx = (await _manager.GetGameById(Context.User!.GetGameId()))!;
+        GameContext ctx = (await _manager.GetGameByIdAsync(Context.User!.GetGameId()))!;
         if (!CheckGameMaster(ctx, "start game"))
             return;
         
