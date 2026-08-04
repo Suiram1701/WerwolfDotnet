@@ -162,17 +162,18 @@
         }
         
         // Remove not non-existent sessions
-        getPlayerTokens().forEach(session => {
+        const sessions = getPlayerTokens();
+        for (const session of sessions.filter((v, i, a) => a.find(s => s.sessionId === v.sessionId)?.playerId === v.playerId)) {     // Distinct session id
             apiClient.api.gameSessionsDetail(session.sessionId)
                 .then(response => {
                     if (!response.ok)
-                        removePlayerToken(session.sessionId); 
+                        removePlayerToken(session.sessionId);
                 })
                 .catch(error => {
                     if (error.status === 404)
                         removePlayerToken(session.sessionId);
                 });
-        });
+        }
         return () => clearInterval(pollId);
     });
     

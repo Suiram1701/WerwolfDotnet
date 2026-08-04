@@ -37,6 +37,24 @@ export const actionDescriptions: Readonly<Record<ActionType, string>> = {
     [ActionType.VillageMattressSelection]: "Wähle einen Spieler, bei dem du die Nacht verbringen möchtest. Du kannst nicht zweimal hintereinander bei derselben Person nächtigen."
 }
 
+export const submitButton: Partial<Record<ActionType, string>> = {
+    [ActionType.MayorVoting]: "Abstimmen",
+    [ActionType.NextMayorDecision]: "Wählen",
+    [ActionType.WerwolfAccuses]: "Anklagen",
+    [ActionType.WerwolfKilling]: "Hinrichten",
+    [ActionType.WerwolfSelection]: "Fressen",
+    [ActionType.UrwolfSelection]: "Verwandeln",
+    [ActionType.WhiteWolfSelection]: "Fressen",
+    [ActionType.SeerSelection]: "Rolle ansehen",
+    [ActionType.SeerApprenticeSelection]: "Rolle ansehen",
+    [ActionType.WitchHealSelection]: "Heilen",
+    [ActionType.WitchKillSelection]: "Töten",
+    [ActionType.HealerSelection]: "Heilen",
+    [ActionType.HunterSelection]: "Töten",
+    [ActionType.AmorSelection]: "Liebespfeil schießen",
+    [ActionType.VillageMattressSelection]: "Übernachten"
+}
+
 // HTML allowed
 export const actionCompletions: Partial<Record<ActionType, (args: string[]) => string>> = {
     [ActionType.MayorVoting]: args => args.length == 1

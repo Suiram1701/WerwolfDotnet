@@ -9,7 +9,7 @@
     import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
     import { GameHub } from "../../gameHub";
     import { roleNames, roleDescriptions, getRoleIcon } from "../../texts/roles";
-    import { actionDescriptions, actionNames } from "../../texts/actions";
+    import { actionNames, actionDescriptions, submitButton } from "../../texts/actions";
     import { renderMessage } from "../../texts/logs";
     import { tooltip } from "$lib/actions/tooltip";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
@@ -188,17 +188,21 @@
     </ul>
 
     {#if $game.currentAction !== null}
-        <Button variant="secondary" class="main-content mb-2" onclick={() => showAllPlayers = !showAllPlayers}>{showAllPlayers ? "Nur wählbare Spieler anzeigen" : "Alle anzeigen"}</Button>
+        <Button variant="secondary" class="main-content mb-2" onclick={() => showAllPlayers = !showAllPlayers}>{showAllPlayers ? "Nur wählbare Spieler anzeigen" : "Alle Spieler anzeigen"}</Button>
 
         <Button variant="primary" class="main-content" onclick={() => gameHub.playerAction($game.selectedPlayers)}
                 disabled={$game.selectedPlayers.length < ($game.currentAction.minimum ?? 0) || $game.selectedPlayers.length > ($game.currentAction.maximum ?? 0)}>
-            Abschicken
+            {#if submitButton[$game.currentAction.type!] !== undefined}
+                {submitButton[$game.currentAction.type!]}
+            {:else}
+                Abschicken
+            {/if}
         </Button>
     {/if}
 
     {#if ($game.gameState ?? 0) <= 0}
         {#if $game.playersReady.includes($game.selfId)}
-            <Button variant="secondary" class="main-content" onclick={() => gameHub.setPlayerReady(false)}>Nicht mehr bereit</Button>
+            <Button variant="secondary" class="main-content" onclick={() => gameHub.setPlayerReady(false)}>Nicht bereit</Button>
         {:else}
             <Button variant="primary" class="main-content" onclick={() => gameHub.setPlayerReady(true)}>Bereit</Button>
         {/if}
@@ -264,12 +268,12 @@
             <Button variant="warning" icon="move_location" class="w-100 ms-2" onclick={() => {
                 const sessionUrl = webUrl + routes.gameDirectJoin($game.gameId, $game.selfId, getPlayerToken($game.gameId, $game.selfId)!.playerToken);
                 modalProvider.show({
-                    title: "Spiel auf einem anderen Gerät fortsetzen",
+                    title: "Gerät wechseln",
                     contentText: `Öffnen Sie <a href="${sessionUrl}">diesen Link</a> auf dem Gerät wo die Sitzung fortgesetzt werden soll.<br>Nach dem wechsel können Sie diesen Tab schließen.`,
                     confirmText: "Gerät Gewechselt",
                     allowHtmlText: true
                 })
-            }}>Auf anderes Gerät wechseln</Button>
+            }}>Gerät wechseln</Button>
         {/if}
 
         {#if $game.selfId === $game.gameMeta?.gameMaster && ($game.gameState ?? -2) > 0}
@@ -325,6 +329,7 @@
         <span class="visually-hidden">Verbinden...</span>
     </div>
     <strong>Verbindung zum Server verloren. Verbinden...</strong>
+    <button type="button" class="link-button" onclick="{() => location.reload()}">Seite neuladen</button>
 </div>
 
 <style>
@@ -386,5 +391,18 @@
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         z-index: 1050;
+    }
+
+    .link-button {
+        display: inline;
+        padding: 0;
+        border: 0;
+        font: inherit;
+        text-decoration: underline;
+        cursor: pointer;
+        background: transparent;
+        color: currentColor;
+
+        -webkit-appearance: none;
     }
 </style>

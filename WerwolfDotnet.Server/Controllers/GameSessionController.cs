@@ -192,7 +192,7 @@ public class GameSessionController(
     /// <response code="200">The dto.</response>
     /// <response code="404">The session wasn't found.</response>
     /// <returns>The dto.</returns>
-    [Authorize()]
+    [Authorize]
     [HttpGet("{sessionId:int}/settings")]
     [ProducesResponseType(typeof(GameOptionsDto),StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetGameSettingsAsync([FromRoute] int sessionId)
