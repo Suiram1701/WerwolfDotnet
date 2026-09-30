@@ -151,6 +151,8 @@
             </p>
         {/if}
     </div>
+
+    <div class="flex-grow-1"></div>
     
     <!-- Player display and selection -->
     <ul class="list-group main-content mb-4">
