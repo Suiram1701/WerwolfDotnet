@@ -117,7 +117,7 @@
                 return;
             modalProvider.show({
                 title: "Spieler kicken?",
-                contentText: "Möchten Sie diesen Spieler wirklich aus dem Spiel werden?",
+                contentText: "Möchten Sie diesen Spieler wirklich aus dem Spiel werfen?",
                 confirmText: "Kicken",
                 confirmColor: "danger",
                 onConfirm: () => apiClient.api.gameSessionsPlayersDelete($state.gameId, player.id ?? -1),

@@ -7,6 +7,7 @@
     let { children }: { children: Snippet } = $props();
     
     const colorKey: string = "colorTheme";
+    const defaultAutoColor: string = "dark";
     
     interface colorMode {
         name: string,
@@ -16,14 +17,14 @@
     const colorModes: colorMode[] = [
         { name: "Hell", value: "light", icon: "light_mode"},
         { name: "Dunkel", value: "dark", icon: "dark_mode"},
-        { name: "Automatisch", value: "auto", icon: "contrast"}
+        { name: "Spielphase", value: "auto", icon: "contrast"}
     ];
     
     let modalProvider: ModalProvider;
     const modalAccessor = writable<ModalProvider>();
     setContext("modalProvider", modalAccessor);
     
-    let isDarkMode: boolean = $state(false);
+    let isDarkMode: boolean = $state(defaultAutoColor === 'dark');
     let currentColor: colorMode = $state(colorModes[2]);
     onMount(() => {
         modalAccessor.set(modalProvider);
@@ -31,17 +32,19 @@
         const savedColor: string | null = localStorage.getItem(colorKey);
         if (savedColor !== null)
             currentColor = colorModes.find(c => c.value === savedColor) ?? colorModes[2];
+        if (currentColor.value == colorModes[2].value)
+            document.documentElement.setAttribute("data-bs-theme", defaultAutoColor);
     });
 
     $effect(() => {
         localStorage.setItem(colorKey, currentColor.value);
         if (currentColor.value === "auto")
-            isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            return;
         else
             isDarkMode = currentColor.value === "dark";
 
         const attrValue = isDarkMode ? "dark" : "light";
-        document.getElementsByTagName("html")[0].setAttribute("data-bs-theme", attrValue);
+        document.documentElement.setAttribute("data-bs-theme", attrValue);
     });
 </script>
 

@@ -1,0 +1,37 @@
+/* ---------- Dark ---------- */
+:root,
+[data-bs-theme="dark"] {
+    --bg-grad-1: #2a2d3a;
+    --bg-grad-2: #1a1b20;
+    --bg-grad-3: #131417;
+    --surface: #22242c;
+    --surface-border: rgba(255, 255, 255, 0.06);
+    --surface-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    --blob-opacity: 0.15;
+    --blob-blend: normal;
+    --noise-opacity: 0.03;
+}
+
+/* ---------- Light ---------- */
+[data-bs-theme="light"] {
+    --bg-grad-1: #ffffff;
+    --bg-grad-2: #eef0f6;
+    --bg-grad-3: #e1e5ee;
+    --surface: #ffffff;
+    --surface-border: rgba(0, 0, 0, 0.08);
+    --surface-shadow: 0 8px 24px rgba(30, 40, 70, 0.12);
+    --blob-opacity: 0.35;      /* heller Grund verträgt mehr, aber mit Pastellfarben */
+    --blob-blend: multiply;    /* färbt statt zu "verschmutzen" */
+    --noise-opacity: 0.025;
+}
+
+
+.icon-WhiteWolf      { color: #e5e7eb; }
+.icon-Urwolf         { color: #d4af37; }
+.icon-Werwolf        { color: #b91c1c; }
+.icon-Villager       { color: #4b5563; }
+.icon-Seer           { color: #7c3aed; }
+.icon-SeerApprentice { font-size: 20px !important; }
+.icon-Healer         { color: #16a34a; }
+.icon-Amor           { color: #db2777; }
+.icon-BearGuide      { color: #a52a2a; }

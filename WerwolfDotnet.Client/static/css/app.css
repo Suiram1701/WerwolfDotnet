@@ -1,13 +1,21 @@
+@import url('colors.css');
 @import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 1.2s;
+    animation-timing-function: ease-in-out;
+}
 
 body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     background: radial-gradient(
             circle at 20% 0%,
-            #2a2d3a 0%,
-            #1a1b20 45%,
-            #131417 100%
+            var(--bg-grad-1) 0%,
+            var(--bg-grad-2) 45%,
+            var(--bg-grad-3) 100%
     );
+    transition: background-color 0.8s ease;
 }
 
 body::before {
@@ -15,7 +23,7 @@ body::before {
     position: fixed;
     inset: 0;
     pointer-events: none;
-    opacity: 0.03;
+    opacity: var(--noise-opacity);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -23,7 +31,10 @@ body::before {
     position: fixed;
     border-radius: 50%;
     filter: blur(120px);
-    opacity: 0.15;
+    opacity: var(--blob-opacity);
+    mix-blend-mode: var(--blob-blend);
+    transition: opacity 0.8s ease, background 1.2s ease;
+    
     z-index: -1;
     pointer-events: none;
 }
@@ -38,15 +49,15 @@ body::before {
     bottom: -150px; right: -100px;
 }
 
-div.primary-container {
-    min-height: 100dvh;
+aside.log-panel-fixed, .card, .modal-content {
+    background: var(--surface);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+    border: 1px solid var(--surface-border) !important;
+    border-radius: 12px !important;
 }
 
-aside.log-panel-fixed, .card, .modal-content {
-    background: #22242c;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
-    border: 1px solid rgba(255,255,255,0.06) !important;
-    border-radius: 12px !important;
+div.primary-container {
+    min-height: 100dvh;
 }
 
 h1:focus {
@@ -84,13 +95,3 @@ a, .btn-link {
 }
 
 .icon-role { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-
-.icon-WhiteWolf      { color: #e5e7eb; }
-.icon-Urwolf         { color: #d4af37; }
-.icon-Werwolf        { color: #b91c1c; }
-.icon-Villager       { color: #4b5563; }
-.icon-Seer           { color: #7c3aed; }
-.icon-SeerApprentice { font-size: 20px !important; }
-.icon-Healer         { color: #16a34a; }
-.icon-Amor           { color: #db2777; }
-.icon-BearGuide      { color: #a52a2a; }

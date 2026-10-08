@@ -1,4 +1,4 @@
-import { goto } from "$app/navigation";
+import {goto} from "$app/navigation";
 import { CauseOfDeath, Fraction, GameState, type LogMessageDto, type PlayerDto, PlayerRelation, Role, type SelectionOptionsDto } from "./Api";
 import { gamePageState, type GamePageState } from "./stores/pageStateStore";
 import { removePlayerToken } from "./stores/gameSessionStore";
@@ -100,7 +100,10 @@ export class GameHub {
             window.location.reload();     // Reset the whole frontend. In my opinion is the risk to break something with a manuell reset.
             return;
         }
-        else if (this.gamePage.gameState === undefined || this.gamePage.gameState <= 0) {     // Frontend has just initialized. No one can be displayed as died during this
+
+        if (localStorage.getItem('colorTheme') === 'auto')
+            this.switchPhaseTheme(newState);
+        if (this.gamePage.gameState === undefined || this.gamePage.gameState <= 0) {     // Frontend has just initialized. No one can be displayed as died during this
             gamePageState.update(state => {
                 state.gameState = newState;
                 return state;
@@ -240,6 +243,23 @@ export class GameHub {
         }
 
         return "Es ist niemand gestorben.";
+    }
+
+    private switchPhaseTheme(state: GameState): void {
+        const newTheme = state === GameState.Day ? 'light' : 'dark'
+        if (document.documentElement.getAttribute('data-bs-theme') === newTheme)     // Prevent unnecessary transitions
+            return;
+        
+        const set = (): void => {
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+        };
+
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!document.startViewTransition || reduce) {
+            set();
+            return;
+        }
+        document.startViewTransition(set);
     }
 }
 
