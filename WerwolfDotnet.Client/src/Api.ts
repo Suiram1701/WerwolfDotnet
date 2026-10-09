@@ -11,21 +11,21 @@
 
 /** @format int32 */
 export enum ActionType {
-  MayorVoting = 0,
-  NextMayorDecision = 1,
-  WerwolfAccuses = 2,
-  WerwolfKilling = 3,
-  WerwolfSelection = 4,
-  UrwolfSelection = 5,
-  WhiteWolfSelection = 6,
-  SeerSelection = 7,
-  SeerApprenticeSelection = 8,
-  WitchHealSelection = 9,
-  WitchKillSelection = 10,
-  HealerSelection = 11,
-  HunterSelection = 12,
-  AmorSelection = 13,
-  VillageMattressSelection = 14,
+  WerwolfSelection = 0,
+  UrwolfSelection = 1,
+  WhiteWolfSelection = 2,
+  SeerSelection = 3,
+  SeerApprenticeSelection = 4,
+  WitchHealSelection = 5,
+  WitchKillSelection = 6,
+  HealerSelection = 7,
+  HunterSelection = 8,
+  AmorSelection = 9,
+  VillageMattressSelection = 10,
+  MayorVoting = -4,
+  NextMayorDecision = -3,
+  WerwolfAccuses = -2,
+  WerwolfKilling = -1,
 }
 
 /** @format int32 */

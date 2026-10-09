@@ -2,10 +2,10 @@ namespace WerwolfDotnet.Actions;
 
 public enum ActionType
 {
-    MayorVoting,
-    NextMayorDecision,
-    WerwolfAccuses,
-    WerwolfKilling,
+    MayorVoting = -4,
+    NextMayorDecision = -3,
+    WerwolfAccuses = -2,
+    WerwolfKilling = -1,
     WerwolfSelection,
     UrwolfSelection,
     WhiteWolfSelection,

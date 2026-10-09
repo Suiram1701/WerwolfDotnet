@@ -198,7 +198,7 @@ export class GameHub {
             return state;
         });
         this.modal.show({
-            title: `Die ${fractions[winFraction]}`,
+            title: `Spielende`,
             contentText: `Die ${fractions[winFraction]} haben gewonnen. ${fractionWin[winFraction]}`,
             canDismiss: false
         });

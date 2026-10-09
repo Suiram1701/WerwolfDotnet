@@ -24,6 +24,7 @@
     </Choose>
 
     <ItemGroup>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
         <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />

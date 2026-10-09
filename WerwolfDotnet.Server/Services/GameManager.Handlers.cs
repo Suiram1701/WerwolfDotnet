@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 using WerwolfDotnet.Roles;
@@ -82,6 +83,7 @@ public partial class GameManager
     // try-catch is "required" everywhere because of async-void 
     private async void LogHandler(LogMessage message, GameContext context, ILogger logger)
     {
+        // Note: This handler does not reveal any other event than voting and management events. Every other event shows that something really happened so its only relevaled when the game ended.
         try
         {
             LogLevel level = message.Event switch
@@ -90,39 +92,50 @@ public partial class GameManager
                 <= 0 => LogLevel.Information,
                 _ => LogLevel.Debug
             };
-            string text = message.Event switch
+            if (message.Event != Event.Voting) // Event.Voting has to be treated special because it contains a dictionary
             {
-                Event.Joined => "Player {player} joined the game",
-                Event.Left => "Player {player} left the game",
-                Event.BecameGameMaster => "{oldGm} left and {player} is the new game master",
-                Event.GameStarted => "Game started",
-                Event.GameStopped => "Game stopped",
-                Event.GameWon => "Game was won by {wonBy}:" + spreadArgs(prefix: "winner"),
-                Event.Voting => "{actionType} finished: " + spreadArgs(),
-                Event.Killed => "{killer} killed " + spreadArgs(prefix: "victim"),
-                Event.Healed => "{doneBy} revived {healedOne}",
-                Event.SawRole => "{seer} saw current role of {player}: {role}",
-                Event.SeerApprenticeActive => "Seer apprentice {newSeer} is now the active seer",
-                Event.Protect => "{doneBy} protects {player} in current round",
-                Event.SuccessfullyProtected => "{doneBy} successfully protected {player}",
-                Event.FallInLove => "{player} made " + spreadArgs() + " to fall in love",
-                Event.SleepOver => "{doneBy} stayed overnight at {player}'s place",
-                Event.VictimMissed => "{killer} failed (missed) to kill {victim}",
-                Event.TurnedToWerwolf => "{doneBy} turned {victim} into a werwolf",
-                _ => "[Unknown event]"
-            };
-            logger.Log(level, text, message.Args);
+                string text = message.Event switch
+                {
+                    Event.Joined => "Player {player} joined the game",
+                    Event.Left => "Player {player} left the game",
+                    Event.BecameGameMaster => "{oldGm} left and {player} is the new game master",
+                    Event.GameStarted => "Game started",
+                    Event.GameStopped => "Game stopped",
+                    Event.GameWon => "Game was won by {wonBy}:" + spreadArgs(prefix: "winner"),
+                    Event.Killed => "{killer} killed " + spreadArgs(prefix: "victim"),
+                    Event.Healed => "{doneBy} revived {healedOne}",
+                    Event.SawRole => "{seer} saw current role of {player}: {role}",
+                    Event.SeerApprenticeActive => "Seer apprentice {newSeer} is now the active seer",
+                    Event.Protect => "{doneBy} protects {player} in current round",
+                    Event.SuccessfullyProtected => "{doneBy} successfully protected {player}",
+                    Event.FallInLove => "{player} made " + spreadArgs() + " to fall in love",
+                    Event.SleepOver => "{doneBy} stayed overnight at {player}'s place",
+                    Event.VictimMissed => "{killer} failed (missed) to kill {victim}",
+                    Event.TurnedToWerwolf => "{doneBy} turned {victim} into a werwolf",
+                    _ => "[Unknown event]"
+                };
+                logger.Log(level, text, message.Args);
+            }
+            else if (logger.IsEnabled(level))
+            {
+                string votingJson = JsonConvert.SerializeObject(message.Args.Skip(1).ToArray());
+                logger.Log(level, "{actionType} finished: {data}", message.Args[0], votingJson);
+            }
             
             // Either the msg is from a previous game, the requesting user was part of the action or global
-            bool reveal =
-                context.State == GameState.GameWon ||
-                message.Time < context.RoundStartedAt; // Show only when the game is finished or from a previous game
+            bool reveal = context.State == GameState.GameWon || message.Time < context.RoundStartedAt; // Show only when the game is finished or from a previous game
             if (reveal || message.Event <= 0)
                 await _hubContext.Clients.Game(context.Id).GameLogUpdated([new LogMessageDto(message, reveal)]);
-            if (message.Event ==
-                Event.Voting) // Event.Voting is expected to have a collection key-value-pairs at its second position
-                await _hubContext.Clients.Players(context.Id, message.Args.Skip(1).Select(arg => ((KeyValuePair<Player, Player[]>)arg!).Key.Id))
-                    .GameLogUpdated([new LogMessageDto(message, reveal)]);
+            switch (message.Event)
+            {
+                case Event.Voting when (ActionType)(message.Args[0] ?? 0) < 0: // first arg is the type of voting. < means global
+                    await _hubContext.Clients.Game(context.Id).GameLogUpdated([new LogMessageDto(message, reveal)]);
+                    break;
+                case Event.Voting: // Event.Voting is expected to have a collection key-value-pairs at its second position
+                    IEnumerable<int> players = message.Args.Skip(1).Select(arg => ((KeyValuePair<Player, Player[]>)arg!).Key.Id);
+                    await _hubContext.Clients.Players(context.Id, players).GameLogUpdated([new LogMessageDto(message, reveal)]);
+                    break;
+            }
         }
         catch (Exception ex)
         { _logger.LogError(ex, ex.Message); }
