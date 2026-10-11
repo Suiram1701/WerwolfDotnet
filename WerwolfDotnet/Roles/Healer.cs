@@ -15,6 +15,7 @@ public sealed class Healer : RoleBase
             Type = ActionType.HealerSelection,
             Participants = [self],
             VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.Alive && !p.Equals(LastPlayer))],
+            VotingTimeout = ctx.GameOptions?.DefaultVotingTime
         }, (action, _) =>
         {
             LastPlayer = action.PlayerVotes[self].SingleOrDefault();

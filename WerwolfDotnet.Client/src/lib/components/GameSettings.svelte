@@ -86,7 +86,7 @@
 <h5>Rollen:</h5>
 {#if options.amountOfRoles !== undefined && cfg.fixedRoleAmounts !== undefined}
     {#each Object.values(Role).filter(r => typeof r === "number" && r !== Role.None).sort((a, b) => a - b) as role}
-        <div class="row mb-1">
+        <div class="row align-items-center flex-nowrap mb-1">
             <label class="form-label d-flex col-7 col-sm-6" for="role{role.toString()}">
                 {@html getRoleIcon(role)}
                 {roleNames[role]}<Tooltip classNames="ms-auto" title={roleDescriptions[role]} />:
@@ -99,7 +99,7 @@
                            await updateSettings();
                        }}>
             {:else}
-                <input class="form-input col-2" id="role{role.toString()}" type="number" placeholder="0" bind:value={options.amountOfRoles[role]} 
+                <input class="form-control col-2" id="role{role.toString()}" type="number" placeholder="0" bind:value={options.amountOfRoles[role]} 
                        min="{role === Role.Werwolf ? 1 : 0}" onchange={updateSettings} readonly={readonly} disabled={readonly}>
             {/if}
         </div>
@@ -111,6 +111,24 @@
         Wenn mehr Rollen ausgewählt sind kann das Spiel nicht gestartet werden, wenn weniger wird mit Dorfbewohnern aufgefüllt." />
 </p>
 <p>Verbleibende Spieler bekommen die Dorfbewohner Rolle.</p>
+
+<h5>Auswahlzeiten für Spieler:</h5>
+<div class="d-flex align-items-center flex-nowrap mb-1">
+    <label class="form-label me-2" for="defaultTime">Standardzeit:</label>
+    <div class="input-group">
+        <input class="form-control" id="defaultTime" type="number" aria-describedby="unit0" bind:value={options.defaultVotingTime} 
+               min="0" readonly={readonly} disabled={readonly}/>
+        <span class="input-group-text" id="unit0">Sekunden</span>
+    </div>
+</div>
+<div class="d-flex align-items-center flex-nowrap mb-1">
+    <label class="form-label me-2" for="discussionTime">Diskussionszeit:</label>
+    <div class="input-group">
+        <input class="form-control" id="discussionTime" type="number" aria-describedby="unit1" bind:value={options.discussionTime}
+               min="0" readonly={readonly} disabled={readonly}/>
+        <span class="input-group-text" id="unit1">Sekunden</span>
+    </div>
+</div>
 
 <h5>Rollen aufdecken bei Folgenden Todesarten:</h5>
 <div class="d-flex flex-column">
@@ -130,6 +148,10 @@
 </div>
 
 <style>
+    div input.form-control {
+        width: auto !important;
+    }
+    
     .roleCheckbox {
         padding-right: 0;     /* Bootstrap row would stretch the checkbox so overwrite it */
     }

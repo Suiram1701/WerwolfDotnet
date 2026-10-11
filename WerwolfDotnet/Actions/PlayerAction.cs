@@ -27,7 +27,11 @@ public sealed class PlayerAction(CancellationToken ct)
     /// Indicates whether to exclude the voter it's self from being voted.
     /// </summary>
     public bool ExcludeSelf { get; init; } = false;
-        
+
+    public DateTimeOffset StartedAt { get; } = DateTimeOffset.Now;
+    
+    public TimeSpan? VotingTimeout { get; init; } = null;
+    
     /// <summary>
     /// Specifies players who can be voted.
     /// </summary>
@@ -74,7 +78,6 @@ public sealed class PlayerAction(CancellationToken ct)
         }
         
         _cts.Cancel();
-        OnCompleted?.Invoke(this, CancellationToken);
     }
 
     public IReadOnlyDictionary<Player, int> GetPlayersByVoteCount(Player[]? doubleValuedVotes = null)

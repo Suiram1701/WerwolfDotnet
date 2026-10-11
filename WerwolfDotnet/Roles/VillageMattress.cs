@@ -15,7 +15,8 @@ public sealed class VillageMattress : RoleBase
             Type = ActionType.VillageMattressSelection,
             Participants = [self],
             ExcludeSelf = true,
-            VotablePlayers = [..ctx.Players.Where(p => p.IsAlive && !p.Equals(LastSleepover))]
+            VotablePlayers = [..ctx.Players.Where(p => p.IsAlive && !p.Equals(LastSleepover))],
+            VotingTimeout = ctx.GameOptions?.DefaultVotingTime
         }, (action, _) =>
         {
             LastSleepover = action.PlayerVotes[self].FirstOrDefault();

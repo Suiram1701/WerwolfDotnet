@@ -24,6 +24,7 @@ public sealed class Urwolf : Werwolf
             Maximum = 1,
             Participants = [self],
             VotablePlayers = werwolfSelected is not null ? [werwolfSelected] : [],
+            VotingTimeout = ctx.GameOptions?.DefaultVotingTime
         }, (action, _) =>
         {
             if (action.PlayerVotes[self].FirstOrDefault() is not { } selectedOne)

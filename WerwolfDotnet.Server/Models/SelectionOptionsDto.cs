@@ -23,4 +23,6 @@ public class SelectionOptionsDto(PlayerAction action, Player self)
         .Except(action.ExcludeSelf ? [self] : [])
         .Select(p => p.Id)
         .ToArray();
+
+    public DateTimeOffset? VotingTimeout { get; } = action.StartedAt + action.VotingTimeout;
 }

@@ -147,8 +147,17 @@ export class GameHub {
 
     private onActionRequested(action: SelectionOptionsDto): void {
         gamePageState.update(state => {
-            state.selectedPlayers = [];
             state.currentAction = action;
+            if (action.votingTimeout !== undefined && action.votingTimeout !== null) {
+                const actionTimeout = new Date(action.votingTimeout).getTime();
+                state.remainingSeconds = Math.max((actionTimeout - Date.now()) / 1000, 0);
+                state.remainingTimeoutHandle = setInterval(() => gamePageState.update(state => {
+                    state.remainingSeconds = Math.max((actionTimeout - Date.now()) / 1000, 0);
+                    return state;
+                }), 1000);
+            }
+            
+            state.selectedPlayers = [];
             return state;
         })
     }
@@ -186,6 +195,9 @@ export class GameHub {
 
         gamePageState.update(state => {
             state.currentAction = null;
+            if (state.remainingTimeoutHandle !== null)
+                clearInterval(state.remainingTimeoutHandle);
+            state.remainingTimeoutHandle = null;
             state.playerToVotes = [];
             state.emptyVotedPlayers = [];
             return state;

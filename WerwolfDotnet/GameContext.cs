@@ -280,22 +280,37 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         await using CancellationTokenRegistration ctr = action.CancellationToken.Register(_ => tcs.SetCanceled(action.CancellationToken), null);
         action.OnCompleted += (_, _) => tcs.TrySetResult();
+
+        CancellationTokenRegistration? timeoutCtr = null;
+        TimeSpan? timeout = action.VotingTimeout + TimeSpan.FromSeconds(1); // Some tolerance
+        if (timeout.HasValue)
+        {
+            CancellationTokenSource timeoutCts = new(timeout.Value);
+            timeoutCtr = timeoutCts.Token.Register(_ =>
+            {
+                Logger.Log(Event.VotingTimeout, [action.Type, ..action.Participants.Where(p => !action.PlayerVotes.ContainsKey(p))]);
+                action.CancelAction();
+            }, null);
+        }
         
         RunningAction = action;
         OnPhaseAction?.Invoke(this, action);
-        
         try
         {
             await tcs.Task;
         }
-        catch (TaskCanceledException ex)
+        catch (TaskCanceledException)
         {
-            // TODO: What to do here?
-            // Logger.LogWarning(ex, "PhaseAction {type} was cancelled due to timeout/stop", action.Type);
+            if (timeoutCtr is not { Token.IsCancellationRequested: true })
+                Logger.Log(Event.VotingSkipped, action.Type);     // The only other way it could be canceled is by the GM
+
             action.OrgCancellationToken.ThrowIfCancellationRequested();
         }
         finally
         {
+            if (timeoutCtr is not null)
+                await timeoutCtr.Value.DisposeAsync();
+            
             ActionResult result = ActionResult.Failed();
             try
             {

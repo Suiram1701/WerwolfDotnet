@@ -63,7 +63,8 @@ partial class GameContext
                 {
                     Type = ActionType.WerwolfSelection,
                     Participants = [.._players.Where(p => p.IsAlive && p.Role!.Type < 0)],
-                    VotablePlayers = [.._players.Where(p => p.IsAlive && p.Role!.Type > 0)]
+                    VotablePlayers = [.._players.Where(p => p.IsAlive && p.Role!.Type > 0)],
+                    VotingTimeout = GameOptions?.DefaultVotingTime
                 }, (action, _) =>
                 {
                     if (action.GetMostVotedPlayer() is not { } playerToDie)
@@ -97,7 +98,8 @@ partial class GameContext
                 Minimum = 0,
                 Maximum = 1,
                 Participants = [.._players.Where(p => p.IsAlive)],
-                VotablePlayers = [.._players.Where(p => p.IsAlive)]
+                VotablePlayers = [.._players.Where(p => p.IsAlive)],
+                VotingTimeout = GameOptions?.DiscussionTime
             }, (action, _) =>
             {
                 if (action.GetMostVotedPlayer() is not { } newMayor)
@@ -116,7 +118,8 @@ partial class GameContext
             Minimum = 0,
             Maximum = 1,
             Participants = [.._players.Where(p => p.IsAlive)],
-            VotablePlayers = [.._players.Where(p => p.IsAlive)]
+            VotablePlayers = [.._players.Where(p => p.IsAlive)],
+            VotingTimeout = GameOptions?.DiscussionTime
         }, (action, _) =>
         {
             /*
@@ -145,7 +148,8 @@ partial class GameContext
                 Minimum = 1,
                 Maximum = 1,
                 Participants = [.._players.Where(p => p.IsAlive)],     // At most 3 people can be accused
-                VotablePlayers = accusedPlayers
+                VotablePlayers = accusedPlayers,
+                VotingTimeout = GameOptions?.DefaultVotingTime
             }, (action, _) =>
             {
                 if (action.GetMostVotedPlayer(Mayor is not null ? [Mayor] : null) is not { } playerToExecute)
@@ -201,7 +205,8 @@ partial class GameContext
                         Minimum = 0,
                         Maximum = 1,
                         Participants = [player],
-                        VotablePlayers = [.._players.Where(p => p.Status == PlayerState.Alive)]
+                        VotablePlayers = [.._players.Where(p => p.Status == PlayerState.Alive)],
+                        VotingTimeout = GameOptions?.DefaultVotingTime
                     }, (action, _) =>
                     {
                         Mayor = action.PlayerVotes[player].FirstOrDefault();

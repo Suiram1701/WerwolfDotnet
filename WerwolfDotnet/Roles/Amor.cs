@@ -22,7 +22,8 @@ public sealed class Amor : RoleBase
             Minimum = 2,
             Maximum = 2,
             Participants = [self],
-            VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.Alive)]     // In the first round everyone should be alive but just to be sure
+            VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.Alive)],     // In the first round everyone should be alive but just to be sure
+            VotingTimeout = ctx.GameOptions?.DefaultVotingTime
         }, (action, _) =>
         {
             Player[] votes = action.PlayerVotes[self];

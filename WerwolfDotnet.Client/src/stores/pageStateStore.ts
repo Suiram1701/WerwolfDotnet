@@ -13,6 +13,8 @@ export interface GamePageState {
     gameMeta: { gameMaster: number, mayor: number | null } | undefined;
     
     currentAction: SelectionOptionsDto | null;
+    remainingSeconds: number;
+    remainingTimeoutHandle: NodeJS.Timeout | null;
     selectedPlayers: number[];
     playerToVotes: Record<number, number[]>;
     emptyVotedPlayers: number[];
@@ -32,6 +34,8 @@ export const gamePageState = writable<GamePageState>({
     gameMeta: undefined,
     
     currentAction: null,
+    remainingSeconds: 0,
+    remainingTimeoutHandle: null,
     selectedPlayers: [],
     playerToVotes: [],
     emptyVotedPlayers: [],

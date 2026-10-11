@@ -22,7 +22,8 @@ public sealed class WhiteWolf : Werwolf
             Maximum = 1,
             Participants = [self],
             ExcludeSelf = true,
-            VotablePlayers = [..ctx.Players.Where(p => p.IsAlive && !p.Equals(werwolfSelected))]
+            VotablePlayers = [..ctx.Players.Where(p => p.IsAlive && !p.Equals(werwolfSelected))],
+            VotingTimeout = ctx.GameOptions?.DefaultVotingTime
         }, (action, _) =>
         {
             if (action.PlayerVotes[self].FirstOrDefault() is not { } selectedOne)

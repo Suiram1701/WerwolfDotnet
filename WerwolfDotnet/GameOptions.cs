@@ -25,5 +25,9 @@ public class GameOptions
     /// </summary>
     public Role[] NightExecutionOrder { get; init; } = [Role.Amor, Role.VillageMattress, Role.Healer, Role.Werwolf, Role.Urwolf, Role.Witch, Role.WhiteWolf, Role.Seer, Role.SeerApprentice];
     
+    public TimeSpan? DefaultVotingTime { get; init; } = TimeSpan.FromMinutes(1);
+
+    public TimeSpan? DiscussionTime { get; init; } = TimeSpan.FromMinutes(5);
+    
     public CauseOfDeath[] RevealRoleForCauses { get; init; } = [CauseOfDeath.WerwolfKilling, CauseOfDeath.WitchExplosion];
 }

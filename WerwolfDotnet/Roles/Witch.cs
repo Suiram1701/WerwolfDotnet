@@ -20,7 +20,8 @@ public sealed class Witch : RoleBase
                 Minimum = 0,
                 Maximum = 1,
                 Participants = [self],
-                VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.PendingDeath && !ctx.WerwolfProtectedPlayers.ContainsKey(p))]
+                VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.PendingDeath && !ctx.WerwolfProtectedPlayers.ContainsKey(p))],
+                VotingTimeout = ctx.GameOptions?.DefaultVotingTime
             }, (action, _) =>
             {
                 if (action.PlayerVotes[self].SingleOrDefault() is not { } playerToHeal)
@@ -42,7 +43,8 @@ public sealed class Witch : RoleBase
                 Maximum = 1,
                 Participants = [self],
                 // ExcludeSelf = true,     // Why not allow the witch to kill herself :)
-                VotablePlayers = [..ctx.Players.Where(p => p.IsAlive)]
+                VotablePlayers = [..ctx.Players.Where(p => p.IsAlive)],
+                VotingTimeout = ctx.GameOptions?.DefaultVotingTime
             }, (action, _) =>
             {
                 if (action.PlayerVotes[self].SingleOrDefault() is not { } playerToKill)

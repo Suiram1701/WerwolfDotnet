@@ -102,6 +102,8 @@ public partial class GameManager
                     Event.GameStarted => "Game started",
                     Event.GameStopped => "Game stopped",
                     Event.GameWon => "Game was won by {wonBy}:" + spreadArgs(prefix: "winner"),
+                    Event.VotingTimeout => "{actionType} timed out for: " + spreadArgs(prefix: "player"),
+                    Event.VotingSkipped => "{actionType} has been skipped by the game master",
                     Event.Killed => "{killer} killed " + spreadArgs(prefix: "victim"),
                     Event.Healed => "{doneBy} revived {healedOne}",
                     Event.SawRole => "{seer} saw current role of {player}: {role}",

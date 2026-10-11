@@ -58,16 +58,18 @@ export interface ClientConfigDto {
 export enum Event {
   GameWon = 0,
   Voting = 1,
-  Killed = 2,
-  Healed = 3,
-  SawRole = 4,
-  SeerApprenticeActive = 5,
-  Protect = 6,
-  SuccessfullyProtected = 7,
-  FallInLove = 8,
-  SleepOver = 9,
-  VictimMissed = 10,
-  TurnedToWerwolf = 11,
+  VotingTimeout = 2,
+  VotingSkipped = 3,
+  Killed = 4,
+  Healed = 5,
+  SawRole = 6,
+  SeerApprenticeActive = 7,
+  Protect = 8,
+  SuccessfullyProtected = 9,
+  FallInLove = 10,
+  SleepOver = 11,
+  VictimMissed = 12,
+  TurnedToWerwolf = 13,
   Joined = -5,
   Left = -4,
   BecameGameMaster = -3,
@@ -114,6 +116,10 @@ export interface GameOptionsDto {
   explodingWitchHome?: boolean;
   hunterMustKill?: boolean;
   mayorDecidesNextMayor?: boolean;
+  /** @format int32 */
+  defaultVotingTime?: number;
+  /** @format int32 */
+  discussionTime?: number;
   revealRoleForCauses?: CauseOfDeath[] | null;
 }
 
@@ -211,6 +217,8 @@ export interface SelectionOptionsDto {
    */
   maximum?: number;
   votablePlayers?: number[] | null;
+  /** @format date-time */
+  votingTimeout?: string | null;
 }
 
 export type QueryParamsType = Record<string | number, any>;

@@ -153,6 +153,12 @@
     </div>
 
     <div class="flex-grow-1"></div>
+
+    {#if $game.remainingTimeoutHandle !== null}
+        <p class="border border-{$game.remainingSeconds > 10 ? 'warning' : 'danger'}-subtle rounded bg-{$game.remainingSeconds > 10 ? 'warning' : 'danger'}-subtle p-1 mb-3">
+            {$game.remainingSeconds.toFixed(0)} Sekunden verbleiben für die {$game.currentAction!.type === ActionType.WerwolfAccuses ? 'Diskussion' : 'Auswahl'}
+        </p>
+    {/if}
     
     <!-- Player display and selection -->
     <ul class="list-group main-content mb-4">

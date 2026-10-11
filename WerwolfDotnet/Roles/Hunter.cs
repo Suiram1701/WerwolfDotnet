@@ -13,7 +13,8 @@ public sealed class Hunter : RoleBase
             Minimum = ctx.GameOptions!.HunterMustKill ? 1 : 0,
             Maximum = 1,
             Participants = [self],
-            VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.Alive)]
+            VotablePlayers = [..ctx.Players.Where(p => p.Status == PlayerState.Alive)],
+            VotingTimeout = ctx.GameOptions?.DefaultVotingTime
         }, (action, _) =>
         {
             if (action.GetMostVotedPlayer() is not { } selectedOne)

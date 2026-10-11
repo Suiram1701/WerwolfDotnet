@@ -15,7 +15,12 @@ public class GameOptionsDto : ICloneable
     
     public bool MayorDecidesNextMayor { get; set; }
 
+    public int DefaultVotingTime { get; init; } = 60;
+
+    public int DiscussionTime { get; init; } = 300;
+
     public CauseOfDeath[] RevealRoleForCauses { get; set; } = [];
+    
 
     public GameOptions ToOptions()
     {
@@ -26,7 +31,10 @@ public class GameOptionsDto : ICloneable
             ExplodingWitchHome = ExplodingWitchHome,
             HunterMustKill = HunterMustKill,
             MayorDecidesNextMayor = MayorDecidesNextMayor,
-            RevealRoleForCauses = RevealRoleForCauses
+            RevealRoleForCauses = RevealRoleForCauses,
+            // It's easier for the frontend to process the amount of seconds instead of .NETs TimeSpan format
+            DefaultVotingTime = DefaultVotingTime != 0 ? TimeSpan.FromSeconds(DefaultVotingTime) : null,
+            DiscussionTime = DiscussionTime != 0 ? TimeSpan.FromSeconds(DiscussionTime) : null
         };
     }
 
@@ -39,7 +47,9 @@ public class GameOptionsDto : ICloneable
             ExplodingWitchHome = ExplodingWitchHome,
             HunterMustKill = HunterMustKill,
             MayorDecidesNextMayor = MayorDecidesNextMayor,
-            RevealRoleForCauses = [..RevealRoleForCauses]
+            RevealRoleForCauses = [..RevealRoleForCauses],
+            DefaultVotingTime = DefaultVotingTime,
+            DiscussionTime = DiscussionTime
         };
     }
 }
