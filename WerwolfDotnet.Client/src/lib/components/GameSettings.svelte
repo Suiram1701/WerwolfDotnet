@@ -86,20 +86,20 @@
 <h5>Rollen:</h5>
 {#if options.amountOfRoles !== undefined && cfg.fixedRoleAmounts !== undefined}
     {#each Object.values(Role).filter(r => typeof r === "number" && r !== Role.None).sort((a, b) => a - b) as role}
-        <div class="row align-items-center flex-nowrap mb-1">
-            <label class="form-label d-flex col-7 col-sm-6" for="role{role.toString()}">
+        <div class="row align-items-center flex-nowrap mb-2">
+            <label class="form-label d-flex col-7 col-sm-6 mb-0" for="role{role.toString()}">
                 {@html getRoleIcon(role)}
                 {roleNames[role]}<Tooltip classNames="ms-auto" title={roleDescriptions[role]} />:
             </label>
 
             {#if role in (cfg.fixedRoleAmounts ?? {})}
-                <input class="form-check-input roleCheckbox" id="role{role.toString()}" type="checkbox" readonly={readonly}
+                <input class="form-check-input pe-0 roleCheckbox" id="role{role.toString()}" type="checkbox" readonly={readonly}
                        disabled={readonly} checked={options.amountOfRoles[role] > 0} onchange={async e => {
                            (options.amountOfRoles ?? {})[role] = e.currentTarget.checked ? (cfg.fixedRoleAmounts ?? {})[role] : 0;
                            await updateSettings();
                        }}>
             {:else}
-                <input class="form-control col-2" id="role{role.toString()}" type="number" placeholder="0" bind:value={options.amountOfRoles[role]} 
+                <input class="form-control w-auto col-2" id="role{role.toString()}" type="number" placeholder="0" bind:value={options.amountOfRoles[role]} 
                        min="{role === Role.Werwolf ? 1 : 0}" onchange={updateSettings} readonly={readonly} disabled={readonly}>
             {/if}
         </div>
@@ -114,18 +114,22 @@
 
 <h5>Auswahlzeiten für Spieler:</h5>
 <div class="d-flex align-items-center flex-nowrap mb-1">
-    <label class="form-label me-2" for="defaultTime">Standardzeit:</label>
+    <label class="form-label d-flex me-2 mb-0" for="defaultTime">
+        Standardzeit <Tooltip classNames="ms-2" title="Die Zeit die ein Spieler für sine Auswahl bekommt (Wenn die Werwölfe töten, wenn die Seherin sieht, ...)." />:
+    </label>
     <div class="input-group">
-        <input class="form-control" id="defaultTime" type="number" aria-describedby="unit0" bind:value={options.defaultVotingTime} 
-               min="0" readonly={readonly} disabled={readonly}/>
+        <input class="form-control" id="defaultTime" type="number" aria-describedby="unit0" bind:value={options.defaultVotingTime}
+               onchange={updateSettings} min="0" readonly={readonly} disabled={readonly}/>
         <span class="input-group-text" id="unit0">Sekunden</span>
     </div>
 </div>
 <div class="d-flex align-items-center flex-nowrap mb-1">
-    <label class="form-label me-2" for="discussionTime">Diskussionszeit:</label>
+    <label class="form-label d-flex me-2 mb-0" for="discussionTime">
+        Diskussionszeit <Tooltip classNames="ms-2" title="Die Zeit die die Dorfgemeinschaft für die Diskussion der Anklage und für die Bürgermeisterwahl bekommt." />:
+    </label>
     <div class="input-group">
         <input class="form-control" id="discussionTime" type="number" aria-describedby="unit1" bind:value={options.discussionTime}
-               min="0" readonly={readonly} disabled={readonly}/>
+               onchange={updateSettings} min="0" readonly={readonly} disabled={readonly}/>
         <span class="input-group-text" id="unit1">Sekunden</span>
     </div>
 </div>
@@ -148,10 +152,6 @@
 </div>
 
 <style>
-    div input.form-control {
-        width: auto !important;
-    }
-    
     .roleCheckbox {
         padding-right: 0;     /* Bootstrap row would stretch the checkbox so overwrite it */
     }

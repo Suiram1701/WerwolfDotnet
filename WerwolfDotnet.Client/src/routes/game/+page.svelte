@@ -156,7 +156,7 @@
 
     {#if $game.remainingTimeoutHandle !== null}
         <p class="border border-{$game.remainingSeconds > 10 ? 'warning' : 'danger'}-subtle rounded bg-{$game.remainingSeconds > 10 ? 'warning' : 'danger'}-subtle p-1 mb-3">
-            {$game.remainingSeconds.toFixed(0)} Sekunden verbleiben für die {$game.currentAction!.type === ActionType.WerwolfAccuses ? 'Diskussion' : 'Auswahl'}
+            {$game.remainingSeconds.toFixed(0)} Sekunden verbleiben für die {[ActionType.WerwolfAccuses, ActionType.MayorVoting].includes($game.currentAction!.type!) ? 'Diskussion' : 'Auswahl'}
         </p>
     {/if}
     
@@ -231,6 +231,7 @@
             title: "Spiel-Log",
             content: gameLogsModalContent,
             confirmText: "Schließen",
+            size: "lg",
             canDismiss: false,
             closeOnConfirm: true
         })}>Spiel-Logs ansehen</Button>
@@ -326,10 +327,25 @@
         <span class="material-symbols-outlined">manage_search</span>
     </button>
 </div>
-<aside id="logSidePanel" class="log-panel-fixed large-vp bg-dark-subtle overflow-auto p-2">
-    {#each $game.gameLogs as message}
-        <p>{renderMessage(message)}</p>
-    {/each}
+<aside id="logSidePanel" class="log-panel-fixed large-vp d-flex flex-column bg-dark-subtle p-2">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <h5 class="mb-0">Spiel-Logs:</h5>
+        <button type="button" class="btn btn-secondary flex-shrink-1 d-flex align-items-center me-0" onclick={() => modalProvider.show({
+            title: "Spiel-Log",
+            content: gameLogsModalContent,
+            confirmText: "Schließen",
+            size: "lg",
+            canDismiss: false,
+            closeOnConfirm: true
+        })} use:tooltip={{ title: "Logs vergrößern", placement: "left" }}>
+            <span class="material-symbols-outlined">open_in_new</span>
+        </button>
+    </div>
+    <div class="overflow-auto">
+        {#each $game.gameLogs as message}
+            <p>{renderMessage(message)}</p>
+        {/each}
+    </div>
 </aside>
 
 <div id="client-disconnected" class="reconnect-ui position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center d-none">

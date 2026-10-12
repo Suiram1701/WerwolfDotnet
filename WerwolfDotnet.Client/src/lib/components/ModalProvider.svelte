@@ -6,6 +6,7 @@
         title: string;
         content?: Snippet;
         contentText?: string;
+        size?: "sm" | "lg" | "xl";
         confirmText?: string;
         allowHtmlText?: boolean;
         confirmColor?: string;
@@ -36,7 +37,7 @@
 </script>
 
 <div {id} class="modal fade" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable{modal?.size ? (' modal-' + modal!.size) : ''}">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
