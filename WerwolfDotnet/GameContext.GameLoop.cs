@@ -281,6 +281,7 @@ partial class GameContext
         Logger.Log(Event.GameWon, args: [wonBy, ..winners]);
         
         State = GameState.GameWon;
+        OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0), null);
         OnGameWon?.Invoke(this, wonBy);
             
         _gameLoopCts!.Cancel();

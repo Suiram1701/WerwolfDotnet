@@ -15,9 +15,9 @@ public class GameOptionsDto : ICloneable
     
     public bool MayorDecidesNextMayor { get; set; }
 
-    public int DefaultVotingTime { get; init; } = 60;
+    public int DefaultVotingTime { get; set; } = 60;
 
-    public int DiscussionTime { get; init; } = 300;
+    public int DiscussionTime { get; set; } = 300;
 
     public CauseOfDeath[] RevealRoleForCauses { get; set; } = [];
     

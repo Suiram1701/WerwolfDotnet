@@ -77,7 +77,7 @@ public partial class GameManager
             ? _hubContext.Clients.Game(ctx.Id).GameLogUpdated(shonMessages)
             : _hubContext.Clients.Player(ctx.Id, recipient.Id).GameLogUpdated(shonMessages);
         
-        bool reveal(LogMessage msg) => ctx.State == GameState.GameWon || msg.Time < ctx.RoundStartedAt;     // Show only when the game is finished or from a previous game
+        bool reveal(LogMessage msg) => ctx.State == GameState.GameWon || msg.Time < ctx.RoundStartedAt || ctx.RoundStartedAt == DateTimeOffset.MinValue;     // Show only when the game is finished or from a previous game
     }
     
     // try-catch is "required" everywhere because of async-void 
@@ -88,9 +88,10 @@ public partial class GameManager
         {
             LogLevel level = message.Event switch
             {
-                Event.Voting => LogLevel.Trace,
+                Event.VotingTimeout => LogLevel.Warning,
+                Event.VotingSkipped => LogLevel.Information,
                 <= 0 => LogLevel.Information,
-                _ => LogLevel.Debug
+                _ => LogLevel.Trace
             };
             if (message.Event != Event.Voting) // Event.Voting has to be treated special because it contains a dictionary
             {

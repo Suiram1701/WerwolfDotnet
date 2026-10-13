@@ -263,6 +263,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
         State = GameState.Preparation;
         OnGameStateChanged?.Invoke(this, State, new Dictionary<Player, (CauseOfDeath, Role)>(0), null);
         Logger.Log(Event.GameStopped);
+        RoundStartedAt = DateTimeOffset.MinValue;     // Indicates the round isn't running
         
         _gameLoopCts = null;
         _gameLoop = null;

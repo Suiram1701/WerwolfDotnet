@@ -145,7 +145,7 @@ public class GameSessionController(
             .Select(m => new LogMessageDto(m, reveal(m)));     
         return Ok(showsMessages);
 
-        bool reveal(LogMessage msg) => ctx.State == GameState.GameWon || msg.Time < ctx.RoundStartedAt;     // Show only when the game is finished or from a previous game
+        bool reveal(LogMessage msg) => ctx.State == GameState.GameWon || msg.Time < ctx.RoundStartedAt || ctx.RoundStartedAt == DateTimeOffset.MinValue;     // Show only when the game is finished or from a previous game
     }
     
     /// <summary>
@@ -180,6 +180,9 @@ public class GameSessionController(
         {
             return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "A role which has a fixed amount is set to something else than this amount. See /api/config for reference.");
         }
+        
+        if (options.DefaultVotingTime < 0 || options.DiscussionTime < 0)
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Neither 'defaultVotingTime' nor 'discussionTime' can be negative.");
         
         await _settingsStore.UpdateAsync(sessionId, options).ConfigureAwait(false);
         return Ok(options);

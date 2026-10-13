@@ -115,7 +115,7 @@
 <h5>Auswahlzeiten für Spieler:</h5>
 <div class="d-flex align-items-center flex-nowrap mb-1">
     <label class="form-label d-flex me-2 mb-0" for="defaultTime">
-        Standardzeit <Tooltip classNames="ms-2" title="Die Zeit die ein Spieler für sine Auswahl bekommt (Wenn die Werwölfe töten, wenn die Seherin sieht, ...)." />:
+        Standardzeit <Tooltip classNames="ms-2" title="Die Zeit die ein Spieler für sine Auswahl bekommt (Wenn die Werwölfe töten, wenn die Seherin sieht, ...). Bei 0 gibt es keine Begrenzung." />:
     </label>
     <div class="input-group">
         <input class="form-control" id="defaultTime" type="number" aria-describedby="unit0" bind:value={options.defaultVotingTime}
@@ -125,7 +125,7 @@
 </div>
 <div class="d-flex align-items-center flex-nowrap mb-1">
     <label class="form-label d-flex me-2 mb-0" for="discussionTime">
-        Diskussionszeit <Tooltip classNames="ms-2" title="Die Zeit die die Dorfgemeinschaft für die Diskussion der Anklage und für die Bürgermeisterwahl bekommt." />:
+        Diskussionszeit <Tooltip classNames="ms-2" title="Die Zeit die die Dorfgemeinschaft für die Diskussion der Anklage und für die Bürgermeisterwahl bekommt. Bei 0 gibt es keine Begrenzung." />:
     </label>
     <div class="input-group">
         <input class="form-control" id="discussionTime" type="number" aria-describedby="unit1" bind:value={options.discussionTime}
