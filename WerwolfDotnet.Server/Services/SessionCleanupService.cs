@@ -33,6 +33,7 @@ public sealed class SessionCleanupService(
 
     private async void OnElapsed(object? sender, ElapsedEventArgs e)
     {
+        _logger.LogTrace("Cleaning up sessions/players");
         try
         {
             IEnumerable<GameContext> contexts = (await _manager.GetAllGamesAsync(skipAccessCheck: true))!;
@@ -43,6 +44,31 @@ public sealed class SessionCleanupService(
                 if (ctx.Players.Count == 1 && Options.AfterEmptySession < DateTimeOffset.UtcNow - (ctx.Logger.Messages
                         .LastOrDefault(msg => msg.Event == Event.Left)?.Time ?? ctx.Logger.Messages[^1].Time))
                     await removeSession(ctx);
+
+                if (ctx.RoundStartedAt == DateTimeOffset.MinValue)     // No need to check
+                    continue;
+                foreach (Player player in ctx.Players.Where(p => p.Status == PlayerState.Alive).ToArray())     // Death players can't interact -> do not kick them
+                {
+                    (int index, LogMessage message)[] playerVotes = ctx.Logger.Messages
+                        .Index() // The last n votings the player participated in
+                        .Where(t => t.Item.Time >= ctx.RoundStartedAt)
+                        .Where(t => t.Item.Event == Event.Voting && t.Item.Args.Skip(1)
+                            .Any(kvp => ((KeyValuePair<LogPlayerSnapshot, LogPlayerSnapshot[]>)kvp!).Key.Equals(player)))
+                        .Reverse()
+                        .Take(Options.KickPlayerAfterInactiveActions)
+                        .ToArray();
+                    if (playerVotes.Length == Options.KickPlayerAfterInactiveActions && playerVotes.All(t =>     // player is kicked when he was in the last n votings absent
+                        {
+                            LogMessage previousMsg = ctx.Logger.Messages[t.index - 1];     // In case the voting timeouted, the corresponding message comes before
+                            if (previousMsg.Event != Event.VotingTimeout)
+                                return false;
+                            return previousMsg.Args.Skip(1).Any(p => player.Equals(p));
+                        }))
+                    {
+                        _logger.LogInformation("Removed player {player} from session {sessionId:D6} due to inactivity", player, ctx.Id);
+                        await _manager.LeaveGameAsync(ctx, player, kicked: true); 
+                    }
+                }
             }
         }
         catch (Exception ex)

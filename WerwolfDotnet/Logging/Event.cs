@@ -11,7 +11,7 @@ public enum Event              // Comment is a list of parameters which should b
     GameStarted = -2,          // No parameters
     GameStopped = -1,          // No parameters
     GameWon = 0,               // won by fraction, ..[won players]
-    Voting,                    // action type, ..[KeyValuePair<Player, Player[]>]
+    Voting,                    // action type, ..[KeyValuePair<LogPlayerSnapshot, LogPlayerSnapshot[]>]
     VotingTimeout,             // action type, ..[not responded players]
     VotingSkipped,             // action type
     Killed,                    // Killer?, ..[killed ones]

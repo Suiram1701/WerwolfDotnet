@@ -102,6 +102,8 @@ public class Player : IEquatable<Player>
             return false;
         if (ReferenceEquals(this, obj))
             return true;
+        if (obj is LogPlayerSnapshot p)
+            return p.Equals(this);
         return obj.GetType() == GetType() && Equals((Player)obj);
     }
 

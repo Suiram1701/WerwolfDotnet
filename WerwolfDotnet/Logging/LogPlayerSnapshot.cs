@@ -17,4 +17,21 @@ public class LogPlayerSnapshot(int id, string name, Role? role)
     public Role? Role { get; } = role;
 
     public override string ToString() => $"{Name} ({Id})";
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
+            return false;
+        if (ReferenceEquals(this, obj))
+            return true;
+
+        return obj switch
+        {
+            Player p => p.Id == Id && p.Name == Name,
+            LogPlayerSnapshot pSnapshot => pSnapshot.Id == Id && pSnapshot.Name == Name && pSnapshot.Role == Role,
+            _ => false
+        };
+    }
+
+    public override int GetHashCode() => HashCode.Combine(Id, Name, Role);
 }

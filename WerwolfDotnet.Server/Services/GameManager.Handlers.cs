@@ -68,7 +68,7 @@ public partial class GameManager
                 if (reveal(m) || m.Event <= 0)
                     return true;
                 return m.Event == Event.Voting && m.Args.Skip(1)     // Event.Voting is expected to have a collection key-value-pairs at its second position
-                    .Any(arg => ((KeyValuePair<Player, Player[]>)arg!).Key.Id == recipient?.Id);
+                    .Any(arg => ((KeyValuePair<LogPlayerSnapshot, LogPlayerSnapshot[]>)arg!).Key.Id == recipient?.Id);
             })
             .Select(m => new LogMessageDto(m, reveal(m)))
             .ToArray();
@@ -135,7 +135,7 @@ public partial class GameManager
                     await _hubContext.Clients.Game(context.Id).GameLogUpdated([new LogMessageDto(message, reveal)]);
                     break;
                 case Event.Voting: // Event.Voting is expected to have a collection key-value-pairs at its second position
-                    IEnumerable<int> players = message.Args.Skip(1).Select(arg => ((KeyValuePair<Player, Player[]>)arg!).Key.Id);
+                    IEnumerable<int> players = message.Args.Skip(1).Select(arg => ((KeyValuePair<LogPlayerSnapshot, LogPlayerSnapshot[]>)arg!).Key.Id);
                     await _hubContext.Clients.Players(context.Id, players).GameLogUpdated([new LogMessageDto(message, reveal)]);
                     break;
             }
@@ -144,7 +144,7 @@ public partial class GameManager
         { _logger.LogError(ex, ex.Message); }
         
         string spreadArgs(int alreadyTook = 1, string prefix = "arg") => string.Join(", ",
-            Enumerable.Range(alreadyTook, message.Args.Length - alreadyTook).Select(i => $"{{arg{i - alreadyTook}}}"));
+            Enumerable.Range(alreadyTook, message.Args.Length - alreadyTook).Select(i => $"{{{prefix}{i - alreadyTook}}}"));
     }
     
     private async void OnGameMetadataChangedAsync(GameContext ctx, int gameMasterId, int? mayorId)
@@ -163,9 +163,6 @@ public partial class GameManager
                 .Select(kvp => KeyValuePair.Create(kvp.Key.Id, new DeathDetails(kvp.Value.Item1, kvp.Value.Item2)))
                 .ToDictionary();
             await _hubContext.Clients.Game(ctx.Id).GameStateUpdated(newState, deathOnes, bearGrowls);
-
-            if (newState == GameState.GameWon)     // The end state reveals a ton of infos
-                await UpdateFullGameLogAsync(ctx, null);
         }
         catch (Exception ex)
         { _logger.LogError(ex, ex.Message); }
@@ -222,6 +219,7 @@ public partial class GameManager
         {
             await _hubContext.Clients.Game(ctx.Id).GameWon(fraction);
             await UpdatePlayersAsync(ctx, null);     // Trigger update to load the roles
+            await UpdateFullGameLogAsync(ctx, null);     // The end state reveals a ton of infos
         }
         catch (Exception ex)
         { _logger.LogError(ex, ex.Message); }

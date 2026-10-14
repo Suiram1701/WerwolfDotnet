@@ -140,7 +140,7 @@ public class GameSessionController(
                 if (reveal(m) || m.Event <= 0)
                     return true;
                 return m.Event == Event.Voting && m.Args.Skip(1)     // Event.Voting is expected to have a collection key-value-pairs at its second position
-                    .Any(arg => ((KeyValuePair<Player, Player[]>)arg!).Key.Id == User.GetPlayerId());
+                    .Any(arg => ((KeyValuePair<LogPlayerSnapshot, LogPlayerSnapshot[]>)arg!).Key.Id == User.GetPlayerId());
             })
             .Select(m => new LogMessageDto(m, reveal(m)));     
         return Ok(showsMessages);

@@ -13,10 +13,16 @@ public sealed class GameLogger
     
     internal void Log(Event @event, params object?[] args)
     {
-        LogMessage msg = new(DateTimeOffset.UtcNow, @event, args
-            .Select(arg => arg is Player p ? new LogPlayerSnapshot(p) : arg)
-            .ToArray());
+        LogMessage msg = new(DateTimeOffset.UtcNow, @event, [.. args.Select(TrySnapshotArg)]);
         _messages.Add(msg);
         OnMessage?.Invoke(msg);
     }
+
+    private static object? TrySnapshotArg(object? arg) => arg switch
+    {
+        Player player => new LogPlayerSnapshot(player),
+        Player[] players => players.Select(p => new LogPlayerSnapshot(p)).ToArray(),
+        KeyValuePair<Player, Player[]> kvp => KeyValuePair.Create(new LogPlayerSnapshot(kvp.Key), (LogPlayerSnapshot[])TrySnapshotArg(kvp.Value)!),
+        _ => arg
+    };
 }
