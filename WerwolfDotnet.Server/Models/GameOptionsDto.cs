@@ -6,14 +6,14 @@ namespace WerwolfDotnet.Server.Models;
 public class GameOptionsDto : ICloneable
 {
     public Dictionary<int, int> AmountOfRoles { get; set; } = [];
-    
-    public bool SeerSeesRole { get; set; }
+
+    public bool SeerSeesRole { get; set; } = true;
     
     public bool ExplodingWitchHome { get; set; }
     
     public bool HunterMustKill { get; set; }
-    
-    public bool MayorDecidesNextMayor { get; set; }
+
+    public bool MayorDecidesNextMayor { get; set; } = true;
 
     public int DefaultVotingTime { get; set; } = 60;
 

@@ -162,7 +162,8 @@ app.UseCors(websiteClientOrigin);
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
+if (!app.Environment.IsDevelopment())
+    app.MapStaticAssets();
 app.MapControllers();
 app.MapHub<GameHub>(GameHubPath, options => options.AllowStatefulReconnects = true);
 app.MapFallbackToFile("app.html");

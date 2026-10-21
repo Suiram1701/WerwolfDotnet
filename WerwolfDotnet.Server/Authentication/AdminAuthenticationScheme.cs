@@ -35,7 +35,7 @@ public class AdminAuthenticationScheme(
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims: [
             new Claim(Claims.SessionId, "-1"),
             new Claim(Claims.PlayerId, "-1"),
-            new Claim(Claims.PlayerName, "Server-ADM"),
+            new Claim(Claims.PlayerName, parts[0] + "_adm"),
             new Claim(Claims.IsAdmin, "true")
         ], authenticationType: SchemeName, nameType: Claims.PlayerName));
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, null, SchemeName)));
