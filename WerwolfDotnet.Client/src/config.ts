@@ -5,7 +5,7 @@ let clientConfig: ClientConfigDto | undefined;
 export const config =
 {
     isDevelopment: import.meta.env.DEV,
-    apiEndpoint: import.meta.env.DEV ? "http://localhost:7216" : "",
+    apiEndpoint: import.meta.env.DEV && window.location.hostname === "localhost" ? `http://localhost:7216` : "",
     apiPollInterval: 5000,
     version: "0.4.0-dev",
     

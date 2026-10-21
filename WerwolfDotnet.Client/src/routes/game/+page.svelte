@@ -239,23 +239,23 @@
     
     <!-- Admin buttons -->
     {#if $game.selfId === $game.gameMeta?.gameMaster && ($game.gameState ?? -2) <= 0}
-        <div class="d-flex main-content mt-3">
+        <div class="adm-btn main-content d-flex mt-3">
             {#if enoughPlayers && everyOneReady}
-                <Button icon="play_arrow" class="w-100" onclick={async () => await gameHub.startGame()}>Spiel starten</Button>
+                <Button icon="play_arrow" class="w-100 my-1" onclick={async () => await gameHub.startGame()}>Spiel starten</Button>
             {:else}
-                <span class="w-100" use:tooltip={{ title: !enoughPlayers
+                <span class="w-100 my-1" use:tooltip={{ title: !enoughPlayers
                     ? `Es müssen mindestens ${serverConfig.minimumPlayers} in einer Runde sein.`
                     : "Alle Spieler müssen bereit sein (Spieler, die AFK sind können auch gekicked werden)." }}>
                     <Button icon="play_arrow" class="w-100 h-100" disabled>Spiel starten</Button>
                 </span>
             {/if}
             
-            <Button variant="info" icon="shuffle" class="w-100 mx-2" onclick={ async () => await gameHub.shufflePlayers()}>Spieler durchmischen</Button>
+            <Button variant="info" icon="shuffle" class="w-100 m-1" onclick={ async () => await gameHub.shufflePlayers()}>Spieler durchmischen</Button>
 
             {#if $game.gameState !== GameState.Locked}
-                <Button variant="warning" icon="lock" class="w-100" onclick={async () => await gameHub.setGameLocked(true)}>Beitreten blockieren</Button>
+                <Button variant="warning" icon="lock" class="w-100 my-1" onclick={async () => await gameHub.setGameLocked(true)}>Beitreten blockieren</Button>
             {:else}
-                <Button variant="success" icon="lock_open" class="w-100" onclick={async () => await gameHub.setGameLocked(false)}>Beitreten erlauben</Button>
+                <Button variant="success" icon="lock_open" class="w-100 my-1" onclick={async () => await gameHub.setGameLocked(false)}>Beitreten erlauben</Button>
             {/if}
         </div>
     {/if}
@@ -361,6 +361,14 @@
         :global(.main-content) {
             width: 100%;
             max-width: 100vw;
+        }
+
+        .adm-btn {
+            flex-wrap: wrap;
+        }
+        :global(.adm-btn > button) {     /* :global is needed because Svelte thinks this is unused somehow */
+            margin-left: 0 !important;   /* Overwrites m-2 from the shuffel player button */
+            margin-right: 0 !important;
         }
 
         .large-vp { visibility: hidden; }
