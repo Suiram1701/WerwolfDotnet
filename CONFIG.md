@@ -40,7 +40,6 @@ A complete configuration and also the default one of the game server looks like 
     "MaxPlayers": 32,
     "PlayerNameMinLength": 3,
     "PlayerNameMaxLength": 16,
-    "PlayerNameAllowNumbers": true,
     "PlayerNameForbiddenWords": [
       "Amor",
       "Bärenführer",

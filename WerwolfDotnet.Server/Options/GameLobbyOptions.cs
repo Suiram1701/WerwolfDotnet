@@ -38,11 +38,6 @@ public class GameLobbyOptions
     public int PlayerNameMaxLength { get; set; } = 16;
 
     /// <summary>
-    /// Indicates whether a player name can contain numbers.
-    /// </summary>
-    public bool PlayerNameAllowNumbers { get; set; } = true;
-
-    /// <summary>
     /// Words which can't be in a player name (case-insensitive)
     /// </summary>
     public HashSet<string> PlayerNameForbiddenWords { get; set; } = new([], comparer: StringComparer.InvariantCultureIgnoreCase);

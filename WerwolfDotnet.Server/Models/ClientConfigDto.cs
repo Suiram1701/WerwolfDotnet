@@ -8,8 +8,6 @@ public class ClientConfigDto
     
     public int PlayerNameMaxLength { get; init; }
     
-    public bool PlayerNameAllowNumbers { get; init; }
-    
     public int MinimumPlayers { get; init; }
 
     public Dictionary<int, int> FixedRoleAmounts { get; init; } = [];
