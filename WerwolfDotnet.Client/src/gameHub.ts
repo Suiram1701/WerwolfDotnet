@@ -1,4 +1,4 @@
-import {goto} from "$app/navigation";
+import { goto } from "$app/navigation";
 import { CauseOfDeath, Fraction, GameState, type LogMessageDto, type PlayerDto, PlayerRelation, Role, type SelectionOptionsDto } from "./Api";
 import { gamePageState, type GamePageState } from "./stores/pageStateStore";
 import { removePlayerToken } from "./stores/gameSessionStore";
@@ -8,16 +8,14 @@ import { fractions, fractionWin } from "./texts/fractions";
 import { causeOfDeathTemplates } from "./texts/causeOfDeaths";
 import { roleNames } from "./texts/roles";
 import { default as routes } from "./routes/routes";
-import ModalProvider from "$lib/components/ModalProvider.svelte";
+import { modal } from "$lib/actions/modal";
 
 export class GameHub {
     private connection: HubConnection;
     private gamePage!: GamePageState;
-    private modal: ModalProvider;
 
-    public constructor(connection: HubConnection, provider: ModalProvider) {
+    public constructor(connection: HubConnection) {
         gamePageState.subscribe(state => this.gamePage = state);
-        this.modal = provider;
         
         this.connection = connection;
         const methodNames: string[] = Object.getOwnPropertyNames(GameHub.prototype);
@@ -61,7 +59,7 @@ export class GameHub {
 
     private onGameMetaUpdated(gameMasterId: number, mayorId: number | null): void {
         if (this.gamePage.gameMeta !== undefined && this.gamePage.gameMeta.gameMaster !== gameMasterId && gameMasterId === this.gamePage.selfId)
-            this.modal.show({ title: "Game-master wechsel", contentText: "Der aktuelle Game-master hat das Spiel verlassen. Sie sind nun der neue Game-master.", canDismiss: false });
+            modal.show({ title: "Game-master wechsel", contentText: "Der aktuelle Game-master hat das Spiel verlassen. Sie sind nun der neue Game-master.", canDismiss: false });
         gamePageState.update(state => {
             state.gameMeta = { gameMaster: gameMasterId, mayor: mayorId };
             return state;
@@ -73,7 +71,9 @@ export class GameHub {
             state.gameLogs = state.gameLogs.concat(messages)
                 // @ts-ignore
                 .sort((a, b) => new Date(a.timeStamp!) - new Date(b.timeStamp!))
-                .filter((v, i, array) => array.indexOf(v) === i);     // Distinct
+                .filter((v, i, array) => array
+                    .findIndex(o => v.timeStamp === o.timeStamp && v.eventType === o.eventType) === i)     // Distinct
+                
             return state;
         });
     }
@@ -121,7 +121,7 @@ export class GameHub {
         });
 
         if (this.gamePage.selfId! in diedPlayers) {
-            this.modal.show({ title: "Du bist gestorben", contentText: "Du bist gestorben. Ab sofort kannst du dem Spiel nur noch zuschauen.", canDismiss: false });
+            modal.show({ title: "Du bist gestorben", contentText: "Du bist gestorben. Ab sofort kannst du dem Spiel nur noch zuschauen.", canDismiss: false });
             return;
         }
         
@@ -132,9 +132,9 @@ export class GameHub {
                 ? "Der Bär brummt nicht"
                 : "";
         if (newState === GameState.Day)
-            this.modal.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr}\n${bearStr}`, allowHtmlText: true, canDismiss: false });
+            modal.show({ title: "Der Tag bricht an", contentText: `Der Tag bricht an. ${diedStr}\n${bearStr}`, allowHtmlText: true, canDismiss: false });
         else if (newState === GameState.Night)
-            this.modal.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. ${diedStr}\n${bearStr}`, allowHtmlText: true, canDismiss: false });
+            modal.show({ title: "Die Nacht bricht an", contentText: `Die Nacht beginnt. ${diedStr}\n${bearStr}`, allowHtmlText: true, canDismiss: false });
     }
 
     private onPlayerRoleUpdated(newRoleName: Role, relations: Record<number, PlayerRelation[]>): void {
@@ -146,13 +146,20 @@ export class GameHub {
     }
 
     private onActionRequested(action: SelectionOptionsDto): void {
+        if (this.gamePage.currentAction !== null)
+        {
+            console.warn("Last player action hasn't been ended properly!")
+            this.onActionCompleted(null)
+        }
+        
         gamePageState.update(state => {
             state.currentAction = action;
             if (action.votingTimeout !== undefined && action.votingTimeout !== null) {
                 const actionTimeout = new Date(action.votingTimeout).getTime();
-                state.remainingSeconds = Math.max((actionTimeout - Date.now()) / 1000, 0);
+                state.remainingSeconds = (actionTimeout - Date.now()) / 1000;
+                
                 state.remainingTimeoutHandle = setInterval(() => gamePageState.update(state => {
-                    state.remainingSeconds = Math.max((actionTimeout - Date.now()) / 1000, 0);
+                    state.remainingSeconds = (actionTimeout - Date.now()) / 1000;
                     return state;
                 }), 1000);
             }
@@ -185,7 +192,7 @@ export class GameHub {
 
     private onActionCompleted(parameters: string[] | null): void {
         if (parameters !== null && actionCompletions[this.gamePage.currentAction!.type ?? 0] !== undefined) {
-            this.modal.show({
+            modal.show({
                 title: actionNames[this.gamePage.currentAction!.type ?? 0] || "undefined",
                 contentText: actionCompletions[this.gamePage.currentAction!.type ?? 0]?.(parameters) || "Wenn du dies siehst ist etwas schiefgelaufen...",
                 allowHtmlText: true,
@@ -209,7 +216,7 @@ export class GameHub {
             state.gameState = GameState.GameWon;
             return state;
         });
-        this.modal.show({
+        modal.show({
             title: `Spielende`,
             contentText: `Die ${fractions[winFraction]} haben gewonnen. ${fractionWin[winFraction]}`,
             canDismiss: false
@@ -220,7 +227,7 @@ export class GameHub {
         await this.connection.stop();
         removePlayerToken(this.gamePage.gameId, this.gamePage.selfId);
         
-        goto(routes.menu(kicked))
+        await goto(routes.menu(kicked))
     }
 
     private buildDeathString(diedPlayers: Record<number, DeathDetails>): string {

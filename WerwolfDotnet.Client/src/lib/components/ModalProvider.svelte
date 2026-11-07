@@ -1,39 +1,26 @@
 <script lang="ts">
     import { beforeNavigate } from "$app/navigation";
-    import { onMount, type Snippet } from "svelte";
-    
-    interface Modal {
-        title: string;
-        content?: Snippet;
-        contentText?: string;
-        size?: "sm" | "lg" | "xl";
-        confirmText?: string;
-        allowHtmlText?: boolean;
-        confirmColor?: string;
-        canDismiss?: boolean;
-        closeOnConfirm?: boolean;
-        onConfirm?: () => void;
-    }
-    
+    import { onMount } from "svelte";
+    import { type ModalOptions, modal as modalControl, modalState } from "$lib/actions/modal";
+
     const id: string = "modalProvider-" + Math.floor(Math.random() * 100);
-    let modal: Modal | undefined = $state();
-    
+
     let instance: any;
+    let modal: ModalOptions | undefined = $state();
     onMount(() => {
         // @ts-ignore (bootstrap imported from CDN)
         instance = new bootstrap.Modal("#" + id);
-        return () => instance.dispose();
+        const unsubscribe = modalState.subscribe(s => {
+            modal = s.options;
+            if (s.visible)
+                instance.show();
+            else
+                instance.hide();
+        });
+        return () => { unsubscribe(); instance.dispose(); };
     });
     
-    beforeNavigate(() => hide());
-    
-    export function show(options: Modal)
-    {
-        modal = options;
-        instance.show();
-    }
-    
-    export function hide() { instance.hide(); }     // Don't set modal to undefined. The Modal content will disappear before the modal it's self finished the animation
+    beforeNavigate(() => modalControl.hide());
 </script>
 
 <div {id} class="modal fade" tabindex="-1">
@@ -65,7 +52,7 @@
                 <button class="btn btn-{modal?.confirmColor ?? 'primary'}" type="button" onclick={() => {
                     modal?.onConfirm?.()
                     if (modal?.onConfirm === undefined || modal?.closeOnConfirm)
-                        hide();
+                        modalControl.hide();
                 }}>
                     {#if modal?.allowHtmlText ?? false}
                         {@html modal?.confirmText ?? "Verstanden"}

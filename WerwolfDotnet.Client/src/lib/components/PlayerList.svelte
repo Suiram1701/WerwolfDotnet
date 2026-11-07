@@ -1,21 +1,15 @@
 <script lang="ts">
-    import { getContext } from "svelte";
-    import { type Readable } from "svelte/store";
     import { ActionType, Api, GameState, type PlayerDto, PlayerRelation } from "../../Api";
     import { gamePageState as state } from "../../stores/pageStateStore";
     import { roleNames, getRoleIcon } from "../../texts/roles";
     import { tooltip } from "$lib/actions/tooltip";
-    import ModalProvider from "$lib/components/ModalProvider.svelte";
+    import { modal } from "$lib/actions/modal";
 
     let { showAll, apiClient }: { showAll: boolean, apiClient: Api<unknown> } = $props();
     
     let shownPlayers = $derived($state.gameState === GameState.GameWon ? $state.players.sort(p => p.role ?? 0)
         : $state.players.filter(p => ($state.currentAction?.votablePlayers?.includes(p.id!) ?? true) || showAll));
     let isWerwolfKilling = $derived($state.currentAction?.type === ActionType.WerwolfKilling);
-    
-    let modalProvider: ModalProvider;
-    const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");
-    modalAccessor.subscribe(m => modalProvider = m);
     
     function getPlayerCSSClasses(player: PlayerDto): string {
         if (player.id === $state.selfId)
@@ -115,7 +109,7 @@
             <button type="button" class="btn btn-sm btn-{player.id === $state.selfId ? 'secondary' : 'danger'} w-auto ms-3" onclick={() => {
             if (player.id === $state.selfId)
                 return;
-            modalProvider.show({
+            modal.show({
                 title: "Spieler kicken?",
                 contentText: "Möchten Sie diesen Spieler wirklich aus dem Spiel werfen?",
                 confirmText: "Kicken",

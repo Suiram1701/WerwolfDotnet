@@ -1,8 +1,7 @@
 <script lang="ts">
-    import { getContext, onMount } from "svelte";
+    import { onMount } from "svelte";
     import { page } from "$app/state"
     import { goto } from "$app/navigation";
-    import { type Readable } from "svelte/store";
     import { ActionType, Api, GameState } from "../../Api";
     import { storePlayerToken, getPlayerToken } from "../../stores/gameSessionStore";
     import { gamePageState as game } from "../../stores/pageStateStore";
@@ -12,7 +11,6 @@
     import { actionNames, actionDescriptions, submitButton } from "../../texts/actions";
     import { renderMessage } from "../../texts/logs";
     import { tooltip } from "$lib/actions/tooltip";
-    import ModalProvider from "$lib/components/ModalProvider.svelte";
     import PageTitle from "$lib/components/PageTitle.svelte";
     import Button from "$lib/components/Button.svelte";
     import PlayerList from "$lib/components/PlayerList.svelte";
@@ -20,13 +18,10 @@
     import { default as routes } from "../routes";
     import { config } from "../../config";
     import GameButtons from "$lib/components/GameButtons.svelte";
+    import {modal} from "$lib/actions/modal";
     
     const webUrl = page.url.protocol + "//" + page.url.host;     // Port is part of the host
     
-    let modalProvider: ModalProvider;
-    const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");
-    modalAccessor.subscribe(m => modalProvider = m);
-
     const apiClient = new Api({ baseUrl: config.apiEndpoint, securityWorker: (data: unknown) => {
         // @ts-ignore
         return { headers: { "Authorization": `Bearer ${data.token}` } };
@@ -36,8 +31,10 @@
 
     let isWerwolfKilling = $derived($game.currentAction?.type === ActionType.WerwolfKilling);
     let canEditSettings = $derived($game.gameMeta?.gameMaster === $game.selfId && ($game.gameState ?? 0) <= 0);
+    let voteLocked = $derived($game.selectedPlayers.length < ($game.currentAction?.minimum ?? 0) || $game.selectedPlayers.length > ($game.currentAction?.maximum ?? 0) || $game.remainingSeconds < 0);
     
     let connection: HubConnection;
+    // svelte-ignore non_reactive_update
     let gameHub: GameHub;
     onMount(() => {
         const gameId = Number.parseInt(page.url.searchParams.get("sessionId") ?? "-1");
@@ -82,7 +79,7 @@
         connection.onreconnecting(() => document.getElementById('client-disconnected')!.classList.remove('d-none'));
         connection.onreconnected(() => document.getElementById('client-disconnected')!.classList.add('d-none'));
 
-        gameHub = new GameHub(connection, modalProvider);     // Initialize the hub first to prevent race conditions between init and sent events
+        gameHub = new GameHub(connection);     // Initialize the hub first to prevent race conditions between init and sent events
         connection.start()
             .catch(err => {
                 console.log("An error occurred while trying to connect to the game API!", err)
@@ -91,6 +88,17 @@
         
         return () => connection.stop();
     });
+    
+    function copySessionUrl() {
+        navigator.clipboard.writeText(webUrl + routes.menuJoin($game.gameId))
+            .catch(err => console.error(err))
+            .then(() => {
+                const element = document.getElementById("copyUrlBtn")!;
+                element.classList.remove("btn-secondary");
+                element.classList.add("btn-success");
+                element.textContent = "Link kopiert";
+            });
+    }
 </script>
 
 {#snippet gameOptionsModalContent()}
@@ -131,9 +139,9 @@
             <h5>{actionNames[$game.currentAction.type ?? 0] || "undefined"}</h5>
             {actionDescriptions[$game.currentAction.type ?? 0] || "Dies solltest du eigentlich nicht sehen :)"}
         {:else if $game.gameState === GameState.Preparation}
-            <div class="d-inline-flex">
-                <h5 class="me-2">Spielcode: <b>{$game.gameId?.toString().padStart(6, '0')}</b></h5>
-                (<a href="{webUrl}{routes.menuJoin($game.gameId)}">Spiellink</a>)
+            <div class="d-inline-flex align-items-center">
+                <h5 class="me-4 my-0">Spielcode: <b>{$game.gameId?.toString().padStart(6, '0')}</b></h5>
+                <button id="copyUrlBtn" class="btn btn-secondary px-2 py-1" onclick={copySessionUrl}>Link kopieren</button>
             </div>
         {:else if $game.gameState === GameState.Locked}
             Beitreten gesperrt
@@ -153,7 +161,7 @@
 
     {#if $game.remainingTimeoutHandle !== null}
         <p class="border border-{$game.remainingSeconds > 10 ? 'warning' : 'danger'}-subtle rounded bg-{$game.remainingSeconds > 10 ? 'warning' : 'danger'}-subtle p-1 mb-3">
-            {$game.remainingSeconds.toFixed(0)} Sekunden verbleiben für die {[ActionType.WerwolfAccuses, ActionType.MayorVoting].includes($game.currentAction!.type!) ? 'Diskussion' : 'Auswahl'}
+            {Math.max($game.remainingSeconds, 0).toFixed(0)} Sekunden verbleiben für die {[ActionType.WerwolfAccuses, ActionType.MayorVoting].includes($game.currentAction!.type!) ? 'Diskussion' : 'Auswahl'}
         </p>
     {/if}
     
@@ -196,7 +204,7 @@
         <Button variant="secondary" class="main-content mb-2" onclick={() => showAllPlayers = !showAllPlayers}>{showAllPlayers ? "Nur wählbare Spieler anzeigen" : "Alle Spieler anzeigen"}</Button>
 
         <Button variant="primary" class="main-content" onclick={() => gameHub.playerAction($game.selectedPlayers)}
-                disabled={$game.selectedPlayers.length < ($game.currentAction.minimum ?? 0) || $game.selectedPlayers.length > ($game.currentAction.maximum ?? 0)}>
+                disabled={voteLocked}>
             {#if submitButton[$game.currentAction.type!] !== undefined}
                 {submitButton[$game.currentAction.type!]}
             {:else}
@@ -220,7 +228,7 @@
 
 <div class="header-fixed large-vp d-flex">
     <button class="btn btn-secondary d-flex align-items-center me-2" type="button" use:tooltip={{title: canEditSettings
-            ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}} onclick={() => modalProvider.show({
+            ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}} onclick={() => modal.show({
         title: canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen (nur ansehen)",
         content: gameOptionsModalContent,
         confirmText: "Schließen",
@@ -235,7 +243,7 @@
 <aside id="logSidePanel" class="log-panel-fixed large-vp d-flex flex-column bg-dark-subtle p-2">
     <div class="d-flex justify-content-between align-items-center mb-1">
         <h5 class="mb-0">Spiel-Logs:</h5>
-        <button type="button" class="btn btn-secondary flex-shrink-1 d-flex align-items-center me-0" onclick={() => modalProvider.show({
+        <button type="button" class="btn btn-secondary flex-shrink-1 d-flex align-items-center me-0" onclick={() => modal.show({
             title: "Spiel-Log",
             content: gameLogsModalContent,
             confirmText: "Schließen",

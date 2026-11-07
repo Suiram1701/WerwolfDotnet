@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { onMount, setContext, type Snippet } from "svelte";
-    import { writable } from "svelte/store";
+    import { onMount, type Snippet } from "svelte";
     import ModalProvider from "$lib/components/ModalProvider.svelte";
     import { config } from "../config";
     
@@ -20,15 +19,9 @@
         { name: "Spielphase", value: "auto", icon: "contrast"}
     ];
     
-    let modalProvider: ModalProvider;
-    const modalAccessor = writable<ModalProvider>();
-    setContext("modalProvider", modalAccessor);
-    
     let isDarkMode: boolean = $state(defaultAutoColor === 'dark');
     let currentColor: colorMode = $state(colorModes[2]);
     onMount(() => {
-        modalAccessor.set(modalProvider);
-        
         const savedColor: string | null = localStorage.getItem(colorKey);
         if (savedColor !== null)
             currentColor = colorModes.find(c => c.value === savedColor) ?? colorModes[2];
@@ -48,7 +41,7 @@
     });
 </script>
 
-<ModalProvider bind:this={modalProvider} />
+<ModalProvider />
 <div class="flex-grow-1 d-flex flex-column my-3">{@render children()}</div>
 
 <footer class="d-flex justify-content-between align-items-center py-3 mt-4 border-top">

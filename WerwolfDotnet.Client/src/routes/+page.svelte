@@ -1,8 +1,7 @@
 <script lang="ts">
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
-    import { onMount, getContext } from "svelte";
-    import { type Readable } from "svelte/store";
+    import { onMount } from "svelte";
     import { config, getServerConfig } from "../config";
     import { Api, type HttpResponse, type GameDto, type JoinGameDto, type JoinedGameDto} from "../Api";
     import { getPlayerToken, getPlayerTokens, removePlayerToken, storePlayerToken } from "../stores/gameSessionStore";
@@ -10,11 +9,7 @@
     import PageTitle from "$lib/components/PageTitle.svelte"
     import Button from "$lib/components/Button.svelte";
     import GameCard from "$lib/components/GameCard.svelte";
-    import ModalProvider from "$lib/components/ModalProvider.svelte";
-    
-    let modalProvider: ModalProvider;
-    const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");
-    modalAccessor.subscribe(m => modalProvider = m);
+    import { modal } from "$lib/actions/modal";
     
     const apiClient = new Api({ baseUrl: config.apiEndpoint });
     
@@ -42,7 +37,7 @@
                 if (response.status === 400) 
                     document.getElementById("creatingPlayerName")!.classList.add("is-invalid");     // No need to reset because it's the only input for this form.
                 else
-                    modalProvider.show({ title: "Fehler bei der Anfrage", contentText: `${response.status}: ${response.statusText}` });
+                    modal.show({ title: "Fehler bei der Anfrage", contentText: `${response.status}: ${response.statusText}` });
             });
     }
 
@@ -76,7 +71,7 @@
                         document.getElementById("joinGameId")!.classList.add("is-invalid");
                         break;
                     default:
-                        modalProvider.show({ title: "Fehler bei der Anfrage", contentText: `${response.status}: ${response.statusText}` });
+                        modal.show({ title: "Fehler bei der Anfrage", contentText: `${response.status}: ${response.statusText}` });
                         break;
                 }
             });
@@ -92,20 +87,17 @@
         
         if (playerName.trim().length === 0)
             return "Der Name darf nicht leer sein";
-        if (playerName.includes(' '))
-            return "Der Name darf keine Leerzeichen enthalten";
+        if (playerName.startsWith(" ") || playerName.endsWith(" "))
+            return "Der Name darf nicht mit Leerzeichen beginnen/enden"
         if (playerName.length < serverConfig.playerNameMinLength! || playerName.length > serverConfig.playerNameMaxLength!)
             return `Der Name muss zwischen ${serverConfig.playerNameMinLength} und ${serverConfig.playerNameMaxLength} Zeichen lang sein`;
-        if (!serverConfig.playerNameAllowNumbers && playerName.match("\d"))
-            return "Es sind keine Zahlen im Namen erlaubt"
-        
         return null;
     }
     
     let pollId: NodeJS.Timeout;
     onMount(() => {
         if (page.url.searchParams.get("kicked") !== null) {
-            modalProvider.show({ title: "Spiel verlassen", contentText: "Sie wurden vom Game master aus dem Spiel geworfen." });
+            modal.show({ title: "Spiel verlassen", contentText: "Sie wurden vom Game master aus dem Spiel geworfen." });
         }
         
         if (page.url.searchParams.get("gameId") !== null) {
@@ -120,9 +112,9 @@
                     
                     if (!response.data.canJoin) {
                         if ((response.data.playerCount ?? 0) >= (response.data.maxPlayerCount ?? 0))
-                            modalProvider.show({ title: "Spiel beitritt nicht möglich", contentText: "Das Spiel hat bereits die maximale Anzahl an Spielern erreicht!" });
+                            modal.show({ title: "Spiel beitritt nicht möglich", contentText: "Das Spiel hat bereits die maximale Anzahl an Spielern erreicht!" });
                         else
-                            modalProvider.show({ title: "Spiel beitritt nicht möglich", contentText: "Das Spiel läuft bereits!" });
+                            modal.show({ title: "Spiel beitritt nicht möglich", contentText: "Das Spiel läuft bereits!" });
                         return;
                     }
                     
@@ -131,12 +123,12 @@
                     password = "";
                     passwordRequired = response.data.protected ?? true;
 
-                    modalProvider.show({ title: "Spiel beitreten", content: joinModalContent, confirmText: "Beitreten", onConfirm: onJoinGame });
+                    modal.show({ title: "Spiel beitreten", content: joinModalContent, confirmText: "Beitreten", onConfirm: onJoinGame });
                 })
                 .catch(response => {
                     if (response.status === 404)
                         return;
-                    modalProvider.show({ title: "Fehler bei der Anfrage", contentText: `${response.status}: ${response.statusText}` });
+                    modal.show({ title: "Fehler bei der Anfrage", contentText: `${response.status}: ${response.statusText}` });
                 });
         }
 
@@ -235,7 +227,7 @@
 <div class="row d-flex flex-wrap">
     <Button class="col start-button m-1" onclick={() => {
             password = "";
-            modalProvider.show({ title: "Neues Spiel erstellen", content: createModalContent, confirmText: "Erstellen", onConfirm: onCreateGame });
+            modal.show({ title: "Neues Spiel erstellen", content: createModalContent, confirmText: "Erstellen", onConfirm: onCreateGame });
     }}>Neues Spiel erstellen</Button>
     
     <Button variant="secondary" class="col start-button m-1" onclick={() => {
@@ -244,7 +236,7 @@
             password = "";
             passwordRequired = true;
             
-            modalProvider.show({ title: "Spiel beitreten", content: joinModalContent, confirmText: "Beitreten", onConfirm: onJoinGame });
+            modal.show({ title: "Spiel beitreten", content: joinModalContent, confirmText: "Beitreten", onConfirm: onJoinGame });
     }}>Spiel beitreten</Button>
 </div>
 <hr />
@@ -266,7 +258,7 @@
                     password = "";
                     passwordRequired = game.protected ?? true;
 
-                    modalProvider.show({ title: "Spiel beitreten", content: joinModalContent, confirmText: "Beitreten", onConfirm: onJoinGame });
+                    modal.show({ title: "Spiel beitreten", content: joinModalContent, confirmText: "Beitreten", onConfirm: onJoinGame });
                     }} />
             {/each}
         </div>
