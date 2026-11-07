@@ -37,17 +37,11 @@ public partial class GameManager(
     /// <returns>true when valid.</returns>
     public bool IsPlayerNameValid(string name, GameContext? context)
     {
-        if (string.IsNullOrWhiteSpace(name) || name.Any(char.IsWhiteSpace))
-            return false;
         if (name.Length < LobbyOptions.PlayerNameMinLength || name.Length > LobbyOptions.PlayerNameMaxLength)
             return false;
-        
-        string pattern = LobbyOptions.PlayerNameAllowNumbers
-            ? "^[a-zA-Z0-9]+$"
-            : "^[a-zA-Z]+$";
-        if (!Regex.IsMatch(name, pattern))
+        if (string.IsNullOrWhiteSpace(name) || char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[^1]))
             return false;
-
+        
         if (LobbyOptions.PlayerNameForbiddenWords.Any(w => name.Contains(w, StringComparison.OrdinalIgnoreCase)))
             return false;
         
@@ -67,7 +61,7 @@ public partial class GameManager(
         while (await _sessionStore.IdExistsAsync(gameId));
         
         ILogger logger = _loggerFactory.CreateLogger($"{typeof(GameContext)}[{gameId}]");
-        GameLogger gameLogger = new();
+        GameLogger gameLogger = new(logger);
         GameContext context = new(gameId, sessionPassword, LobbyOptions.MaxPlayers, gameLogger);
         gameLogger.OnMessage += msg => LogHandler(msg, context, logger);
         
@@ -79,7 +73,8 @@ public partial class GameManager(
         context.OnPhaseAction += OnPhaseActionAsync;
         context.OnPlayerActionCompleted += OnPlayerActionCompletedAsync;
         context.OnGameWon += OnGameWonAsync;
-
+        context.OnGameFaulted += OnGameFaultedAsync;
+        
         await _sessionStore.AddAsync(context);
         _logger.LogInformation("Game {gameId} created. Game master is {gameMasterName} ({gameMasterId})", gameId, gameMasterName, 0);
         
@@ -173,6 +168,7 @@ public partial class GameManager(
             ctx.OnPhaseAction -= OnPhaseActionAsync;
             ctx.OnPlayerActionCompleted -= OnPlayerActionCompletedAsync;
             ctx.OnGameWon -= OnGameWonAsync;
+            ctx.OnGameFaulted -= OnGameFaultedAsync;
         
             await _sessionStore.RemoveAsync(ctx).ConfigureAwait(false);
         }

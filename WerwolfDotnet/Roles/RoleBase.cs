@@ -25,4 +25,6 @@ public abstract class RoleBase
 
         return Task.CompletedTask;
     }
+
+    public override string ToString() => Type.ToString();
 }

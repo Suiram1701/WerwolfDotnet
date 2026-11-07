@@ -7,7 +7,7 @@ export const config =
     isDevelopment: import.meta.env.DEV,
     apiEndpoint: import.meta.env.DEV && window.location.hostname === "localhost" ? `http://localhost:7216` : "",
     apiPollInterval: 5000,
-    version: "1.0.0",
+    version: "1.0.1",
     
     allowMultipleSessions: import.meta.env.DEV,
     allowSessionSharing: true,

@@ -1,12 +1,20 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace WerwolfDotnet.Logging;
 
-public sealed class GameLogger
+public sealed class GameLogger(ILogger? internalLogger = null)
 {
     public IReadOnlyList<LogMessage> Messages => _messages.AsReadOnly();
     private readonly List<LogMessage> _messages = [];
 
     public event Action<LogMessage>? OnMessage;
 
+    /// <summary>
+    /// A logger intended for internal logs (never shipped to the user)
+    /// </summary>
+    internal ILogger InternalLogger { get; } = internalLogger ?? NullLogger.Instance;
+    
     internal void Log(Event @event, Player? source, Player? target) => Log(@event, source, target is null ? [] : [target]);
 
     internal void Log(Event @event, Player? source, Player[] targets) => Log(@event, args: [source, ..targets]);

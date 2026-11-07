@@ -7,21 +7,15 @@
     import { config , getServerConfig } from "../../config";
     import { renderMessage } from "../../texts/logs";
     import GameSettings from "$lib/components/GameSettings.svelte";
-    import {type Api, GameState} from "../../Api";
-    import ModalProvider from "$lib/components/ModalProvider.svelte";
-    import { type Readable } from "svelte/store";
-    import { getContext } from "svelte";
-    import {getPlayerToken} from "../../stores/gameSessionStore";
+    import { type Api, GameState } from "../../Api";
+    import { getPlayerToken } from "../../stores/gameSessionStore";
     import type {GameHub} from "../../gameHub";
-    import {page} from "$app/state";
+    import { page } from "$app/state";
+    import { modal } from "$lib/actions/modal";
 
     let { apiClient, gameHub }: { apiClient: Api<any>, gameHub: GameHub } = $props();
 
     const webUrl = page.url.protocol + "//" + page.url.host;     // Port is part of the host
-    
-    let modalProvider: ModalProvider;
-    const modalAccessor = getContext<Readable<ModalProvider>>("modalProvider");
-    modalAccessor.subscribe(m => modalProvider = m);
     
     const serverConfig = getServerConfig();
     let enoughPlayers = $derived($game.players.length >= (serverConfig.minimumPlayers ?? 0));
@@ -43,7 +37,7 @@
 {/snippet}
 
 <div class="small-vp d-flex main-content mt-3">
-    <Button variant="secondary" icon="settings" class="w-100" onclick={() => modalProvider.show({
+    <Button variant="secondary" icon="settings" class="w-100" onclick={() => modal.show({
             title: canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen (nur ansehen)",
             content: gameOptionsModalContent,
             confirmText: "Schließen",
@@ -51,7 +45,7 @@
             closeOnConfirm: true
         })}>{canEditSettings ? "Spieleinstellungen" : "Spieleinstellungen ansehen"}</Button>
 
-    <Button variant="secondary" icon="manage_search" class="w-100 ms-2" onclick={() => modalProvider.show({
+    <Button variant="secondary" icon="manage_search" class="w-100 ms-2" onclick={() => modal.show({
             title: "Spiel-Log",
             content: gameLogsModalContent,
             confirmText: "Schließen",
@@ -86,7 +80,7 @@
 
 <div class="d-flex main-content m-3">
     <!-- Leave button -->
-    <Button variant="danger" icon="logout" class="w-100" onclick={() => modalProvider.show({
+    <Button variant="danger" icon="logout" class="w-100" onclick={() => modal.show({
             title: "Spiel verlassen?",
             contentText: "Möchten Sie das Spiel wirklich verlassen?",
             confirmText: "Verlassen",
@@ -100,7 +94,7 @@
     {#if config.allowSessionSharing}
         <Button variant="warning" icon="move_location" class="w-100 ms-2" onclick={() => {
                 const sessionUrl = webUrl + routes.gameDirectJoin($game.gameId, $game.selfId, getPlayerToken($game.gameId, $game.selfId)!.playerToken);
-                modalProvider.show({
+                modal.show({
                     title: "Gerät wechseln",
                     contentText: `Öffnen Sie <a href="${sessionUrl}">diesen Link</a> auf dem Gerät wo die Sitzung fortgesetzt werden soll.<br>Nach dem wechsel können Sie diesen Tab schließen.`,
                     confirmText: "Gerät Gewechselt",
@@ -110,26 +104,26 @@
     {/if}
 
     {#if $game.selfId === $game.gameMeta?.gameMaster && ($game.gameState ?? -2) > 0}
-        <Button variant="danger" class="w-100 ms-2" onclick={() => modalProvider.show({
+        <Button variant="danger" class="w-100 ms-2" onclick={() => modal.show({
                 title: "Spiel beenden?",
                 contentText: "Möchten Sie die Runde wirklich beenden? (Spieler bleiben in der Sitzung)",
                 confirmText: "Beenden",
                 confirmColor: "danger",
                 onConfirm: async () => {
                     await gameHub.stopGame()
-                    modalProvider.hide();
+                    modal.hide();
                 }
             })}>Runde beenden</Button>
 
         {#if serverConfig.gameMasterSkipAllowed ?? false}
-            <Button variant="danger" class="w-100 ms-2" onclick={() => modalProvider.show({
+            <Button variant="danger" class="w-100 ms-2" onclick={() => modal.show({
                     title: "Spieler Aktion überspringen?",
                     contentText: "Diese Funktion sollte nur genutzt werden, wenn ein Nutzer AFK ist. Das Ergebnis der Aktion wird im voraus ausgewertet egal, ob Spieler noch nicht abgestimmt haben.",
                     confirmText: "Überspringen",
                     confirmColor: "danger",
                     onConfirm: async () => {
                         await gameHub.cancelCurrentAction();
-                        modalProvider.hide();
+                        modal.hide();
                     }
                 })}>Aktuelle Aktion beenden</Button>
         {/if}

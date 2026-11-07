@@ -21,11 +21,8 @@ public partial class GameManager
     /// <returns>A task to await</returns>
     public Task UpdatePlayersAsync(GameContext ctx, Player? recipient)
     {
-        var seer = recipient?.Role as Seer;
-        
-        IEnumerable<PlayerDto> dtos = ctx.Players.ToDtoCollection(p => ctx.State == GameState.GameWon
-            ? p.Role?.Type
-            : (seer?.WatchedPlayers.TryGetValue(p, out Role r) ?? false) ? r : null);
+        IEnumerable<PlayerDto> dtos = ctx.Players.ToDtoCollection(p => 
+            ctx.State == GameState.GameWon ? p.Role?.Type : recipient?.PerceivedRole(p));
         return recipient is null
             ? _hubContext.Clients.Game(ctx.Id).PlayersUpdated(dtos)
             : _hubContext.Clients.Player(ctx.Id, recipient.Id).PlayersUpdated(dtos);
@@ -62,22 +59,16 @@ public partial class GameManager
 
     public Task UpdateFullGameLogAsync(GameContext ctx, Player? recipient)
     {
-        LogMessageDto[] shonMessages = ctx.Logger.Messages     // Either the msg is from a previous game, the requesting user was part of the action or global
-            .Where(m =>
-            {
-                if (reveal(m) || m.Event <= 0)
-                    return true;
-                return m.Event == Event.Voting && m.Args.Skip(1)     // Event.Voting is expected to have a collection key-value-pairs at its second position
-                    .Any(arg => ((KeyValuePair<LogPlayerSnapshot, LogPlayerSnapshot[]>)arg!).Key.Id == recipient?.Id);
-            })
+        LogMessageDto[] shownMessages = ctx.Logger.Messages     // Either the msg is from a previous game, the requesting user was part of the action or global
+            .Where(m => reveal(m) || (recipient?.ShouldSeeLog(m) ?? false))
             .Select(m => new LogMessageDto(m, reveal(m)))
             .ToArray();
 
         return recipient is null
-            ? _hubContext.Clients.Game(ctx.Id).GameLogUpdated(shonMessages)
-            : _hubContext.Clients.Player(ctx.Id, recipient.Id).GameLogUpdated(shonMessages);
+            ? _hubContext.Clients.Game(ctx.Id).GameLogUpdated(shownMessages)
+            : _hubContext.Clients.Player(ctx.Id, recipient.Id).GameLogUpdated(shownMessages);
         
-        bool reveal(LogMessage msg) => ctx.State == GameState.GameWon || msg.Time < ctx.RoundStartedAt || ctx.RoundStartedAt == DateTimeOffset.MinValue;     // Show only when the game is finished or from a previous game
+        bool reveal(LogMessage msg) => msg.Event <= 0 || ctx.State == GameState.GameWon || msg.Time < ctx.RoundStartedAt || ctx.RoundStartedAt == DateTimeOffset.MinValue;     // Show only when the game is finished or from a previous game
     }
     
     // try-catch is "required" everywhere because of async-void 
@@ -152,7 +143,7 @@ public partial class GameManager
         try
         { await _hubContext.Clients.Game(ctx.Id).GameMetaUpdated(gameMasterId, mayorId); }
         catch (Exception ex)
-        { _logger.LogError(ex, ex.Message); }
+        { _logger.LogError(ex, "Failed to run {method} handler", nameof(OnGameMetadataChangedAsync)); }
     }
     
     private async void OnGameStateChangedAsync(GameContext ctx, GameState newState, IReadOnlyDictionary<Player, (CauseOfDeath, Role)> diedPlayers, bool? bearGrowls)
@@ -176,7 +167,7 @@ public partial class GameManager
                 .PlayerActionRequested(new SelectionOptionsDto(action, p))));
         }
         catch (Exception ex)
-        { _logger.LogError(ex, ex.Message); }
+        { _logger.LogError(ex, "Failed to run {method} handler", nameof(OnPhaseActionAsync)); }
     }
 
     private async void OnPlayerActionCompletedAsync(GameContext ctx, PlayerAction action, ActionResult result)
@@ -205,12 +196,15 @@ public partial class GameManager
                 case ActionType.AmorSelection:
                     await Task.WhenAll(action.PlayerVotes.Values
                         .SelectMany(l => l)
-                        .Select(p => UpdatePlayerRoleAsync(ctx, p)));
+                        .Select(p => UpdatePlayersAsync(ctx, p)));     // Update role of loved one
+                    await Task.WhenAll(action.PlayerVotes.Values
+                        .SelectMany(l => l)
+                        .Select(p => UpdatePlayerRoleAsync(ctx, p)));     // Update relations
                     break;
             }
         }
         catch (Exception ex)
-        { _logger.LogError(ex, ex.Message); }
+        { _logger.LogError(ex, "Failed to run {method} handler", nameof(OnPlayerActionCompletedAsync)); }
     }
 
     private async void OnGameWonAsync(GameContext ctx, Fraction fraction)
@@ -222,6 +216,16 @@ public partial class GameManager
             await UpdateFullGameLogAsync(ctx, null);     // The end state reveals a ton of infos
         }
         catch (Exception ex)
-        { _logger.LogError(ex, ex.Message); }
+        { _logger.LogError(ex, "Failed to run {method} handler", nameof(OnGameWonAsync)); }
+    }
+
+    private async void OnGameFaultedAsync(GameContext ctx, Exception gameEx)
+    {
+        try
+        {
+            await StopGameAsync(ctx);
+        }
+        catch (Exception ex)
+        { _logger.LogError(ex, "Failed to run {method} handler", nameof(OnGameFaultedAsync)); }
     }
 }

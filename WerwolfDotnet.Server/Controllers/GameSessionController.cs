@@ -132,20 +132,17 @@ public class GameSessionController(
             return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Session not found.");
         if (User.GetGameId() != sessionId && !User.IsAdmin())
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
-                
-        // Fron GameManager.Handlers.cs
-        IEnumerable<LogMessageDto> showsMessages = ctx.Logger.Messages     // Either the msg is from a previous game, the requesting user was part of the action or global
-            .Where(m =>
-            {
-                if (reveal(m) || m.Event <= 0)
-                    return true;
-                return m.Event == Event.Voting && m.Args.Skip(1)     // Event.Voting is expected to have a collection key-value-pairs at its second position
-                    .Any(arg => ((KeyValuePair<LogPlayerSnapshot, LogPlayerSnapshot[]>)arg!).Key.Id == User.GetPlayerId());
-            })
-            .Select(m => new LogMessageDto(m, reveal(m)));     
-        return Ok(showsMessages);
 
-        bool reveal(LogMessage msg) => ctx.State == GameState.GameWon || msg.Time < ctx.RoundStartedAt || ctx.RoundStartedAt == DateTimeOffset.MinValue;     // Show only when the game is finished or from a previous game
+        Player user = ctx.Players.Single(p => p.Id == User.GetPlayerId());
+        
+        // From GameManager.Handlers.cs
+        LogMessageDto[] shownMessages = ctx.Logger.Messages     // Either the msg is from a previous game, the requesting user was part of the action or global
+            .Where(m => reveal(m) || user.ShouldSeeLog(m))
+            .Select(m => new LogMessageDto(m, reveal(m)))
+            .ToArray();  
+        return Ok(shownMessages);
+
+        bool reveal(LogMessage msg) => msg.Event <= 0 || ctx.State == GameState.GameWon || msg.Time < ctx.RoundStartedAt || ctx.RoundStartedAt == DateTimeOffset.MinValue;     // Show only when the game is finished or from a previous game
     }
     
     /// <summary>
@@ -261,8 +258,9 @@ public class GameSessionController(
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
         
         GameContext? ctx = await _manager.GetGameByIdAsync(sessionId);
+        Player? user = ctx?.Players.Single(p => p.Id == User.GetPlayerId());
         return ctx is not null
-            ? Ok(ctx.Players.ToDtoCollection())
+            ? Ok(ctx.Players.ToDtoCollection(p => ctx.State == GameState.GameWon ? p.Role?.Type : user!.PerceivedRole(p)))
             : Problem(statusCode: StatusCodes.Status404NotFound, detail: "Game wasn't not found.");
     }
     
@@ -279,14 +277,17 @@ public class GameSessionController(
     [ProducesResponseType(typeof(PlayerDto), StatusCodes.Status200OK, Application.Json)]
     public async Task<IActionResult> GetPlayerByIdAsync([FromRoute] int sessionId, [FromRoute] int playerId)
     {
+        GameContext? ctx = await _manager.GetGameByIdAsync(sessionId);
+        if (ctx is null)
+            return Problem(statusCode: StatusCodes.Status404NotFound, detail: "Specified session not found.");
         if (User.GetGameId() != sessionId && !User.IsAdmin())
             return Problem(statusCode: StatusCodes.Status403Forbidden, detail: "You're not authorized to access this game.");
         
-        GameContext? ctx = await _manager.GetGameByIdAsync(sessionId);
-        Player? player = ctx?.Players.SingleOrDefault(p => p.Id == playerId);
-        return ctx is null || player is null
+        Player user = ctx.Players.Single(p => p.Id == User.GetPlayerId());
+        Player? player = ctx.Players.SingleOrDefault(p => p.Id == playerId);
+        return player is null
             ? Problem(statusCode: StatusCodes.Status404NotFound, detail: "Game or player not found.")
-            : Ok(new PlayerDto(player));
+            : Ok(new PlayerDto(player, ctx.State == GameState.GameWon ? player.Role?.Type : user.PerceivedRole(player)));
     }
     
     /// <summary>

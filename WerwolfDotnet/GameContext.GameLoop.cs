@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 using WerwolfDotnet.Actions;
 using WerwolfDotnet.Logging;
 using WerwolfDotnet.Roles;
@@ -48,6 +49,11 @@ partial class GameContext
         }
         catch (TaskCanceledException)
         {
+        }
+        catch (Exception ex)
+        {
+            Logger.InternalLogger.LogError(ex, "Session has unexpectedly crashed!");
+            OnGameFaulted?.Invoke(this, ex);
         }
     }
     

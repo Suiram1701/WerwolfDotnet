@@ -55,6 +55,28 @@ public class Player : IEquatable<Player>
         return SHA256.HashData(tokenBytes).SequenceEqual(_authSecretHash);
     }
 
+    /// <summary>
+    /// The role a player has from the perspective of this player.
+    /// </summary>
+    /// <param name="other">The player whose role is searched for.</param>
+    /// <returns>The role or <c>null</c> if unknown.</returns>
+    public Role? PerceivedRole(Player other)
+    {
+        if (_game.PlayersInLove.TryGetValue(this, out Player? lovedOne) && other.Equals(lovedOne))
+            return other.Role?.Type;
+        
+        if (Role is Seer seer)
+        {
+            if (seer.WatchedPlayers.TryGetValue(other, out Role r))
+                return r;
+        }
+        return null;
+    }
+
+    public bool ShouldSeeLog(LogMessage msg) =>
+        msg.Event == Event.Voting && msg.Args.Skip(1)     // Event.Voting is expected to have a collection key-value-pairs at its second position
+            .Any(arg => ((KeyValuePair<LogPlayerSnapshot, LogPlayerSnapshot[]>)arg!).Key.Id == Id);
+    
     internal void Kill(CauseOfDeath causeOfDeath, Player? killer)
     {
         _game.Logger.Log(Event.Killed, killer, this);

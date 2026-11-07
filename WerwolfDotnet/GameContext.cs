@@ -89,6 +89,8 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     /// Invoked when one of the fractions has won the game. First bool is whether the village won the game.
     /// </summary>
     public event Action<GameContext, Fraction>? OnGameWon;
+
+    public event Action<GameContext, Exception>? OnGameFaulted;
     
     internal GameOptions? GameOptions { get; private set; }
     
@@ -279,7 +281,7 @@ public sealed partial class GameContext : IEquatable<GameContext>, IDisposable
     internal async Task RequestPlayerActionAsync(PlayerAction action, Func<PlayerAction, CancellationToken, ActionResult> completedCallback)
     {
         TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        await using CancellationTokenRegistration ctr = action.CancellationToken.Register(_ => tcs.SetCanceled(action.CancellationToken), null);
+        await using CancellationTokenRegistration ctr = action.CancellationToken.Register(_ => tcs.TrySetCanceled(action.CancellationToken), null);
         action.OnCompleted += (_, _) => tcs.TrySetResult();
 
         CancellationTokenRegistration? timeoutCtr = null;

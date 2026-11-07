@@ -52,38 +52,48 @@ public sealed class PlayerAction(CancellationToken ct)
     private readonly CancellationTokenSource _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
     
     internal CancellationToken OrgCancellationToken => ct;
+
+    private readonly Lock _lock = new();
     
     public event Action<PlayerAction, CancellationToken>? OnCompleted;
     
     public bool RegisterVote(Player self, Player[] selection)
     {
+        if (!Participants.Contains(self))
+            return false;
         if (selection.Length < Minimum || selection.Length > Maximum)
             return false;
         if (selection.Any(p => !VotablePlayers.Contains(p)))
             return false;
 
-        _playerVotes[self] = selection;
+        lock (_lock)
+        {
+            _playerVotes[self] = selection;
         
-        if (PlayerVotes.Count == Participants.Count && PlayerVotes.All(v => v.Value.Length >= Minimum))
-            OnCompleted?.Invoke(this, CancellationToken);
-        return true;
+            if (Participants.All(_playerVotes.ContainsKey) && PlayerVotes.All(v => v.Value.Length >= Minimum))
+                OnCompleted?.Invoke(this, CancellationToken);
+            return true;
+        }
     }
 
     public void CancelAction()
     {
-        foreach (Player participant in Participants)
+        lock(_lock)
         {
-            if (!_playerVotes.ContainsKey(participant))     // Add at least every participant to the dict.
-                _playerVotes[participant] = [];
-        }
+            foreach (Player participant in Participants)
+            {
+                if (!_playerVotes.ContainsKey(participant))     // Add at least every participant to the dict.
+                    _playerVotes[participant] = [];
+            }
         
-        _cts.Cancel();
+            _cts.Cancel();
+        }
     }
 
     public IReadOnlyDictionary<Player, int> GetPlayersByVoteCount(Player[]? doubleValuedVotes = null)
     {
         Dictionary<Player, int> votesForPlayer = new();
-        foreach ((Player player, Player[] votesFor) in _playerVotes)
+        foreach ((Player player, Player[] votesFor) in _playerVotes.ToArray())     // Copy in case its modified during enumeration
         {
             int value = doubleValuedVotes?.Contains(player) ?? false ? 2 : 1;
             foreach (Player votedOne in votesFor)
@@ -107,7 +117,7 @@ public sealed class PlayerAction(CancellationToken ct)
     {
         var abstention = 0;
         Dictionary<Player, int> votesForPlayer = new();
-        foreach ((Player player, Player[] votesFor) in _playerVotes)
+        foreach ((Player player, Player[] votesFor) in _playerVotes.ToArray())     // Copy in case its modified during enumeration
         {
             int value = doubleValuedVotes?.Contains(player) ?? false ? 2 : 1;
             if (votesFor.Length == 0)
