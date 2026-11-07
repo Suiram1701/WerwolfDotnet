@@ -6,10 +6,8 @@
         <Nullable>enable</Nullable>
         <Version>1.0.1</Version>
     </PropertyGroup>
-
+    
     <ItemGroup>
-      <Reference Include="Microsoft.Extensions.Logging.Abstractions">
-        <HintPath>..\..\..\..\..\usr\lib\dotnet\shared\Microsoft.AspNetCore.App\10.0.14\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
-      </Reference>
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
     </ItemGroup>
 </Project>
